@@ -156,6 +156,104 @@ typedef struct {
     int (*exscan)(const void *sendbuf, void *recvbuf, int count,
                   MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 
+    /* MPI-3 Non-blocking Collectives */
+    int (*ibarrier)(MPI_Comm comm, MPI_Request *request);
+    int (*ibcast)(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm, MPI_Request *request);
+    int (*igather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                   void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                   int root, MPI_Comm comm, MPI_Request *request);
+    int (*igatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                    void *recvbuf, const int *recvcounts, const int *displs, MPI_Datatype recvtype,
+                    int root, MPI_Comm comm, MPI_Request *request);
+    int (*iscatter)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                    void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                    int root, MPI_Comm comm, MPI_Request *request);
+    int (*iscatterv)(const void *sendbuf, const int *sendcounts, const int *displs, MPI_Datatype sendtype,
+                     void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                     int root, MPI_Comm comm, MPI_Request *request);
+    int (*iallgather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                      void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                      MPI_Comm comm, MPI_Request *request);
+    int (*iallgatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                       void *recvbuf, const int *recvcounts, const int *displs, MPI_Datatype recvtype,
+                       MPI_Comm comm, MPI_Request *request);
+    int (*ialltoall)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                     void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                     MPI_Comm comm, MPI_Request *request);
+    int (*ialltoallv)(const void *sendbuf, const int *sendcounts, const int *sdispls, MPI_Datatype sendtype,
+                      void *recvbuf, const int *recvcounts, const int *rdispls, MPI_Datatype recvtype,
+                      MPI_Comm comm, MPI_Request *request);
+    int (*ireduce)(const void *sendbuf, void *recvbuf, int count,
+                   MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm, MPI_Request *request);
+    int (*iallreduce)(const void *sendbuf, void *recvbuf, int count,
+                      MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
+    int (*ireduce_scatter)(const void *sendbuf, void *recvbuf, const int *recvcounts,
+                           MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
+    int (*ireduce_scatter_block)(const void *sendbuf, void *recvbuf, int recvcount,
+                                 MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
+    int (*iscan)(const void *sendbuf, void *recvbuf, int count,
+                 MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
+    int (*iexscan)(const void *sendbuf, void *recvbuf, int count,
+                   MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
+
+    /* Group operations */
+    int (*group_size)(MPI_Group group, int *size);
+    int (*group_rank)(MPI_Group group, int *rank);
+    int (*group_translate_ranks)(MPI_Group group1, int n, const int *ranks1, MPI_Group group2, int *ranks2);
+    int (*group_compare)(MPI_Group group1, MPI_Group group2, int *result);
+    int (*group_union)(MPI_Group group1, MPI_Group group2, MPI_Group *newgroup);
+    int (*group_intersection)(MPI_Group group1, MPI_Group group2, MPI_Group *newgroup);
+    int (*group_difference)(MPI_Group group1, MPI_Group group2, MPI_Group *newgroup);
+    int (*group_incl)(MPI_Group group, int n, const int *ranks, MPI_Group *newgroup);
+    int (*group_excl)(MPI_Group group, int n, const int *ranks, MPI_Group *newgroup);
+    int (*group_range_incl)(MPI_Group group, int n, int ranges[][3], MPI_Group *newgroup);
+    int (*group_range_excl)(MPI_Group group, int n, int ranges[][3], MPI_Group *newgroup);
+    int (*group_free)(MPI_Group *group);
+
+    /* Communicator extended operations */
+    int (*comm_create)(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm);
+    int (*comm_group)(MPI_Comm comm, MPI_Group *group);
+    int (*comm_set_name)(MPI_Comm comm, const char *comm_name);
+    int (*comm_get_name)(MPI_Comm comm, char *comm_name, int *resultlen);
+
+    /* RMA/One-Sided - Window creation */
+    int (*win_create)(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win);
+    int (*win_allocate)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
+    int (*win_free)(MPI_Win *win);
+
+    /* RMA Operations */
+    int (*put)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+               int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win);
+    int (*get)(void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+               int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win);
+    int (*accumulate)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                      int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                      MPI_Op op, MPI_Win win);
+    int (*get_accumulate)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                          void *result_addr, int result_count, MPI_Datatype result_datatype,
+                          int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                          MPI_Op op, MPI_Win win);
+    int (*fetch_and_op)(const void *origin_addr, void *result_addr, MPI_Datatype datatype,
+                        int target_rank, MPI_Aint target_disp, MPI_Op op, MPI_Win win);
+    int (*compare_and_swap)(const void *origin_addr, const void *compare_addr, void *result_addr,
+                            MPI_Datatype datatype, int target_rank, MPI_Aint target_disp, MPI_Win win);
+    int (*rput)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                MPI_Win win, MPI_Request *request);
+    int (*rget)(void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                MPI_Win win, MPI_Request *request);
+
+    /* RMA Synchronization */
+    int (*win_fence)(int assert, MPI_Win win);
+    int (*win_lock)(int lock_type, int rank, int assert, MPI_Win win);
+    int (*win_unlock)(int rank, MPI_Win win);
+    int (*win_lock_all)(int assert, MPI_Win win);
+    int (*win_unlock_all)(MPI_Win win);
+    int (*win_flush)(int rank, MPI_Win win);
+    int (*win_flush_all)(MPI_Win win);
+    int (*win_sync)(MPI_Win win);
+
     /* Communicator */
     int (*comm_size)(MPI_Comm comm, int *size);
     int (*comm_rank)(MPI_Comm comm, int *rank);

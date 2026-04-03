@@ -197,6 +197,120 @@ int tftk_mpi_vtable_init_mpich(tftk_mpi_lib_handle_t handle) {
     tftk_mpi.pack_size = (int (*)(int, MPI_Datatype, MPI_Comm, int*))
         tftk_mpi_platform_dlsym(handle, "MPI_Pack_size");
 
+    /* MPI-3 Non-blocking Collectives */
+    tftk_mpi.ibarrier = (int (*)(MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ibarrier");
+    tftk_mpi.ibcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ibcast");
+    tftk_mpi.igather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Igather");
+    tftk_mpi.igatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Igatherv");
+    tftk_mpi.iscatter = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Iscatter");
+    tftk_mpi.iscatterv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Iscatterv");
+    tftk_mpi.iallgather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Iallgather");
+    tftk_mpi.iallgatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Iallgatherv");
+    tftk_mpi.ialltoall = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ialltoall");
+    tftk_mpi.ialltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ialltoallv");
+    tftk_mpi.ireduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ireduce");
+    tftk_mpi.iallreduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Iallreduce");
+    tftk_mpi.ireduce_scatter = (int (*)(const void*, void*, const int*, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ireduce_scatter");
+    tftk_mpi.ireduce_scatter_block = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ireduce_scatter_block");
+    tftk_mpi.iscan = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Iscan");
+    tftk_mpi.iexscan = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Iexscan");
+
+    /* Group operations */
+    tftk_mpi.group_size = (int (*)(MPI_Group, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_size");
+    tftk_mpi.group_rank = (int (*)(MPI_Group, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_rank");
+    tftk_mpi.group_translate_ranks = (int (*)(MPI_Group, int, const int*, MPI_Group, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_translate_ranks");
+    tftk_mpi.group_compare = (int (*)(MPI_Group, MPI_Group, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_compare");
+    tftk_mpi.group_union = (int (*)(MPI_Group, MPI_Group, MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_union");
+    tftk_mpi.group_intersection = (int (*)(MPI_Group, MPI_Group, MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_intersection");
+    tftk_mpi.group_difference = (int (*)(MPI_Group, MPI_Group, MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_difference");
+    tftk_mpi.group_incl = (int (*)(MPI_Group, int, const int*, MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_incl");
+    tftk_mpi.group_excl = (int (*)(MPI_Group, int, const int*, MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_excl");
+    tftk_mpi.group_range_incl = (int (*)(MPI_Group, int, int[][3], MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_range_incl");
+    tftk_mpi.group_range_excl = (int (*)(MPI_Group, int, int[][3], MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_range_excl");
+    tftk_mpi.group_free = (int (*)(MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Group_free");
+
+    /* Communicator extended */
+    tftk_mpi.comm_create = (int (*)(MPI_Comm, MPI_Group, MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_create");
+    tftk_mpi.comm_group = (int (*)(MPI_Comm, MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_group");
+    tftk_mpi.comm_set_name = (int (*)(MPI_Comm, const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_set_name");
+    tftk_mpi.comm_get_name = (int (*)(MPI_Comm, char*, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_get_name");
+
+    /* RMA - Window creation */
+    tftk_mpi.win_create = (int (*)(void*, MPI_Aint, int, MPI_Info, MPI_Comm, MPI_Win*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_create");
+    tftk_mpi.win_allocate = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_allocate");
+    tftk_mpi.win_free = (int (*)(MPI_Win*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_free");
+
+    /* RMA Operations */
+    tftk_mpi.put = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Put");
+    tftk_mpi.get = (int (*)(void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Get");
+    tftk_mpi.accumulate = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Accumulate");
+    tftk_mpi.get_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Get_accumulate");
+    tftk_mpi.fetch_and_op = (int (*)(const void*, void*, MPI_Datatype, int, MPI_Aint, MPI_Op, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Fetch_and_op");
+    tftk_mpi.compare_and_swap = (int (*)(const void*, const void*, void*, MPI_Datatype, int, MPI_Aint, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Compare_and_swap");
+    tftk_mpi.rput = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Rput");
+    tftk_mpi.rget = (int (*)(void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Rget");
+
+    /* RMA Synchronization */
+    tftk_mpi.win_fence = (int (*)(int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_fence");
+    tftk_mpi.win_lock = (int (*)(int, int, int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_lock");
+    tftk_mpi.win_unlock = (int (*)(int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_unlock");
+    tftk_mpi.win_lock_all = (int (*)(int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_lock_all");
+    tftk_mpi.win_unlock_all = (int (*)(MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_unlock_all");
+    tftk_mpi.win_flush = (int (*)(int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_flush");
+    tftk_mpi.win_flush_all = (int (*)(MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_flush_all");
+    tftk_mpi.win_sync = (int (*)(MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_sync");
+
     /* Get predefined communicator values */
     get_mpich_comm_world(handle, &TFTK_MPI_COMM_WORLD);
 
