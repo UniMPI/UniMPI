@@ -66,6 +66,12 @@
 #define MPI_Probe tftk_mpi.probe
 #define MPI_Iprobe tftk_mpi.iprobe
 
+/* MPI-3 Matched probe operations */
+#define MPI_Mprobe tftk_mpi.mprobe
+#define MPI_Improbe tftk_mpi.improbe
+#define MPI_Mrecv tftk_mpi.mrecv
+#define MPI_Imrecv tftk_mpi.imrecv
+
 /* Persistent communication */
 #define MPI_Send_init tftk_mpi.send_init
 #define MPI_Recv_init tftk_mpi.recv_init
@@ -86,6 +92,9 @@
 #define MPI_Alltoall tftk_mpi.alltoall
 #define MPI_Alltoallv tftk_mpi.alltoallv
 
+/* MPI-3 Alltoallw */
+#define MPI_Alltoallw tftk_mpi.alltoallw
+
 /* Collectives - Reduce-scatter and scan */
 #define MPI_Reduce_scatter tftk_mpi.reduce_scatter
 #define MPI_Reduce_scatter_block tftk_mpi.reduce_scatter_block
@@ -102,16 +111,33 @@
 #define MPI_Type_create_subarray tftk_mpi.type_create_subarray
 #define MPI_Type_dup tftk_mpi.type_dup
 
+/* MPI-3 Extended datatypes */
+#define MPI_Type_hvector tftk_mpi.type_hvector
+#define MPI_Type_hindexed tftk_mpi.type_hindexed
+#define MPI_Type_create_darray tftk_mpi.type_create_darray
+
 /* Datatypes - Query */
 #define MPI_Type_get_extent tftk_mpi.type_get_extent
 #define MPI_Type_get_size tftk_mpi.type_get_size
 #define MPI_Type_get_name tftk_mpi.type_get_name
 #define MPI_Type_set_name tftk_mpi.type_set_name
 
+/* MPI-3 Extended datatype query */
+#define MPI_Type_get_true_extent tftk_mpi.type_get_true_extent
+#define MPI_Type_size tftk_mpi.type_size
+#define MPI_Type_extent tftk_mpi.type_extent
+#define MPI_Type_lb tftk_mpi.type_lb
+#define MPI_Type_ub tftk_mpi.type_ub
+
 /* Pack/Unpack */
 #define MPI_Pack tftk_mpi.pack
 #define MPI_Unpack tftk_mpi.unpack
 #define MPI_Pack_size tftk_mpi.pack_size
+
+/* MPI-3 External pack/unpack */
+#define MPI_Pack_external tftk_mpi.pack_external
+#define MPI_Unpack_external tftk_mpi.unpack_external
+#define MPI_Pack_external_size tftk_mpi.pack_external_size
 
 /* MPI-3 Non-blocking Collectives */
 #define MPI_Ibarrier tftk_mpi.ibarrier
@@ -124,6 +150,7 @@
 #define MPI_Iallgatherv tftk_mpi.iallgatherv
 #define MPI_Ialltoall tftk_mpi.ialltoall
 #define MPI_Ialltoallv tftk_mpi.ialltoallv
+#define MPI_Ialltoallw tftk_mpi.ialltoallw
 #define MPI_Ireduce tftk_mpi.ireduce
 #define MPI_Iallreduce tftk_mpi.iallreduce
 #define MPI_Ireduce_scatter tftk_mpi.ireduce_scatter
@@ -151,10 +178,22 @@
 #define MPI_Comm_set_name tftk_mpi.comm_set_name
 #define MPI_Comm_get_name tftk_mpi.comm_get_name
 
+/* MPI-3 Extended communicator */
+#define MPI_Comm_create_group tftk_mpi.comm_create_group
+#define MPI_Comm_compare tftk_mpi.comm_compare
+#define MPI_Comm_get_info tftk_mpi.comm_get_info
+#define MPI_Comm_set_info tftk_mpi.comm_set_info
+
 /* RMA - Window creation */
 #define MPI_Win_create tftk_mpi.win_create
 #define MPI_Win_allocate tftk_mpi.win_allocate
 #define MPI_Win_free tftk_mpi.win_free
+
+/* MPI-3 Extended RMA window */
+#define MPI_Win_allocate_shared tftk_mpi.win_allocate_shared
+#define MPI_Win_create_dynamic tftk_mpi.win_create_dynamic
+#define MPI_Win_set_name tftk_mpi.win_set_name
+#define MPI_Win_get_name tftk_mpi.win_get_name
 
 /* RMA Operations */
 #define MPI_Put tftk_mpi.put
@@ -166,6 +205,10 @@
 #define MPI_Rput tftk_mpi.rput
 #define MPI_Rget tftk_mpi.rget
 
+/* MPI-3 Extended RMA operations */
+#define MPI_Raccumulate tftk_mpi.raccumulate
+#define MPI_Rget_accumulate tftk_mpi.rget_accumulate
+
 /* RMA Synchronization */
 #define MPI_Win_fence tftk_mpi.win_fence
 #define MPI_Win_lock tftk_mpi.win_lock
@@ -175,6 +218,14 @@
 #define MPI_Win_flush tftk_mpi.win_flush
 #define MPI_Win_flush_all tftk_mpi.win_flush_all
 #define MPI_Win_sync tftk_mpi.win_sync
+
+/* MPI-3 Extended RMA synchronization */
+#define MPI_Win_start tftk_mpi.win_start
+#define MPI_Win_complete tftk_mpi.win_complete
+#define MPI_Win_post tftk_mpi.win_post
+#define MPI_Win_wait tftk_mpi.win_wait
+#define MPI_Win_test tftk_mpi.win_test
+#define MPI_Win_flush_local tftk_mpi.win_flush_local
 
 /* Parallel I/O - File Operations */
 #define MPI_File_open tftk_mpi.file_open
@@ -186,6 +237,13 @@
 #define MPI_File_get_group tftk_mpi.file_get_group
 #define MPI_File_get_amode tftk_mpi.file_get_amode
 
+/* MPI-3 Extended file operations */
+#define MPI_File_get_info tftk_mpi.file_get_info
+#define MPI_File_set_info tftk_mpi.file_set_info
+#define MPI_File_seek tftk_mpi.file_seek
+#define MPI_File_get_position tftk_mpi.file_get_position
+#define MPI_File_get_byte_offset tftk_mpi.file_get_byte_offset
+
 /* Parallel I/O - Read/Write */
 #define MPI_File_read tftk_mpi.file_read
 #define MPI_File_read_all tftk_mpi.file_read_all
@@ -195,6 +253,12 @@
 #define MPI_File_read_at_all tftk_mpi.file_read_at_all
 #define MPI_File_write_at tftk_mpi.file_write_at
 #define MPI_File_write_at_all tftk_mpi.file_write_at_all
+
+/* MPI-3 Extended file read/write */
+#define MPI_File_read_shared tftk_mpi.file_read_shared
+#define MPI_File_write_shared tftk_mpi.file_write_shared
+#define MPI_File_read_ordered tftk_mpi.file_read_ordered
+#define MPI_File_write_ordered tftk_mpi.file_write_ordered
 
 /* Parallel I/O - Non-blocking */
 #define MPI_File_iread tftk_mpi.file_iread
@@ -212,6 +276,9 @@
 #define MPI_Comm_accept tftk_mpi.comm_accept
 #define MPI_Comm_connect tftk_mpi.comm_connect
 #define MPI_Comm_disconnect tftk_mpi.comm_disconnect
+
+/* MPI-3 Comm join */
+#define MPI_Comm_join tftk_mpi.comm_join
 
 /* Port and Name Service */
 #define MPI_Open_port tftk_mpi.open_port
@@ -237,5 +304,32 @@
 /* Memory Allocation */
 #define MPI_Alloc_mem tftk_mpi.alloc_mem
 #define MPI_Free_mem tftk_mpi.free_mem
+
+/* MPI-3 Reduction operations */
+#define MPI_Op_create tftk_mpi.op_create
+#define MPI_Op_free tftk_mpi.op_free
+#define MPI_Op_commutative tftk_mpi.op_commutative
+
+/* MPI-3 Status manipulation */
+#define MPI_Status_set_elements tftk_mpi.status_set_elements
+#define MPI_Status_set_cancelled tftk_mpi.status_set_cancelled
+
+/* MPI-3 Error handling */
+#define MPI_Errhandler_create tftk_mpi.errhandler_create
+#define MPI_Errhandler_free tftk_mpi.errhandler_free
+#define MPI_Errhandler_set tftk_mpi.errhandler_set
+#define MPI_Errhandler_get tftk_mpi.errhandler_get
+#define MPI_Comm_create_errhandler tftk_mpi.comm_create_errhandler
+#define MPI_Comm_call_errhandler tftk_mpi.comm_call_errhandler
+#define MPI_Win_create_errhandler tftk_mpi.win_create_errhandler
+#define MPI_File_create_errhandler tftk_mpi.file_create_errhandler
+#define MPI_Add_error_class tftk_mpi.add_error_class
+#define MPI_Add_error_code tftk_mpi.add_error_code
+#define MPI_Add_error_string tftk_mpi.add_error_string
+
+/* MPI-3 Attributes */
+#define MPI_Attr_put tftk_mpi.attr_put
+#define MPI_Attr_get tftk_mpi.attr_get
+#define MPI_Attr_delete tftk_mpi.attr_delete
 
 #endif /* TFTK_MPI_STD_MACROS_H */

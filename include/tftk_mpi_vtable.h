@@ -94,6 +94,12 @@ typedef struct {
     int (*waitsome)(int incount, MPI_Request *array_of_requests, int *outcount,
                     int *array_of_indices, TFTK_MPI_Status *array_of_statuses);
 
+    /* Message probing - MPI-3 matched probes */
+    int (*mprobe)(int source, int tag, MPI_Comm comm, MPI_Message *message, TFTK_MPI_Status *status);
+    int (*improbe)(int source, int tag, MPI_Comm comm, int *flag, MPI_Message *message, TFTK_MPI_Status *status);
+    int (*mrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, TFTK_MPI_Status *status);
+    int (*imrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, MPI_Request *request);
+
     /* Message probing */
     int (*probe)(int source, int tag, MPI_Comm comm, TFTK_MPI_Status *status);
     int (*iprobe)(int source, int tag, MPI_Comm comm, int *flag, TFTK_MPI_Status *status);
@@ -145,6 +151,9 @@ typedef struct {
     int (*alltoallv)(const void *sendbuf, const int *sendcounts, const int *sdispls, MPI_Datatype sendtype,
                      void *recvbuf, const int *recvcounts, const int *rdispls, MPI_Datatype recvtype,
                      MPI_Comm comm);
+    int (*alltoallw)(const void *sendbuf, const int *sendcounts, const int *sdispls, const MPI_Datatype *sendtypes,
+                     void *recvbuf, const int *recvcounts, const int *rdispls, const MPI_Datatype *recvtypes,
+                     MPI_Comm comm);
 
     /* Reduce-scatter and scan */
     int (*reduce_scatter)(const void *sendbuf, void *recvbuf, const int *recvcounts,
@@ -183,6 +192,9 @@ typedef struct {
     int (*ialltoallv)(const void *sendbuf, const int *sendcounts, const int *sdispls, MPI_Datatype sendtype,
                       void *recvbuf, const int *recvcounts, const int *rdispls, MPI_Datatype recvtype,
                       MPI_Comm comm, MPI_Request *request);
+    int (*ialltoallw)(const void *sendbuf, const int *sendcounts, const int *sdispls, const MPI_Datatype *sendtypes,
+                      void *recvbuf, const int *recvcounts, const int *rdispls, const MPI_Datatype *recvtypes,
+                      MPI_Comm comm, MPI_Request *request);
     int (*ireduce)(const void *sendbuf, void *recvbuf, int count,
                    MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm, MPI_Request *request);
     int (*iallreduce)(const void *sendbuf, void *recvbuf, int count,
@@ -212,14 +224,22 @@ typedef struct {
 
     /* Communicator extended operations */
     int (*comm_create)(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm);
+    int (*comm_create_group)(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm);
     int (*comm_group)(MPI_Comm comm, MPI_Group *group);
+    int (*comm_compare)(MPI_Comm comm1, MPI_Comm comm2, int *result);
     int (*comm_set_name)(MPI_Comm comm, const char *comm_name);
     int (*comm_get_name)(MPI_Comm comm, char *comm_name, int *resultlen);
+    int (*comm_get_info)(MPI_Comm comm, MPI_Info *info_used);
+    int (*comm_set_info)(MPI_Comm comm, MPI_Info info);
 
     /* RMA/One-Sided - Window creation */
     int (*win_create)(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win);
     int (*win_allocate)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
+    int (*win_allocate_shared)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
+    int (*win_create_dynamic)(MPI_Info info, MPI_Comm comm, MPI_Win *win);
     int (*win_free)(MPI_Win *win);
+    int (*win_set_name)(MPI_Win win, const char *win_name);
+    int (*win_get_name)(MPI_Win win, char *win_name, int *resultlen);
 
     /* RMA Operations */
     int (*put)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
@@ -243,15 +263,28 @@ typedef struct {
     int (*rget)(void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
                 int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
                 MPI_Win win, MPI_Request *request);
+    int (*raccumulate)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                       int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                       MPI_Op op, MPI_Win win, MPI_Request *request);
+    int (*rget_accumulate)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                           void *result_addr, int result_count, MPI_Datatype result_datatype,
+                           int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
+                           MPI_Op op, MPI_Win win, MPI_Request *request);
 
     /* RMA Synchronization */
     int (*win_fence)(int assert, MPI_Win win);
+    int (*win_start)(MPI_Group group, int assert, MPI_Win win);
+    int (*win_complete)(MPI_Win win);
+    int (*win_post)(MPI_Group group, int assert, MPI_Win win);
+    int (*win_wait)(MPI_Win win);
+    int (*win_test)(MPI_Win win, int *flag);
     int (*win_lock)(int lock_type, int rank, int assert, MPI_Win win);
     int (*win_unlock)(int rank, MPI_Win win);
     int (*win_lock_all)(int assert, MPI_Win win);
     int (*win_unlock_all)(MPI_Win win);
     int (*win_flush)(int rank, MPI_Win win);
     int (*win_flush_all)(MPI_Win win);
+    int (*win_flush_local)(int rank, MPI_Win win);
     int (*win_sync)(MPI_Win win);
 
     /* Parallel I/O - File operations */
@@ -263,6 +296,11 @@ typedef struct {
     int (*file_get_size)(MPI_File fh, MPI_Offset *size);
     int (*file_get_group)(MPI_File fh, MPI_Group *group);
     int (*file_get_amode)(MPI_File fh, int *amode);
+    int (*file_get_info)(MPI_File fh, MPI_Info *info_used);
+    int (*file_set_info)(MPI_File fh, MPI_Info info);
+    int (*file_seek)(MPI_File fh, MPI_Offset offset, int whence);
+    int (*file_get_position)(MPI_File fh, MPI_Offset *offset);
+    int (*file_get_byte_offset)(MPI_File fh, MPI_Offset offset, MPI_Offset *disp);
 
     /* Parallel I/O - Read/Write */
     int (*file_read)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
@@ -273,6 +311,10 @@ typedef struct {
     int (*file_read_at_all)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
     int (*file_write_at)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
     int (*file_write_at_all)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_read_shared)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_write_shared)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_read_ordered)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_write_ordered)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
 
     /* Parallel I/O - Nonblocking */
     int (*file_iread)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
@@ -290,6 +332,7 @@ typedef struct {
     int (*comm_accept)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
     int (*comm_connect)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
     int (*comm_disconnect)(MPI_Comm *comm);
+    int (*comm_join)(int fd, MPI_Comm *intercomm);
 
     /* Dynamic Process - Port and Name Service */
     int (*open_port)(MPI_Info info, char *port_name);
@@ -316,7 +359,32 @@ typedef struct {
     int (*alloc_mem)(MPI_Aint size, MPI_Info info, void *baseptr);
     int (*free_mem)(void *baseptr);
 
-    /* Communicator */
+    /* Reduction operations */
+    int (*op_create)(void (*user_fn)(void *, void *, int *, MPI_Datatype *), int commute, MPI_Op *op);
+    int (*op_free)(MPI_Op *op);
+    int (*op_commutative)(MPI_Op op, int *commute);
+
+    /* Status manipulation */
+    int (*status_set_elements)(TFTK_MPI_Status *status, MPI_Datatype datatype, int count);
+    int (*status_set_cancelled)(TFTK_MPI_Status *status, int flag);
+
+    /* Error handling */
+    int (*errhandler_create)(void (*handler_fn)(MPI_Comm *, int *, ...), MPI_Errhandler *errhandler);
+    int (*errhandler_free)(MPI_Errhandler *errhandler);
+    int (*errhandler_set)(MPI_Comm comm, MPI_Errhandler errhandler);
+    int (*errhandler_get)(MPI_Comm comm, MPI_Errhandler *errhandler);
+    int (*comm_create_errhandler)(void (*handler_fn)(MPI_Comm *, int *, ...), MPI_Errhandler *errhandler);
+    int (*comm_call_errhandler)(MPI_Comm comm, int errorcode);
+    int (*win_create_errhandler)(void (*handler_fn)(MPI_Win *, int *, ...), MPI_Errhandler *errhandler);
+    int (*file_create_errhandler)(void (*handler_fn)(MPI_File *, int *, ...), MPI_Errhandler *errhandler);
+    int (*add_error_class)(int *errorclass);
+    int (*add_error_code)(int errorclass, int *errorcode);
+    int (*add_error_string)(int errorcode, const char *string);
+
+    /* Attributes */
+    int (*attr_put)(MPI_Comm comm, int keyval, void *attribute_val);
+    int (*attr_get)(MPI_Comm comm, int keyval, void *attribute_val, int *flag);
+    int (*attr_delete)(MPI_Comm comm, int keyval);
     int (*comm_size)(MPI_Comm comm, int *size);
     int (*comm_rank)(MPI_Comm comm, int *rank);
     int (*comm_dup)(MPI_Comm comm, MPI_Comm *newcomm);
@@ -328,19 +396,30 @@ typedef struct {
     int (*type_free)(MPI_Datatype *datatype);
     int (*type_contiguous)(int count, MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*type_vector)(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype);
+    int (*type_hvector)(int count, int blocklength, MPI_Aint stride, MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*type_indexed)(int count, const int *array_of_blocklengths, const int *array_of_displacements,
                         MPI_Datatype oldtype, MPI_Datatype *newtype);
+    int (*type_hindexed)(int count, const int *array_of_blocklengths, const MPI_Aint *array_of_displacements,
+                         MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*type_create_indexed_block)(int count, int blocklength, const int *array_of_displacements,
                                      MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*type_create_subarray)(int ndims, const int *array_of_sizes, const int *array_of_subsizes,
                                 const int *array_of_starts, int order, MPI_Datatype oldtype, MPI_Datatype *newtype);
+    int (*type_create_darray)(int size, int rank, int ndims, const int *array_of_gsizes,
+                              const int *array_of_distribs, const int *array_of_dargs,
+                              const int *array_of_psizes, int order, MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*type_dup)(MPI_Datatype oldtype, MPI_Datatype *newtype);
 
     /* Datatypes - query */
     int (*type_get_extent)(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
+    int (*type_get_true_extent)(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
     int (*type_get_size)(MPI_Datatype datatype, int *size);
+    int (*type_size)(MPI_Datatype datatype, int *size);
     int (*type_get_name)(MPI_Datatype datatype, char *type_name, int *resultlen);
     int (*type_set_name)(MPI_Datatype datatype, const char *type_name);
+    int (*type_extent)(MPI_Datatype datatype, MPI_Aint *extent);
+    int (*type_lb)(MPI_Datatype datatype, MPI_Aint *displacement);
+    int (*type_ub)(MPI_Datatype datatype, MPI_Aint *displacement);
 
     /* Pack/Unpack */
     int (*pack)(const void *inbuf, int incount, MPI_Datatype datatype, void *outbuf,
@@ -348,6 +427,11 @@ typedef struct {
     int (*unpack)(const void *inbuf, int insize, int *position, void *outbuf,
                   int outcount, MPI_Datatype datatype, MPI_Comm comm);
     int (*pack_size)(int incount, MPI_Datatype datatype, MPI_Comm comm, int *size);
+    int (*pack_external)(const char *datarep, const void *inbuf, int incount,
+                         MPI_Datatype datatype, void *outbuf, MPI_Aint outsize, MPI_Aint *position);
+    int (*unpack_external)(const char *datarep, const void *inbuf, MPI_Aint insize,
+                           MPI_Aint *position, void *outbuf, int outcount, MPI_Datatype datatype);
+    int (*pack_external_size)(const char *datarep, int incount, MPI_Datatype datatype, MPI_Aint *size);
 
 } tftk_mpi_vtable_t;
 

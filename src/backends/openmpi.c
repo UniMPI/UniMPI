@@ -95,6 +95,14 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Probe");
     tftk_mpi.iprobe = (int (*)(int, int, MPI_Comm, int*, TFTK_MPI_Status*))
         tftk_mpi_platform_dlsym(handle, "MPI_Iprobe");
+    tftk_mpi.mprobe = (int (*)(int, int, MPI_Comm, MPI_Message*, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Mprobe");
+    tftk_mpi.improbe = (int (*)(int, int, MPI_Comm, int*, MPI_Message*, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Improbe");
+    tftk_mpi.mrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Mrecv");
+    tftk_mpi.imrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Imrecv");
 
     /* Persistent communication */
     tftk_mpi.send_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
@@ -143,6 +151,8 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Alltoall");
     tftk_mpi.alltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm))
         tftk_mpi_platform_dlsym(handle, "MPI_Alltoallv");
+    tftk_mpi.alltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm))
+        tftk_mpi_platform_dlsym(handle, "MPI_Alltoallw");
 
     /* Collective - Reduce-scatter and scan */
     tftk_mpi.reduce_scatter = (int (*)(const void*, void*, const int*, MPI_Datatype, MPI_Op, MPI_Comm))
@@ -175,24 +185,40 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Type_contiguous");
     tftk_mpi.type_vector = (int (*)(int, int, int, MPI_Datatype, MPI_Datatype*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_vector");
+    tftk_mpi.type_hvector = (int (*)(int, int, MPI_Aint, MPI_Datatype, MPI_Datatype*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_hvector");
     tftk_mpi.type_indexed = (int (*)(int, const int*, const int*, MPI_Datatype, MPI_Datatype*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_indexed");
+    tftk_mpi.type_hindexed = (int (*)(int, const int*, const MPI_Aint*, MPI_Datatype, MPI_Datatype*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_hindexed");
     tftk_mpi.type_create_indexed_block = (int (*)(int, int, const int*, MPI_Datatype, MPI_Datatype*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_create_indexed_block");
     tftk_mpi.type_create_subarray = (int (*)(int, const int*, const int*, const int*, int, MPI_Datatype, MPI_Datatype*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_create_subarray");
+    tftk_mpi.type_create_darray = (int (*)(int, int, int, const int*, const int*, const int*, const int*, int, MPI_Datatype, MPI_Datatype*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_create_darray");
     tftk_mpi.type_dup = (int (*)(MPI_Datatype, MPI_Datatype*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_dup");
 
     /* Datatypes - Query */
     tftk_mpi.type_get_extent = (int (*)(MPI_Datatype, MPI_Aint*, MPI_Aint*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_get_extent");
+    tftk_mpi.type_get_true_extent = (int (*)(MPI_Datatype, MPI_Aint*, MPI_Aint*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_get_true_extent");
     tftk_mpi.type_get_size = (int (*)(MPI_Datatype, int*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_get_size");
+    tftk_mpi.type_size = (int (*)(MPI_Datatype, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_size");
     tftk_mpi.type_get_name = (int (*)(MPI_Datatype, char*, int*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_get_name");
     tftk_mpi.type_set_name = (int (*)(MPI_Datatype, const char*))
         tftk_mpi_platform_dlsym(handle, "MPI_Type_set_name");
+    tftk_mpi.type_extent = (int (*)(MPI_Datatype, MPI_Aint*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_extent");
+    tftk_mpi.type_lb = (int (*)(MPI_Datatype, MPI_Aint*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_lb");
+    tftk_mpi.type_ub = (int (*)(MPI_Datatype, MPI_Aint*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Type_ub");
 
     /* Pack/Unpack */
     tftk_mpi.pack = (int (*)(const void*, int, MPI_Datatype, void*, int, int*, MPI_Comm))
@@ -201,6 +227,12 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Unpack");
     tftk_mpi.pack_size = (int (*)(int, MPI_Datatype, MPI_Comm, int*))
         tftk_mpi_platform_dlsym(handle, "MPI_Pack_size");
+    tftk_mpi.pack_external = (int (*)(const char*, const void*, int, MPI_Datatype, void*, MPI_Aint, MPI_Aint*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Pack_external");
+    tftk_mpi.unpack_external = (int (*)(const char*, const void*, MPI_Aint, MPI_Aint*, void*, int, MPI_Datatype))
+        tftk_mpi_platform_dlsym(handle, "MPI_Unpack_external");
+    tftk_mpi.pack_external_size = (int (*)(const char*, int, MPI_Datatype, MPI_Aint*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Pack_external_size");
 
     /* MPI-3 Non-blocking Collectives */
     tftk_mpi.ibarrier = (int (*)(MPI_Comm, MPI_Request*))
@@ -223,6 +255,10 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Ialltoall");
     tftk_mpi.ialltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
         tftk_mpi_platform_dlsym(handle, "MPI_Ialltoallv");
+    tftk_mpi.ialltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ialltoallw");
+    tftk_mpi.ialltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ialltoallw");
     tftk_mpi.ireduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, int, MPI_Comm, MPI_Request*))
         tftk_mpi_platform_dlsym(handle, "MPI_Ireduce");
     tftk_mpi.iallreduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
@@ -265,20 +301,36 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
     /* Communicator extended */
     tftk_mpi.comm_create = (int (*)(MPI_Comm, MPI_Group, MPI_Comm*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_create");
+    tftk_mpi.comm_create_group = (int (*)(MPI_Comm, MPI_Group, int, MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_create_group");
     tftk_mpi.comm_group = (int (*)(MPI_Comm, MPI_Group*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_group");
+    tftk_mpi.comm_compare = (int (*)(MPI_Comm, MPI_Comm, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_compare");
     tftk_mpi.comm_set_name = (int (*)(MPI_Comm, const char*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_set_name");
     tftk_mpi.comm_get_name = (int (*)(MPI_Comm, char*, int*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_get_name");
+    tftk_mpi.comm_get_info = (int (*)(MPI_Comm, MPI_Info*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_get_info");
+    tftk_mpi.comm_set_info = (int (*)(MPI_Comm, MPI_Info))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_set_info");
 
     /* RMA - Window creation */
     tftk_mpi.win_create = (int (*)(void*, MPI_Aint, int, MPI_Info, MPI_Comm, MPI_Win*))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_create");
     tftk_mpi.win_allocate = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_allocate");
+    tftk_mpi.win_allocate_shared = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_allocate_shared");
+    tftk_mpi.win_create_dynamic = (int (*)(MPI_Info, MPI_Comm, MPI_Win*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_create_dynamic");
     tftk_mpi.win_free = (int (*)(MPI_Win*))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_free");
+    tftk_mpi.win_set_name = (int (*)(MPI_Win, const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_set_name");
+    tftk_mpi.win_get_name = (int (*)(MPI_Win, char*, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_get_name");
 
     /* RMA Operations */
     tftk_mpi.put = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win))
@@ -297,10 +349,24 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Rput");
     tftk_mpi.rget = (int (*)(void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win, MPI_Request*))
         tftk_mpi_platform_dlsym(handle, "MPI_Rget");
+    tftk_mpi.raccumulate = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Raccumulate");
+    tftk_mpi.rget_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Rget_accumulate");
 
     /* RMA Synchronization */
     tftk_mpi.win_fence = (int (*)(int, MPI_Win))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_fence");
+    tftk_mpi.win_start = (int (*)(MPI_Group, int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_start");
+    tftk_mpi.win_complete = (int (*)(MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_complete");
+    tftk_mpi.win_post = (int (*)(MPI_Group, int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_post");
+    tftk_mpi.win_wait = (int (*)(MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_wait");
+    tftk_mpi.win_test = (int (*)(MPI_Win, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_test");
     tftk_mpi.win_lock = (int (*)(int, int, int, MPI_Win))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_lock");
     tftk_mpi.win_unlock = (int (*)(int, MPI_Win))
@@ -313,6 +379,8 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Win_flush");
     tftk_mpi.win_flush_all = (int (*)(MPI_Win))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_flush_all");
+    tftk_mpi.win_flush_local = (int (*)(int, MPI_Win))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_flush_local");
     tftk_mpi.win_sync = (int (*)(MPI_Win))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_sync");
 
@@ -333,6 +401,10 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_File_get_group");
     tftk_mpi.file_get_amode = (int (*)(MPI_File, int*))
         tftk_mpi_platform_dlsym(handle, "MPI_File_get_amode");
+    tftk_mpi.file_get_info = (int (*)(MPI_File, MPI_Info*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_get_info");
+    tftk_mpi.file_set_info = (int (*)(MPI_File, MPI_Info))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_set_info");
 
     /* Parallel I/O - Read/Write */
     tftk_mpi.file_read = (int (*)(MPI_File, void*, int, MPI_Datatype, TFTK_MPI_Status*))
@@ -351,6 +423,20 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_File_write_at");
     tftk_mpi.file_write_at_all = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, TFTK_MPI_Status*))
         tftk_mpi_platform_dlsym(handle, "MPI_File_write_at_all");
+    tftk_mpi.file_read_shared = (int (*)(MPI_File, void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_read_shared");
+    tftk_mpi.file_write_shared = (int (*)(MPI_File, const void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_write_shared");
+    tftk_mpi.file_read_ordered = (int (*)(MPI_File, void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_read_ordered");
+    tftk_mpi.file_write_ordered = (int (*)(MPI_File, const void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_write_ordered");
+    tftk_mpi.file_seek = (int (*)(MPI_File, MPI_Offset, int))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_seek");
+    tftk_mpi.file_get_position = (int (*)(MPI_File, MPI_Offset*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_get_position");
+    tftk_mpi.file_get_byte_offset = (int (*)(MPI_File, MPI_Offset, MPI_Offset*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_get_byte_offset");
 
     /* Parallel I/O - Non-blocking */
     tftk_mpi.file_iread = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Request*))
@@ -379,6 +465,8 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_connect");
     tftk_mpi.comm_disconnect = (int (*)(MPI_Comm*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_disconnect");
+    tftk_mpi.comm_join = (int (*)(int, MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_join");
 
     /* Port and Name Service */
     tftk_mpi.open_port = (int (*)(MPI_Info, char*))
@@ -421,6 +509,58 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Alloc_mem");
     tftk_mpi.free_mem = (int (*)(void*))
         tftk_mpi_platform_dlsym(handle, "MPI_Free_mem");
+
+    /* Memory Allocation */
+    tftk_mpi.alloc_mem = (int (*)(MPI_Aint, MPI_Info, void*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Alloc_mem");
+    tftk_mpi.free_mem = (int (*)(void*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Free_mem");
+
+    /* Reduction operations */
+    tftk_mpi.op_create = (int (*)(void (*)(void*, void*, int*, MPI_Datatype*), int, MPI_Op*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Op_create");
+    tftk_mpi.op_free = (int (*)(MPI_Op*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Op_free");
+    tftk_mpi.op_commutative = (int (*)(MPI_Op, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Op_commutative");
+
+    /* Status manipulation */
+    tftk_mpi.status_set_elements = (int (*)(TFTK_MPI_Status*, MPI_Datatype, int))
+        tftk_mpi_platform_dlsym(handle, "MPI_Status_set_elements");
+    tftk_mpi.status_set_cancelled = (int (*)(TFTK_MPI_Status*, int))
+        tftk_mpi_platform_dlsym(handle, "MPI_Status_set_cancelled");
+
+    /* Error handling */
+    tftk_mpi.errhandler_create = (int (*)(void (*)(MPI_Comm*, int*, ...), MPI_Errhandler*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Errhandler_create");
+    tftk_mpi.errhandler_free = (int (*)(MPI_Errhandler*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Errhandler_free");
+    tftk_mpi.errhandler_set = (int (*)(MPI_Comm, MPI_Errhandler))
+        tftk_mpi_platform_dlsym(handle, "MPI_Errhandler_set");
+    tftk_mpi.errhandler_get = (int (*)(MPI_Comm, MPI_Errhandler*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Errhandler_get");
+    tftk_mpi.comm_create_errhandler = (int (*)(void (*)(MPI_Comm*, int*, ...), MPI_Errhandler*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_create_errhandler");
+    tftk_mpi.comm_call_errhandler = (int (*)(MPI_Comm, int))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_call_errhandler");
+    tftk_mpi.win_create_errhandler = (int (*)(void (*)(MPI_Win*, int*, ...), MPI_Errhandler*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Win_create_errhandler");
+    tftk_mpi.file_create_errhandler = (int (*)(void (*)(MPI_File*, int*, ...), MPI_Errhandler*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_create_errhandler");
+    tftk_mpi.add_error_class = (int (*)(int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Add_error_class");
+    tftk_mpi.add_error_code = (int (*)(int, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Add_error_code");
+    tftk_mpi.add_error_string = (int (*)(int, const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Add_error_string");
+
+    /* Attributes */
+    tftk_mpi.attr_put = (int (*)(MPI_Comm, int, void*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Attr_put");
+    tftk_mpi.attr_get = (int (*)(MPI_Comm, int, void*, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Attr_get");
+    tftk_mpi.attr_delete = (int (*)(MPI_Comm, int))
+        tftk_mpi_platform_dlsym(handle, "MPI_Attr_delete");
 
     /* Get predefined communicator values */
     get_openmpi_comm_world(handle, &TFTK_MPI_COMM_WORLD);
