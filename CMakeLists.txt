@@ -57,11 +57,15 @@ endif()
 
 # Examples
 if(TFTK_MPI_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt)
+        add_subdirectory(examples)
+    endif()
 endif()
 
 # Tests
 if(TFTK_MPI_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
 endif()
