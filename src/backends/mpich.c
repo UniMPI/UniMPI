@@ -56,6 +56,24 @@ int tftk_mpi_vtable_init_mpich(tftk_mpi_lib_handle_t handle) {
     tftk_mpi.waitall = (int (*)(int, MPI_Request*, TFTK_MPI_Status*))
         tftk_mpi_platform_dlsym(handle, "MPI_Waitall");
 
+    /* Synchronous, Buffered, and Ready sends */
+    tftk_mpi.ssend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ssend");
+    tftk_mpi.ssend_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Ssend_init");
+    tftk_mpi.bsend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))
+        tftk_mpi_platform_dlsym(handle, "MPI_Bsend");
+    tftk_mpi.bsend_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Bsend_init");
+    tftk_mpi.buffer_attach = (int (*)(void*, int))
+        tftk_mpi_platform_dlsym(handle, "MPI_Buffer_attach");
+    tftk_mpi.buffer_detach = (int (*)(void*, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Buffer_detach");
+    tftk_mpi.rsend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))
+        tftk_mpi_platform_dlsym(handle, "MPI_Rsend");
+    tftk_mpi.rsend_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Rsend_init");
+
     /* Load collective functions */
     tftk_mpi.bcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm))
         tftk_mpi_platform_dlsym(handle, "MPI_Bcast");

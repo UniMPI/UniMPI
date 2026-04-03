@@ -62,6 +62,22 @@ typedef struct {
                     int source, int recvtag,
                     MPI_Comm comm, TFTK_MPI_Status *status);
 
+    /* Synchronous, Buffered, and Ready sends */
+    int (*ssend)(const void *buf, int count, MPI_Datatype datatype,
+                 int dest, int tag, MPI_Comm comm);
+    int (*bsend)(const void *buf, int count, MPI_Datatype datatype,
+                 int dest, int tag, MPI_Comm comm);
+    int (*rsend)(const void *buf, int count, MPI_Datatype datatype,
+                 int dest, int tag, MPI_Comm comm);
+    int (*ssend_init)(const void *buf, int count, MPI_Datatype datatype,
+                      int dest, int tag, MPI_Comm comm, MPI_Request *request);
+    int (*bsend_init)(const void *buf, int count, MPI_Datatype datatype,
+                      int dest, int tag, MPI_Comm comm, MPI_Request *request);
+    int (*rsend_init)(const void *buf, int count, MPI_Datatype datatype,
+                      int dest, int tag, MPI_Comm comm, MPI_Request *request);
+    int (*buffer_attach)(void *buffer, int size);
+    int (*buffer_detach)(void *buffer_addr, int *size);
+
     /* Collective */
     int (*bcast)(void *buffer, int count, MPI_Datatype datatype,
                  int root, MPI_Comm comm);
