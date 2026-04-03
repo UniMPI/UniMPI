@@ -38,7 +38,9 @@
 #define MPI_Comm_size tftk_mpi.comm_size
 #define MPI_Comm_rank tftk_mpi.comm_rank
 #define MPI_Comm_dup tftk_mpi.comm_dup
+#define MPI_Comm_dup_with_info tftk_mpi.comm_dup_with_info
 #define MPI_Comm_split tftk_mpi.comm_split
+#define MPI_Comm_split_type tftk_mpi.comm_split_type
 #define MPI_Comm_free tftk_mpi.comm_free
 
 /* Predefined values */

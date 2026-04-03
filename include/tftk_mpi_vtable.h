@@ -226,6 +226,13 @@ typedef struct {
     int (*group_free)(MPI_Group *group);
 
     /* Communicator extended operations */
+    int (*comm_size)(MPI_Comm comm, int *size);
+    int (*comm_rank)(MPI_Comm comm, int *rank);
+    int (*comm_dup)(MPI_Comm comm, MPI_Comm *newcomm);
+    int (*comm_dup_with_info)(MPI_Comm comm, MPI_Info info, MPI_Comm *newcomm);
+    int (*comm_split)(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
+    int (*comm_split_type)(MPI_Comm comm, int split_type, int key, MPI_Info info, MPI_Comm *newcomm);
+    int (*comm_free)(MPI_Comm *comm);
     int (*comm_create)(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm);
     int (*comm_create_group)(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm);
     int (*comm_group)(MPI_Comm comm, MPI_Group *group);
@@ -388,11 +395,6 @@ typedef struct {
     int (*attr_put)(MPI_Comm comm, int keyval, void *attribute_val);
     int (*attr_get)(MPI_Comm comm, int keyval, void *attribute_val, int *flag);
     int (*attr_delete)(MPI_Comm comm, int keyval);
-    int (*comm_size)(MPI_Comm comm, int *size);
-    int (*comm_rank)(MPI_Comm comm, int *rank);
-    int (*comm_dup)(MPI_Comm comm, MPI_Comm *newcomm);
-    int (*comm_split)(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
-    int (*comm_free)(MPI_Comm *comm);
 
     /* Datatypes - creation */
     int (*type_commit)(MPI_Datatype *datatype);

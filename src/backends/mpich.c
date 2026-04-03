@@ -172,8 +172,12 @@ int tftk_mpi_vtable_init_mpich(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_rank");
     tftk_mpi.comm_dup = (int (*)(MPI_Comm, MPI_Comm*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_dup");
+    tftk_mpi.comm_dup_with_info = (int (*)(MPI_Comm, MPI_Info, MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_dup_with_info");
     tftk_mpi.comm_split = (int (*)(MPI_Comm, int, int, MPI_Comm*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_split");
+    tftk_mpi.comm_split_type = (int (*)(MPI_Comm, int, int, MPI_Info, MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_split_type");
     tftk_mpi.comm_free = (int (*)(MPI_Comm*))
         tftk_mpi_platform_dlsym(handle, "MPI_Comm_free");
 
