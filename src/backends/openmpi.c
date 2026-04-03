@@ -316,6 +316,112 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
     tftk_mpi.win_sync = (int (*)(MPI_Win))
         tftk_mpi_platform_dlsym(handle, "MPI_Win_sync");
 
+    /* Parallel I/O - File Operations */
+    tftk_mpi.file_open = (int (*)(MPI_Comm, const char*, int, MPI_Info, MPI_File*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_open");
+    tftk_mpi.file_close = (int (*)(MPI_File*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_close");
+    tftk_mpi.file_delete = (int (*)(const char*, MPI_Info))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_delete");
+    tftk_mpi.file_set_size = (int (*)(MPI_File, MPI_Offset))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_set_size");
+    tftk_mpi.file_preallocate = (int (*)(MPI_File, MPI_Offset))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_preallocate");
+    tftk_mpi.file_get_size = (int (*)(MPI_File, MPI_Offset*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_get_size");
+    tftk_mpi.file_get_group = (int (*)(MPI_File, MPI_Group*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_get_group");
+    tftk_mpi.file_get_amode = (int (*)(MPI_File, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_get_amode");
+
+    /* Parallel I/O - Read/Write */
+    tftk_mpi.file_read = (int (*)(MPI_File, void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_read");
+    tftk_mpi.file_read_all = (int (*)(MPI_File, void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_read_all");
+    tftk_mpi.file_write = (int (*)(MPI_File, const void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_write");
+    tftk_mpi.file_write_all = (int (*)(MPI_File, const void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_write_all");
+    tftk_mpi.file_read_at = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_read_at");
+    tftk_mpi.file_read_at_all = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_read_at_all");
+    tftk_mpi.file_write_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_write_at");
+    tftk_mpi.file_write_at_all = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_write_at_all");
+
+    /* Parallel I/O - Non-blocking */
+    tftk_mpi.file_iread = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_iread");
+    tftk_mpi.file_iwrite = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_iwrite");
+    tftk_mpi.file_iread_at = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_iread_at");
+    tftk_mpi.file_iwrite_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Request*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_iwrite_at");
+
+    /* Parallel I/O - Views */
+    tftk_mpi.file_set_view = (int (*)(MPI_File, MPI_Offset, MPI_Datatype, MPI_Datatype, const char*, MPI_Info))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_set_view");
+    tftk_mpi.file_get_view = (int (*)(MPI_File, MPI_Offset*, MPI_Datatype*, MPI_Datatype*, char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_File_get_view");
+
+    /* Dynamic Process Management */
+    tftk_mpi.comm_spawn = (int (*)(const char*, char*[], int, MPI_Info, int, MPI_Comm, MPI_Comm*, int[]))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_spawn");
+    tftk_mpi.comm_spawn_multiple = (int (*)(int, char*[], char**[], const int[], const MPI_Info[], int, MPI_Comm, MPI_Comm*, int[]))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_spawn_multiple");
+    tftk_mpi.comm_accept = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_accept");
+    tftk_mpi.comm_connect = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_connect");
+    tftk_mpi.comm_disconnect = (int (*)(MPI_Comm*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Comm_disconnect");
+
+    /* Port and Name Service */
+    tftk_mpi.open_port = (int (*)(MPI_Info, char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Open_port");
+    tftk_mpi.close_port = (int (*)(const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Close_port");
+    tftk_mpi.publish_name = (int (*)(const char*, MPI_Info, const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Publish_name");
+    tftk_mpi.unpublish_name = (int (*)(const char*, MPI_Info, const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Unpublish_name");
+    tftk_mpi.lookup_name = (int (*)(const char*, MPI_Info, char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Lookup_name");
+
+    /* Info Operations */
+    tftk_mpi.info_create = (int (*)(MPI_Info*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Info_create");
+    tftk_mpi.info_free = (int (*)(MPI_Info*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Info_free");
+    tftk_mpi.info_set = (int (*)(MPI_Info, const char*, const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Info_set");
+    tftk_mpi.info_get = (int (*)(MPI_Info, const char*, int, char*, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Info_get");
+    tftk_mpi.info_delete = (int (*)(MPI_Info, const char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Info_delete");
+    tftk_mpi.info_get_nkeys = (int (*)(MPI_Info, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Info_get_nkeys");
+    tftk_mpi.info_get_nthkey = (int (*)(MPI_Info, int, char*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Info_get_nthkey");
+
+    /* Thread Support */
+    tftk_mpi.init_thread = (int (*)(int*, char***, int, int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Init_thread");
+    tftk_mpi.query_thread = (int (*)(int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Query_thread");
+    tftk_mpi.is_thread_main = (int (*)(int*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Is_thread_main");
+
+    /* Memory Allocation */
+    tftk_mpi.alloc_mem = (int (*)(MPI_Aint, MPI_Info, void*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Alloc_mem");
+    tftk_mpi.free_mem = (int (*)(void*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Free_mem");
+
     /* Get predefined communicator values */
     get_openmpi_comm_world(handle, &TFTK_MPI_COMM_WORLD);
 

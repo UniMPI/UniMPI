@@ -254,6 +254,68 @@ typedef struct {
     int (*win_flush_all)(MPI_Win win);
     int (*win_sync)(MPI_Win win);
 
+    /* Parallel I/O - File operations */
+    int (*file_open)(MPI_Comm comm, const char *filename, int amode, MPI_Info info, MPI_File *fh);
+    int (*file_close)(MPI_File *fh);
+    int (*file_delete)(const char *filename, MPI_Info info);
+    int (*file_set_size)(MPI_File fh, MPI_Offset size);
+    int (*file_preallocate)(MPI_File fh, MPI_Offset size);
+    int (*file_get_size)(MPI_File fh, MPI_Offset *size);
+    int (*file_get_group)(MPI_File fh, MPI_Group *group);
+    int (*file_get_amode)(MPI_File fh, int *amode);
+
+    /* Parallel I/O - Read/Write */
+    int (*file_read)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_read_all)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_write)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_write_all)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_read_at)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_read_at_all)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_write_at)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+    int (*file_write_at_all)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, TFTK_MPI_Status *status);
+
+    /* Parallel I/O - Nonblocking */
+    int (*file_iread)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iwrite)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iread_at)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iwrite_at)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+
+    /* Parallel I/O - Views */
+    int (*file_set_view)(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, const char *datarep, MPI_Info info);
+    int (*file_get_view)(MPI_File fh, MPI_Offset *disp, MPI_Datatype *etype, MPI_Datatype *filetype, char *datarep);
+
+    /* Dynamic Process - Spawn */
+    int (*comm_spawn)(const char *command, char *argv[], int maxprocs, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *intercomm, int array_of_errcodes[]);
+    int (*comm_spawn_multiple)(int count, char *array_of_commands[], char **array_of_argv[], const int array_of_maxprocs[], const MPI_Info array_of_info[], int root, MPI_Comm comm, MPI_Comm *intercomm, int array_of_errcodes[]);
+    int (*comm_accept)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
+    int (*comm_connect)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
+    int (*comm_disconnect)(MPI_Comm *comm);
+
+    /* Dynamic Process - Port and Name Service */
+    int (*open_port)(MPI_Info info, char *port_name);
+    int (*close_port)(const char *port_name);
+    int (*publish_name)(const char *service_name, MPI_Info info, const char *port_name);
+    int (*unpublish_name)(const char *service_name, MPI_Info info, const char *port_name);
+    int (*lookup_name)(const char *service_name, MPI_Info info, char *port_name);
+
+    /* Info operations */
+    int (*info_create)(MPI_Info *info);
+    int (*info_free)(MPI_Info *info);
+    int (*info_set)(MPI_Info info, const char *key, const char *value);
+    int (*info_get)(MPI_Info info, const char *key, int valuelen, char *value, int *flag);
+    int (*info_delete)(MPI_Info info, const char *key);
+    int (*info_get_nkeys)(MPI_Info info, int *nkeys);
+    int (*info_get_nthkey)(MPI_Info info, int n, char *key);
+
+    /* Thread support */
+    int (*init_thread)(int *argc, char ***argv, int required, int *provided);
+    int (*query_thread)(int *provided);
+    int (*is_thread_main)(int *flag);
+
+    /* Memory */
+    int (*alloc_mem)(MPI_Aint size, MPI_Info info, void *baseptr);
+    int (*free_mem)(void *baseptr);
+
     /* Communicator */
     int (*comm_size)(MPI_Comm comm, int *size);
     int (*comm_rank)(MPI_Comm comm, int *rank);
