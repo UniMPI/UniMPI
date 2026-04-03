@@ -57,6 +57,8 @@ int tftk_mpi_vtable_init_openmpi(tftk_mpi_lib_handle_t handle) {
         tftk_mpi_platform_dlsym(handle, "MPI_Waitall");
     tftk_mpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, TFTK_MPI_Status*))
         tftk_mpi_platform_dlsym(handle, "MPI_Sendrecv");
+    tftk_mpi.sendrecv_replace = (int (*)(void*, int, MPI_Datatype, int, int, int, int, MPI_Comm, TFTK_MPI_Status*))
+        tftk_mpi_platform_dlsym(handle, "MPI_Sendrecv_replace");
 
     /* Point-to-Point - Sync/Buffered/Ready */
     tftk_mpi.ssend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))

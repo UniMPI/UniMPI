@@ -24,6 +24,7 @@
 #define MPI_Wait tftk_mpi.wait
 #define MPI_Waitall tftk_mpi.waitall
 #define MPI_Sendrecv tftk_mpi.sendrecv
+#define MPI_Sendrecv_replace tftk_mpi.sendrecv_replace
 
 /* Collectives */
 #define MPI_Bcast tftk_mpi.bcast

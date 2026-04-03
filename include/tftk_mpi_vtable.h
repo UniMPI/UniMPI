@@ -64,6 +64,9 @@ typedef struct {
                     void *recvbuf, int recvcount, MPI_Datatype recvtype,
                     int source, int recvtag,
                     MPI_Comm comm, TFTK_MPI_Status *status);
+    int (*sendrecv_replace)(void *buf, int count, MPI_Datatype datatype,
+                            int dest, int sendtag, int source, int recvtag,
+                            MPI_Comm comm, TFTK_MPI_Status *status);
 
     /* Synchronous, Buffered, and Ready sends */
     int (*ssend)(const void *buf, int count, MPI_Datatype datatype,
