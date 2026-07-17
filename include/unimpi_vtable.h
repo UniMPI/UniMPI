@@ -2,19 +2,23 @@
 #define UNIMPI_VTABLE_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include "unimpi_platform.h"
 
-/* MPI opaque types - forward declarations */
-typedef int MPI_Comm;
-typedef int MPI_Datatype;
-typedef int MPI_Op;
-typedef int MPI_Group;
-typedef int MPI_Request;
-typedef int MPI_Info;
-typedef int MPI_Win;
-typedef int MPI_File;
-typedef int MPI_Errhandler;
-typedef int MPI_Message;
+/* MPI opaque types - forward declarations
+ * Use intptr_t to handle both integer handles (MPICH/MS-MPI)
+ * and pointer handles (OpenMPI) on 64-bit systems
+ */
+typedef intptr_t MPI_Comm;
+typedef intptr_t MPI_Datatype;
+typedef intptr_t MPI_Op;
+typedef intptr_t MPI_Group;
+typedef intptr_t MPI_Request;
+typedef intptr_t MPI_Info;
+typedef intptr_t MPI_Win;
+typedef intptr_t MPI_File;
+typedef intptr_t MPI_Errhandler;
+typedef intptr_t MPI_Message;
 typedef long MPI_Aint;
 typedef long long MPI_Offset;
 

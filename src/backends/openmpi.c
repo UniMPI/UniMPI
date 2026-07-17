@@ -3,20 +3,70 @@
 #include "unimpi_platform.h"
 #include "unimpi.h"
 
-/* OpenMPI uses pointers for communicators, so we need special handling */
+/* OpenMPI uses pointers for all opaque types */
 typedef struct ompi_communicator_t* ompi_comm_t;
 typedef struct ompi_datatype_t* ompi_datatype_t;
 typedef struct ompi_op_t* ompi_op_t;
 typedef struct ompi_request_t* ompi_request_t;
+typedef struct ompi_info_t* ompi_info_t;
+typedef struct ompi_group_t* ompi_group_t;
+typedef struct ompi_win_t* ompi_win_t;
+typedef struct ompi_file_t* ompi_file_t;
 
-/* Get actual MPI_Comm values from OpenMPI globals */
-static int get_openmpi_comm_world(unimpi_lib_handle_t handle, MPI_Comm *comm) {
-    void **ptr = (void**)unimpi_platform_dlsym(handle, "ompi_mpi_comm_world");
+/* Helper: Get pointer value from OpenMPI global symbol */
+static intptr_t get_ompi_ptr(unimpi_lib_handle_t handle, const char *symbol) {
+    void **ptr = (void**)unimpi_platform_dlsym(handle, symbol);
     if (ptr) {
-        *comm = (MPI_Comm)(size_t)ptr;
-        return UNIMPI_OK;
+        return (intptr_t)(*ptr);
     }
-    return UNIMPI_ERR_SYMBOL_NOT_FOUND;
+    return 0;
+}
+
+/* Get predefined communicator values from OpenMPI globals */
+static int get_openmpi_comm_values(unimpi_lib_handle_t handle) {
+    intptr_t world = get_ompi_ptr(handle, "ompi_mpi_comm_world");
+    intptr_t self = get_ompi_ptr(handle, "ompi_mpi_comm_self");
+    if (world) UNIMPI_COMM_WORLD = world;
+    if (self) UNIMPI_COMM_SELF = self;
+    return UNIMPI_OK;
+}
+
+/* Get predefined datatype values from OpenMPI globals */
+static int get_openmpi_datatype_values(unimpi_lib_handle_t handle) {
+    UNIMPI_CHAR = get_ompi_ptr(handle, "ompi_mpi_char");
+    UNIMPI_SIGNED_CHAR = get_ompi_ptr(handle, "ompi_mpi_signed_char");
+    UNIMPI_UNSIGNED_CHAR = get_ompi_ptr(handle, "ompi_mpi_unsigned_char");
+    UNIMPI_BYTE = get_ompi_ptr(handle, "ompi_mpi_byte");
+    UNIMPI_SHORT = get_ompi_ptr(handle, "ompi_mpi_short");
+    UNIMPI_UNSIGNED_SHORT = get_ompi_ptr(handle, "ompi_mpi_unsigned_short");
+    UNIMPI_INT = get_ompi_ptr(handle, "ompi_mpi_int");
+    UNIMPI_UNSIGNED = get_ompi_ptr(handle, "ompi_mpi_unsigned");
+    UNIMPI_LONG = get_ompi_ptr(handle, "ompi_mpi_long");
+    UNIMPI_UNSIGNED_LONG = get_ompi_ptr(handle, "ompi_mpi_unsigned_long");
+    UNIMPI_FLOAT = get_ompi_ptr(handle, "ompi_mpi_float");
+    UNIMPI_DOUBLE = get_ompi_ptr(handle, "ompi_mpi_double");
+    UNIMPI_LONG_DOUBLE = get_ompi_ptr(handle, "ompi_mpi_long_double");
+    UNIMPI_LONG_LONG_INT = get_ompi_ptr(handle, "ompi_mpi_long_long_int");
+    UNIMPI_LONG_LONG = UNIMPI_LONG_LONG_INT;
+    UNIMPI_UNSIGNED_LONG_LONG = get_ompi_ptr(handle, "ompi_mpi_unsigned_long_long");
+    return UNIMPI_OK;
+}
+
+/* Get predefined operation values from OpenMPI globals */
+static int get_openmpi_op_values(unimpi_lib_handle_t handle) {
+    UNIMPI_MAX = get_ompi_ptr(handle, "ompi_mpi_op_max");
+    UNIMPI_MIN = get_ompi_ptr(handle, "ompi_mpi_op_min");
+    UNIMPI_SUM = get_ompi_ptr(handle, "ompi_mpi_op_sum");
+    UNIMPI_PROD = get_ompi_ptr(handle, "ompi_mpi_op_prod");
+    UNIMPI_LAND = get_ompi_ptr(handle, "ompi_mpi_op_land");
+    UNIMPI_BAND = get_ompi_ptr(handle, "ompi_mpi_op_band");
+    UNIMPI_LOR = get_ompi_ptr(handle, "ompi_mpi_op_lor");
+    UNIMPI_BOR = get_ompi_ptr(handle, "ompi_mpi_op_bor");
+    UNIMPI_LXOR = get_ompi_ptr(handle, "ompi_mpi_op_lxor");
+    UNIMPI_BXOR = get_ompi_ptr(handle, "ompi_mpi_op_bxor");
+    UNIMPI_MINLOC = get_ompi_ptr(handle, "ompi_mpi_op_minloc");
+    UNIMPI_MAXLOC = get_ompi_ptr(handle, "ompi_mpi_op_maxloc");
+    return UNIMPI_OK;
 }
 
 int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
@@ -568,8 +618,10 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     unimpi.attr_delete = (int (*)(MPI_Comm, int))
         unimpi_platform_dlsym(handle, "MPI_Attr_delete");
 
-    /* Get predefined communicator values */
-    get_openmpi_comm_world(handle, &UNIMPI_COMM_WORLD);
+    /* Get predefined values from OpenMPI globals */
+    get_openmpi_comm_values(handle);
+    get_openmpi_datatype_values(handle);
+    get_openmpi_op_values(handle);
 
     return UNIMPI_OK;
 }
