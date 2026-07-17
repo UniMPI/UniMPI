@@ -1,4 +1,5 @@
 /* tests/benchmark/bench_collective.c - Collective communication benchmark */
+#define UNIMPI_USE_STD_NAMES
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,22 +22,22 @@ void benchmark_bcast(int buf_size) {
     double start, end;
     double time_us;
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     memset(buf, rank, buf_size);
 
     /* Warmup */
     for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-        unimpi.bcast(buf, buf_size, MPI_CHAR, 0, UNIMPI_COMM_WORLD);
+        unimpi.bcast(buf, buf_size, MPI_CHAR, 0, MPI_COMM_WORLD);
     }
 
-    unimpi.barrier(UNIMPI_COMM_WORLD);
+    unimpi.barrier(MPI_COMM_WORLD);
 
     /* Benchmark */
     start = get_time();
     for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
-        unimpi.bcast(buf, buf_size, MPI_CHAR, 0, UNIMPI_COMM_WORLD);
+        unimpi.bcast(buf, buf_size, MPI_CHAR, 0, MPI_COMM_WORLD);
     }
     end = get_time();
 
@@ -57,8 +58,8 @@ void benchmark_allreduce(int buf_size) {
     double time_us;
     int count = buf_size / sizeof(int);
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     for (int i = 0; i < count; i++) {
         sendbuf[i] = rank + i;
@@ -67,15 +68,15 @@ void benchmark_allreduce(int buf_size) {
 
     /* Warmup */
     for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-        unimpi.allreduce(sendbuf, recvbuf, count, MPI_INT, MPI_SUM, UNIMPI_COMM_WORLD);
+        unimpi.allreduce(sendbuf, recvbuf, count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     }
 
-    unimpi.barrier(UNIMPI_COMM_WORLD);
+    unimpi.barrier(MPI_COMM_WORLD);
 
     /* Benchmark */
     start = get_time();
     for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
-        unimpi.allreduce(sendbuf, recvbuf, count, MPI_INT, MPI_SUM, UNIMPI_COMM_WORLD);
+        unimpi.allreduce(sendbuf, recvbuf, count, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     }
     end = get_time();
 
@@ -96,8 +97,8 @@ void benchmark_gather(int buf_size) {
     double start, end;
     double time_us;
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     memset(sendbuf, rank, buf_size);
 
@@ -107,15 +108,15 @@ void benchmark_gather(int buf_size) {
 
     /* Warmup */
     for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-        unimpi.gather(sendbuf, buf_size, MPI_CHAR, recvbuf, buf_size, MPI_CHAR, 0, UNIMPI_COMM_WORLD);
+        unimpi.gather(sendbuf, buf_size, MPI_CHAR, recvbuf, buf_size, MPI_CHAR, 0, MPI_COMM_WORLD);
     }
 
-    unimpi.barrier(UNIMPI_COMM_WORLD);
+    unimpi.barrier(MPI_COMM_WORLD);
 
     /* Benchmark */
     start = get_time();
     for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
-        unimpi.gather(sendbuf, buf_size, MPI_CHAR, recvbuf, buf_size, MPI_CHAR, 0, UNIMPI_COMM_WORLD);
+        unimpi.gather(sendbuf, buf_size, MPI_CHAR, recvbuf, buf_size, MPI_CHAR, 0, MPI_COMM_WORLD);
     }
     end = get_time();
 
@@ -134,18 +135,18 @@ void benchmark_barrier(void) {
     double start, end;
     double time_us;
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     /* Warmup */
     for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-        unimpi.barrier(UNIMPI_COMM_WORLD);
+        unimpi.barrier(MPI_COMM_WORLD);
     }
 
     /* Benchmark */
     start = get_time();
     for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
-        unimpi.barrier(UNIMPI_COMM_WORLD);
+        unimpi.barrier(MPI_COMM_WORLD);
     }
     end = get_time();
 
@@ -164,7 +165,7 @@ int main(int argc, char **argv) {
     }
 
     int rank;
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
 
     if (rank == 0) {
         printf("=== Collective Communication Benchmark ===\n");

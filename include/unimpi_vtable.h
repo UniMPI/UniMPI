@@ -10,7 +10,6 @@ typedef int MPI_Datatype;
 typedef int MPI_Op;
 typedef int MPI_Group;
 typedef int MPI_Request;
-typedef int MPI_Status;
 typedef int MPI_Info;
 typedef int MPI_Win;
 typedef int MPI_File;
@@ -19,51 +18,68 @@ typedef int MPI_Message;
 typedef long MPI_Aint;
 typedef long long MPI_Offset;
 
-/* MPI predefined constants (will be resolved at runtime) */
-extern MPI_Comm UNIMPI_COMM_WORLD;
-extern MPI_Comm UNIMPI_COMM_SELF;
-
-/* MPI predefined datatypes - hardcoded values matching Intel MPI */
-#define MPI_CHAR       ((MPI_Datatype)0x4c000101)
-#define MPI_SIGNED_CHAR ((MPI_Datatype)0x4c000118)
-#define MPI_UNSIGNED_CHAR ((MPI_Datatype)0x4c000102)
-#define MPI_BYTE       ((MPI_Datatype)0x4c00010d)
-#define MPI_SHORT      ((MPI_Datatype)0x4c000203)
-#define MPI_UNSIGNED_SHORT ((MPI_Datatype)0x4c000204)
-#define MPI_INT        ((MPI_Datatype)0x4c000405)
-#define MPI_UNSIGNED   ((MPI_Datatype)0x4c000406)
-#define MPI_LONG       ((MPI_Datatype)0x4c000807)
-#define MPI_UNSIGNED_LONG ((MPI_Datatype)0x4c000808)
-#define MPI_FLOAT      ((MPI_Datatype)0x4c00040a)
-#define MPI_DOUBLE     ((MPI_Datatype)0x4c00080b)
-#define MPI_LONG_DOUBLE ((MPI_Datatype)0x4c00100c)
-#define MPI_LONG_LONG_INT ((MPI_Datatype)0x4c000809)
-#define MPI_LONG_LONG  ((MPI_Datatype)0x4c000809)
-#define MPI_UNSIGNED_LONG_LONG ((MPI_Datatype)0x4c000819)
-
-/* MPI operations */
-#define MPI_MAX        ((MPI_Op)0x58000001)
-#define MPI_MIN        ((MPI_Op)0x58000002)
-#define MPI_SUM        ((MPI_Op)0x58000003)
-#define MPI_PROD       ((MPI_Op)0x58000004)
-#define MPI_LAND       ((MPI_Op)0x58000005)
-#define MPI_BAND       ((MPI_Op)0x58000006)
-#define MPI_LOR        ((MPI_Op)0x58000007)
-#define MPI_BOR        ((MPI_Op)0x58000008)
-#define MPI_LXOR       ((MPI_Op)0x58000009)
-#define MPI_BXOR       ((MPI_Op)0x5800000a)
-#define MPI_MINLOC     ((MPI_Op)0x5800000b)
-#define MPI_MAXLOC     ((MPI_Op)0x5800000c)
-
-/* Status struct */
-struct UNIMPI_Status {
+/* Status struct - must be defined before MPI_Status */
+struct MPI_Status {
     int MPI_SOURCE;
     int MPI_TAG;
     int MPI_ERROR;
     int count;
     int cancelled;
 };
-typedef struct UNIMPI_Status UNIMPI_Status;
+typedef struct MPI_Status MPI_Status;
+
+/* MPI predefined operations - will be resolved at runtime from backend */
+extern MPI_Op UNIMPI_MAX;
+extern MPI_Op UNIMPI_MIN;
+extern MPI_Op UNIMPI_SUM;
+extern MPI_Op UNIMPI_PROD;
+extern MPI_Op UNIMPI_LAND;
+extern MPI_Op UNIMPI_BAND;
+extern MPI_Op UNIMPI_LOR;
+extern MPI_Op UNIMPI_BOR;
+extern MPI_Op UNIMPI_LXOR;
+extern MPI_Op UNIMPI_BXOR;
+extern MPI_Op UNIMPI_MINLOC;
+extern MPI_Op UNIMPI_MAXLOC;
+
+/* MPI predefined communicators */
+extern MPI_Comm UNIMPI_COMM_WORLD;
+extern MPI_Comm UNIMPI_COMM_SELF;
+
+/* MPI predefined Info */
+extern MPI_Info UNIMPI_INFO_NULL;
+
+/* MPI predefined datatypes - will be resolved at runtime from backend */
+extern MPI_Datatype UNIMPI_CHAR;
+extern MPI_Datatype UNIMPI_SIGNED_CHAR;
+extern MPI_Datatype UNIMPI_UNSIGNED_CHAR;
+extern MPI_Datatype UNIMPI_BYTE;
+extern MPI_Datatype UNIMPI_SHORT;
+extern MPI_Datatype UNIMPI_UNSIGNED_SHORT;
+extern MPI_Datatype UNIMPI_INT;
+extern MPI_Datatype UNIMPI_UNSIGNED;
+extern MPI_Datatype UNIMPI_LONG;
+extern MPI_Datatype UNIMPI_UNSIGNED_LONG;
+extern MPI_Datatype UNIMPI_FLOAT;
+extern MPI_Datatype UNIMPI_DOUBLE;
+extern MPI_Datatype UNIMPI_LONG_DOUBLE;
+extern MPI_Datatype UNIMPI_LONG_LONG_INT;
+extern MPI_Datatype UNIMPI_LONG_LONG;
+extern MPI_Datatype UNIMPI_UNSIGNED_LONG_LONG;
+
+/* MPI predefined operations - will be resolved at runtime from backend */
+extern MPI_Op UNIMPI_MAX;
+extern MPI_Op UNIMPI_MIN;
+extern MPI_Op UNIMPI_SUM;
+extern MPI_Op UNIMPI_PROD;
+extern MPI_Op UNIMPI_LAND;
+extern MPI_Op UNIMPI_BAND;
+extern MPI_Op UNIMPI_LOR;
+extern MPI_Op UNIMPI_BOR;
+extern MPI_Op UNIMPI_LXOR;
+extern MPI_Op UNIMPI_BXOR;
+extern MPI_Op UNIMPI_MINLOC;
+extern MPI_Op UNIMPI_MAXLOC;
 
 /* Vtable structure - Environment functions first */
 typedef struct {
@@ -84,22 +100,22 @@ typedef struct {
     int (*send)(const void *buf, int count, MPI_Datatype datatype,
                 int dest, int tag, MPI_Comm comm);
     int (*recv)(void *buf, int count, MPI_Datatype datatype,
-                int source, int tag, MPI_Comm comm, UNIMPI_Status *status);
+                int source, int tag, MPI_Comm comm, MPI_Status *status);
     int (*isend)(const void *buf, int count, MPI_Datatype datatype,
                  int dest, int tag, MPI_Comm comm, MPI_Request *request);
     int (*irecv)(void *buf, int count, MPI_Datatype datatype,
                  int source, int tag, MPI_Comm comm, MPI_Request *request);
-    int (*wait)(MPI_Request *request, UNIMPI_Status *status);
+    int (*wait)(MPI_Request *request, MPI_Status *status);
     int (*waitall)(int count, MPI_Request *array_of_requests,
-                   UNIMPI_Status *array_of_statuses);
+                   MPI_Status *array_of_statuses);
     int (*sendrecv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                     int dest, int sendtag,
                     void *recvbuf, int recvcount, MPI_Datatype recvtype,
                     int source, int recvtag,
-                    MPI_Comm comm, UNIMPI_Status *status);
+                    MPI_Comm comm, MPI_Status *status);
     int (*sendrecv_replace)(void *buf, int count, MPI_Datatype datatype,
                             int dest, int sendtag, int source, int recvtag,
-                            MPI_Comm comm, UNIMPI_Status *status);
+                            MPI_Comm comm, MPI_Status *status);
 
     /* Synchronous, Buffered, and Ready sends */
     int (*ssend)(const void *buf, int count, MPI_Datatype datatype,
@@ -118,27 +134,27 @@ typedef struct {
     int (*buffer_detach)(void *buffer_addr, int *size);
 
     /* Nonblocking test and wait variants */
-    int (*test)(MPI_Request *request, int *flag, UNIMPI_Status *status);
+    int (*test)(MPI_Request *request, int *flag, MPI_Status *status);
     int (*testany)(int count, MPI_Request *array_of_requests, int *index,
-                   int *flag, UNIMPI_Status *status);
+                   int *flag, MPI_Status *status);
     int (*testsome)(int incount, MPI_Request *array_of_requests, int *outcount,
-                    int *array_of_indices, UNIMPI_Status *array_of_statuses);
+                    int *array_of_indices, MPI_Status *array_of_statuses);
     int (*testall)(int count, MPI_Request *array_of_requests, int *flag,
-                   UNIMPI_Status *array_of_statuses);
+                   MPI_Status *array_of_statuses);
     int (*waitany)(int count, MPI_Request *array_of_requests, int *index,
-                   UNIMPI_Status *status);
+                   MPI_Status *status);
     int (*waitsome)(int incount, MPI_Request *array_of_requests, int *outcount,
-                    int *array_of_indices, UNIMPI_Status *array_of_statuses);
+                    int *array_of_indices, MPI_Status *array_of_statuses);
 
     /* Message probing - MPI-3 matched probes */
-    int (*mprobe)(int source, int tag, MPI_Comm comm, MPI_Message *message, UNIMPI_Status *status);
-    int (*improbe)(int source, int tag, MPI_Comm comm, int *flag, MPI_Message *message, UNIMPI_Status *status);
-    int (*mrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, UNIMPI_Status *status);
+    int (*mprobe)(int source, int tag, MPI_Comm comm, MPI_Message *message, MPI_Status *status);
+    int (*improbe)(int source, int tag, MPI_Comm comm, int *flag, MPI_Message *message, MPI_Status *status);
+    int (*mrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, MPI_Status *status);
     int (*imrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, MPI_Request *request);
 
     /* Message probing */
-    int (*probe)(int source, int tag, MPI_Comm comm, UNIMPI_Status *status);
-    int (*iprobe)(int source, int tag, MPI_Comm comm, int *flag, UNIMPI_Status *status);
+    int (*probe)(int source, int tag, MPI_Comm comm, MPI_Status *status);
+    int (*iprobe)(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status);
 
     /* Persistent communication */
     int (*send_init)(const void *buf, int count, MPI_Datatype datatype,
@@ -151,9 +167,9 @@ typedef struct {
 
     /* Cancel and status query */
     int (*cancel)(MPI_Request *request);
-    int (*test_cancelled)(const UNIMPI_Status *status, int *flag);
-    int (*get_count)(const UNIMPI_Status *status, MPI_Datatype datatype, int *count);
-    int (*get_elements)(const UNIMPI_Status *status, MPI_Datatype datatype, int *count);
+    int (*test_cancelled)(const MPI_Status *status, int *flag);
+    int (*get_count)(const MPI_Status *status, MPI_Datatype datatype, int *count);
+    int (*get_elements)(const MPI_Status *status, MPI_Datatype datatype, int *count);
 
     /* Collective */
     int (*bcast)(void *buffer, int count, MPI_Datatype datatype,
@@ -346,18 +362,18 @@ typedef struct {
     int (*file_get_byte_offset)(MPI_File fh, MPI_Offset offset, MPI_Offset *disp);
 
     /* Parallel I/O - Read/Write */
-    int (*file_read)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_read_all)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_write)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_write_all)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_read_at)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_read_at_all)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_write_at)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_write_at_all)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_read_shared)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_write_shared)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_read_ordered)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
-    int (*file_write_ordered)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, UNIMPI_Status *status);
+    int (*file_read)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_read_all)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_write)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_write_all)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_read_at)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_read_at_all)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_write_at)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_write_at_all)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_read_shared)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_write_shared)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_read_ordered)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_write_ordered)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
 
     /* Parallel I/O - Nonblocking */
     int (*file_iread)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
@@ -408,8 +424,8 @@ typedef struct {
     int (*op_commutative)(MPI_Op op, int *commute);
 
     /* Status manipulation */
-    int (*status_set_elements)(UNIMPI_Status *status, MPI_Datatype datatype, int count);
-    int (*status_set_cancelled)(UNIMPI_Status *status, int flag);
+    int (*status_set_elements)(MPI_Status *status, MPI_Datatype datatype, int count);
+    int (*status_set_cancelled)(MPI_Status *status, int flag);
 
     /* Error handling */
     int (*errhandler_create)(void (*handler_fn)(MPI_Comm *, int *, ...), MPI_Errhandler *errhandler);

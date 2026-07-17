@@ -214,3 +214,25 @@ unimpi.finalize();
 ```
 
 Use standard style for portability, function pointer style for debugging or explicit control.
+
+## Development Guidelines
+
+### Always Use Native MPI Style in Applications
+**Important**: Applications using unimpi should always use native MPI naming style (`MPI_*`) rather than unimpi-specific prefixes (`UNIMPI_*`).
+
+**Correct:**
+```c
+#include "unimpi.h"  // This header automatically provides MPI_* macros
+
+MPI_Send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+MPI_Bcast(buf, count, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Reduce(sendbuf, recvbuf, count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+```
+
+**Incorrect:**
+```c
+// Don't use UNIMPI_* prefixes in application code
+unimpi.send(buf, count, UNIMPI_INT, dest, tag, UNIMPI_COMM_WORLD);
+```
+
+The `UNIMPI_*` prefixes are for internal implementation only. The public API should always present as standard MPI to users.

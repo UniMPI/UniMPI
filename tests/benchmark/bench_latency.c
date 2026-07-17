@@ -1,4 +1,5 @@
 /* tests/benchmark/bench_latency.c - MPI Latency benchmark */
+#define UNIMPI_USE_STD_NAMES
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,12 +19,12 @@ static double get_time(void) {
 void benchmark_ping_pong(int message_size) {
     int rank, size;
     char *buf = (char*)malloc(message_size);
-    UNIMPI_Status status;
+    MPI_Status status;
     double start, end;
     double latency;
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     if (size < 2) {
         if (rank == 0) {
@@ -38,24 +39,24 @@ void benchmark_ping_pong(int message_size) {
     /* Warmup */
     if (rank == 0) {
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-            unimpi.send(buf, message_size, MPI_CHAR, 1, 100, UNIMPI_COMM_WORLD);
-            unimpi.recv(buf, message_size, MPI_CHAR, 1, 100, UNIMPI_COMM_WORLD, &status);
+            unimpi.send(buf, message_size, MPI_CHAR, 1, 100, MPI_COMM_WORLD);
+            unimpi.recv(buf, message_size, MPI_CHAR, 1, 100, MPI_COMM_WORLD, &status);
         }
     } else if (rank == 1) {
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-            unimpi.recv(buf, message_size, MPI_CHAR, 0, 100, UNIMPI_COMM_WORLD, &status);
-            unimpi.send(buf, message_size, MPI_CHAR, 0, 100, UNIMPI_COMM_WORLD);
+            unimpi.recv(buf, message_size, MPI_CHAR, 0, 100, MPI_COMM_WORLD, &status);
+            unimpi.send(buf, message_size, MPI_CHAR, 0, 100, MPI_COMM_WORLD);
         }
     }
 
-    unimpi.barrier(UNIMPI_COMM_WORLD);
+    unimpi.barrier(MPI_COMM_WORLD);
 
     /* Benchmark */
     if (rank == 0) {
         start = get_time();
         for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
-            unimpi.send(buf, message_size, MPI_CHAR, 1, 101, UNIMPI_COMM_WORLD);
-            unimpi.recv(buf, message_size, MPI_CHAR, 1, 101, UNIMPI_COMM_WORLD, &status);
+            unimpi.send(buf, message_size, MPI_CHAR, 1, 101, MPI_COMM_WORLD);
+            unimpi.recv(buf, message_size, MPI_CHAR, 1, 101, MPI_COMM_WORLD, &status);
         }
         end = get_time();
 
@@ -65,8 +66,8 @@ void benchmark_ping_pong(int message_size) {
                message_size, latency, message_size / (latency * 1e-6) / 1e6);
     } else if (rank == 1) {
         for (int i = 0; i < BENCHMARK_ITERATIONS; i++) {
-            unimpi.recv(buf, message_size, MPI_CHAR, 0, 101, UNIMPI_COMM_WORLD, &status);
-            unimpi.send(buf, message_size, MPI_CHAR, 0, 101, UNIMPI_COMM_WORLD);
+            unimpi.recv(buf, message_size, MPI_CHAR, 0, 101, MPI_COMM_WORLD, &status);
+            unimpi.send(buf, message_size, MPI_CHAR, 0, 101, MPI_COMM_WORLD);
         }
     }
 
@@ -78,8 +79,8 @@ void benchmark_throughput(void) {
     int message_sizes[] = {1, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576};
     int num_sizes = sizeof(message_sizes) / sizeof(message_sizes[0]);
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     if (rank == 0) {
         printf("\n=== Point-to-Point Latency Benchmark ===\n");
@@ -101,7 +102,7 @@ int main(int argc, char **argv) {
 
     benchmark_throughput();
 
-    if (unimpi.comm_rank(UNIMPI_COMM_WORLD, &(int){0}) == 0) {
+    if (unimpi.comm_rank(MPI_COMM_WORLD, &(int){0}) == 0) {
         printf("\nBenchmark complete!\n");
     }
 

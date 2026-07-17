@@ -1,4 +1,5 @@
 /* tests/benchmark/bench_overhead.c - Measure wrapper overhead */
+#define UNIMPI_USE_STD_NAMES
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +19,7 @@ void measure_init_overhead(void) {
     double start, end;
     double total_time = 0;
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
 
     /* Note: We can't easily measure init overhead without native comparison
      * This is just a placeholder showing the wrapper overhead concept */
@@ -35,14 +36,14 @@ void measure_vtable_call_overhead(void) {
     double direct_time, vtable_time;
     int val = 0;
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     if (rank == 0) {
         /* Measure vtable call overhead by calling a simple function many times */
         start = get_time();
         for (int i = 0; i < ITERATIONS; i++) {
-            unimpi.barrier(UNIMPI_COMM_WORLD);
+            unimpi.barrier(MPI_COMM_WORLD);
         }
         end = get_time();
         vtable_time = (end - start) * 1e6 / ITERATIONS;
@@ -52,7 +53,7 @@ void measure_vtable_call_overhead(void) {
     } else {
         /* Participate in barriers */
         for (int i = 0; i < ITERATIONS; i++) {
-            unimpi.barrier(UNIMPI_COMM_WORLD);
+            unimpi.barrier(MPI_COMM_WORLD);
         }
     }
 }
@@ -65,8 +66,8 @@ void measure_bandwidth_comparison(void) {
     double bandwidth;
     int iterations = 100;
 
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
-    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     if (size < 2) {
         if (rank == 0) {
@@ -79,19 +80,19 @@ void measure_bandwidth_comparison(void) {
     memset(buf, rank, buf_size);
 
     if (rank == 0) {
-        UNIMPI_Status status;
+        MPI_Status status;
 
         /* Warmup */
         for (int i = 0; i < 10; i++) {
-            unimpi.send(buf, buf_size, MPI_CHAR, 1, 200, UNIMPI_COMM_WORLD);
-            unimpi.recv(buf, buf_size, MPI_CHAR, 1, 200, UNIMPI_COMM_WORLD, &status);
+            unimpi.send(buf, buf_size, MPI_CHAR, 1, 200, MPI_COMM_WORLD);
+            unimpi.recv(buf, buf_size, MPI_CHAR, 1, 200, MPI_COMM_WORLD, &status);
         }
 
         /* Benchmark */
         start = get_time();
         for (int i = 0; i < iterations; i++) {
-            unimpi.send(buf, buf_size, MPI_CHAR, 1, 201, UNIMPI_COMM_WORLD);
-            unimpi.recv(buf, buf_size, MPI_CHAR, 1, 201, UNIMPI_COMM_WORLD, &status);
+            unimpi.send(buf, buf_size, MPI_CHAR, 1, 201, MPI_COMM_WORLD);
+            unimpi.recv(buf, buf_size, MPI_CHAR, 1, 201, MPI_COMM_WORLD, &status);
         }
         end = get_time();
 
@@ -101,18 +102,18 @@ void measure_bandwidth_comparison(void) {
         printf("\n1MB Message Bandwidth: %.2f MB/s\n", bandwidth);
         printf("(This should be comparable to native MPI performance)\n");
     } else if (rank == 1) {
-        UNIMPI_Status status;
+        MPI_Status status;
 
         /* Warmup */
         for (int i = 0; i < 10; i++) {
-            unimpi.recv(buf, buf_size, MPI_CHAR, 0, 200, UNIMPI_COMM_WORLD, &status);
-            unimpi.send(buf, buf_size, MPI_CHAR, 0, 200, UNIMPI_COMM_WORLD);
+            unimpi.recv(buf, buf_size, MPI_CHAR, 0, 200, MPI_COMM_WORLD, &status);
+            unimpi.send(buf, buf_size, MPI_CHAR, 0, 200, MPI_COMM_WORLD);
         }
 
         /* Benchmark */
         for (int i = 0; i < iterations; i++) {
-            unimpi.recv(buf, buf_size, MPI_CHAR, 0, 201, UNIMPI_COMM_WORLD, &status);
-            unimpi.send(buf, buf_size, MPI_CHAR, 0, 201, UNIMPI_COMM_WORLD);
+            unimpi.recv(buf, buf_size, MPI_CHAR, 0, 201, MPI_COMM_WORLD, &status);
+            unimpi.send(buf, buf_size, MPI_CHAR, 0, 201, MPI_COMM_WORLD);
         }
     }
 
@@ -127,7 +128,7 @@ int main(int argc, char **argv) {
     }
 
     int rank;
-    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
 
     if (rank == 0) {
         printf("=== TFTK-MPI Wrapper Overhead Analysis ===\n");

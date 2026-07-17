@@ -35,19 +35,19 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Point-to-Point - Standard */
     unimpi.send = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Send");
-    unimpi.recv = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, UNIMPI_Status*))
+    unimpi.recv = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Recv");
     unimpi.isend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Isend");
     unimpi.irecv = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Irecv");
-    unimpi.wait = (int (*)(MPI_Request*, UNIMPI_Status*))
+    unimpi.wait = (int (*)(MPI_Request*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Wait");
-    unimpi.waitall = (int (*)(int, MPI_Request*, UNIMPI_Status*))
+    unimpi.waitall = (int (*)(int, MPI_Request*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitall");
-    unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, UNIMPI_Status*))
+    unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Sendrecv");
-    unimpi.sendrecv_replace = (int (*)(void*, int, MPI_Datatype, int, int, int, int, MPI_Comm, UNIMPI_Status*))
+    unimpi.sendrecv_replace = (int (*)(void*, int, MPI_Datatype, int, int, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Sendrecv_replace");
 
     /* Point-to-Point - Sync/Buffered/Ready */
@@ -69,31 +69,31 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Rsend_init");
 
     /* Nonblocking test and wait */
-    unimpi.test = (int (*)(MPI_Request*, int*, UNIMPI_Status*))
+    unimpi.test = (int (*)(MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Test");
-    unimpi.testany = (int (*)(int, MPI_Request*, int*, int*, UNIMPI_Status*))
+    unimpi.testany = (int (*)(int, MPI_Request*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testany");
-    unimpi.testsome = (int (*)(int, MPI_Request*, int*, int*, UNIMPI_Status*))
+    unimpi.testsome = (int (*)(int, MPI_Request*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testsome");
-    unimpi.testall = (int (*)(int, MPI_Request*, int*, UNIMPI_Status*))
+    unimpi.testall = (int (*)(int, MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testall");
-    unimpi.waitany = (int (*)(int, MPI_Request*, int*, UNIMPI_Status*))
+    unimpi.waitany = (int (*)(int, MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitany");
-    unimpi.waitsome = (int (*)(int, MPI_Request*, int*, int*, UNIMPI_Status*))
+    unimpi.waitsome = (int (*)(int, MPI_Request*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitsome");
 
     /* Message probing */
-    unimpi.probe = (int (*)(int, int, MPI_Comm, UNIMPI_Status*))
+    unimpi.probe = (int (*)(int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Probe");
-    unimpi.iprobe = (int (*)(int, int, MPI_Comm, int*, UNIMPI_Status*))
+    unimpi.iprobe = (int (*)(int, int, MPI_Comm, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Iprobe");
 
     /* MPI-3 Matched probing */
-    unimpi.mprobe = (int (*)(int, int, MPI_Comm, MPI_Message*, UNIMPI_Status*))
+    unimpi.mprobe = (int (*)(int, int, MPI_Comm, MPI_Message*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Mprobe");
-    unimpi.improbe = (int (*)(int, int, MPI_Comm, int*, MPI_Message*, UNIMPI_Status*))
+    unimpi.improbe = (int (*)(int, int, MPI_Comm, int*, MPI_Message*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Improbe");
-    unimpi.mrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, UNIMPI_Status*))
+    unimpi.mrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Mrecv");
     unimpi.imrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Imrecv");
@@ -113,11 +113,11 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Cancel and status */
     unimpi.cancel = (int (*)(MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Cancel");
-    unimpi.test_cancelled = (int (*)(const UNIMPI_Status*, int*))
+    unimpi.test_cancelled = (int (*)(const MPI_Status*, int*))
         unimpi_platform_dlsym(handle, "MPI_Test_cancelled");
-    unimpi.get_count = (int (*)(const UNIMPI_Status*, MPI_Datatype, int*))
+    unimpi.get_count = (int (*)(const MPI_Status*, MPI_Datatype, int*))
         unimpi_platform_dlsym(handle, "MPI_Get_count");
-    unimpi.get_elements = (int (*)(const UNIMPI_Status*, MPI_Datatype, int*))
+    unimpi.get_elements = (int (*)(const MPI_Status*, MPI_Datatype, int*))
         unimpi_platform_dlsym(handle, "MPI_Get_elements");
 
     /* Collective - Standard */
@@ -429,31 +429,31 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_File_get_byte_offset");
 
     /* Parallel I/O - Read/Write */
-    unimpi.file_read = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_read = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_read");
-    unimpi.file_read_all = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_read_all = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_read_all");
-    unimpi.file_write = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_write = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write");
-    unimpi.file_write_all = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_write_all = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write_all");
-    unimpi.file_read_at = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_read_at = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_read_at");
-    unimpi.file_read_at_all = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_read_at_all = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_read_at_all");
-    unimpi.file_write_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_write_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write_at");
-    unimpi.file_write_at_all = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_write_at_all = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write_at_all");
 
     /* MPI-3 Extended file read/write */
-    unimpi.file_read_shared = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_read_shared = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_read_shared");
-    unimpi.file_write_shared = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_write_shared = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write_shared");
-    unimpi.file_read_ordered = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_read_ordered = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_read_ordered");
-    unimpi.file_write_ordered = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+    unimpi.file_write_ordered = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write_ordered");
 
     /* Parallel I/O - Non-blocking */
@@ -539,9 +539,9 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Op_commutative");
 
     /* MPI-3 Status manipulation */
-    unimpi.status_set_elements = (int (*)(UNIMPI_Status*, MPI_Datatype, int))
+    unimpi.status_set_elements = (int (*)(MPI_Status*, MPI_Datatype, int))
         unimpi_platform_dlsym(handle, "MPI_Status_set_elements");
-    unimpi.status_set_cancelled = (int (*)(UNIMPI_Status*, int))
+    unimpi.status_set_cancelled = (int (*)(MPI_Status*, int))
         unimpi_platform_dlsym(handle, "MPI_Status_set_cancelled");
 
     /* MPI-3 Error handling */

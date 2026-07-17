@@ -7,6 +7,9 @@ extern "C" {
 
 #include "unimpi_vtable.h"
 
+/* Compatibility typedef - UNIMPI_Status is the same as MPI_Status */
+typedef MPI_Status UNIMPI_Status;
+
 /* Version */
 #define UNIMPI_VERSION_MAJOR 0
 #define UNIMPI_VERSION_MINOR 1
