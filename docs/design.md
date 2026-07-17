@@ -1,4 +1,4 @@
-# TFTK-MPI Wrapper 设计文档
+# unimpi Wrapper 设计文档
 
 **日期**: 2025-04-03  
 **主题**: MPI 运行时包装层  
@@ -13,14 +13,14 @@
 │                    用户代码层                                │
 │  ┌─────────────┐    ┌─────────────────────────────────────┐ │
 │  │ 函数指针风格 │    │ 标准 MPI 风格（可选宏封装）          │ │
-│  │ tftk_mpi.xxx│    │ MPI_Send, MPI_Init...               │ │
+│  │ unimpi.xxx│    │ MPI_Send, MPI_Init...               │ │
 │  └──────┬──────┘    └──────────────────┬──────────────────┘ │
 └─────────┼──────────────────────────────┼────────────────────┘
           │                              │
           └──────────────┬───────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────┐
-│              TFTK-MPI 运行时核心层                          │
+│              unimpi 运行时核心层                          │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │ 后端检测    │  │ 动态加载器  │  │ 函数指针表 (vtable)  │  │
 │  │  auto-detect│  │  dlopen/dlsym│  │  400+ MPI-3 函数    │  │
@@ -45,7 +45,7 @@
 
 | 优先级 | 后端 | 库名 (Linux) | 库名 (Windows) |
 |--------|------|--------------|----------------|
-| 1 | 用户指定 | `TFTK_MPI_BACKEND` 环境变量 | 同上 |
+| 1 | 用户指定 | `UNIMPI_BACKEND` 环境变量 | 同上 |
 | 2 | OpenMPI | `libmpi.so.40`, `libmpi.so.20` | 不支持 |
 | 3 | Intel-MPI | `libmpi.so` | 不支持 |
 | 4 | MPICH | `libmpich.so` | `msmpi.dll` |
@@ -53,7 +53,7 @@
 
 **加载流程：**
 
-1. 读取 `TFTK_MPI_BACKEND` 环境变量
+1. 读取 `UNIMPI_BACKEND` 环境变量
 2. 尝试加载指定后端
 3. 失败后进入自动检测（按优先级）
 4. 解析核心符号（MPI_Init, MPI_Finalize）
@@ -83,36 +83,36 @@
 
 ```c
 // 初始化与关闭
-int tftk_mpi_init(int *argc, char ***argv);        // 自动检测后端
-int tftk_mpi_init_with(const char *backend_name);  // 指定后端
-int tftk_mpi_finalize(void);
+int unimpi_init(int *argc, char ***argv);        // 自动检测后端
+int unimpi_init_with(const char *backend_name);  // 指定后端
+int unimpi_finalize(void);
 
 // 查询
-const char *tftk_mpi_get_backend_name(void);
-int tftk_mpi_is_initialized(void);
+const char *unimpi_get_backend_name(void);
+int unimpi_is_initialized(void);
 
 // 错误处理
-const char *tftk_mpi_error_string(int error_code);
+const char *unimpi_error_string(int error_code);
 ```
 
 ### 3.2 函数指针表访问
 
 ```c
 // 直接访问 vtable（零开销）
-extern tftk_mpi_vtable_t tftk_mpi;
+extern unimpi_vtable_t unimpi;
 
 // 使用示例
-tftk_mpi.init(&argc, &argv);
-tftk_mpi.send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
+unimpi.init(&argc, &argv);
+unimpi.send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 ```
 
 ### 3.3 可选宏封装
 
-定义 `TFTK_MPI_USE_STD_NAMES` 后，标准 MPI 命名可用：
+定义 `UNIMPI_USE_STD_NAMES` 后，标准 MPI 命名可用：
 
 ```c
-#define MPI_Init tftk_mpi.init
-#define MPI_Send tftk_mpi.send
+#define MPI_Init unimpi.init
+#define MPI_Send unimpi.send
 // ... 所有 MPI 函数
 ```
 
@@ -122,10 +122,10 @@ tftk_mpi.send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 
 | 错误码 | 含义 | 处理方式 |
 |--------|------|----------|
-| `TFTK_MPI_OK` | 成功 | 正常继续 |
-| `TFTK_MPI_ERR_NO_BACKEND` | 未找到 MPI 后端 | 返回错误，提示安装 MPI |
-| `TFTK_MPI_ERR_BACKEND_LOAD` | 加载库失败 | 返回错误，检查库路径 |
-| `TFTK_MPI_ERR_ABI_MISMATCH` | ABI 不兼容 | 返回错误，提示版本不匹配 |
+| `UNIMPI_OK` | 成功 | 正常继续 |
+| `UNIMPI_ERR_NO_BACKEND` | 未找到 MPI 后端 | 返回错误，提示安装 MPI |
+| `UNIMPI_ERR_BACKEND_LOAD` | 加载库失败 | 返回错误，检查库路径 |
+| `UNIMPI_ERR_ABI_MISMATCH` | ABI 不兼容 | 返回错误，提示版本不匹配 |
 
 运行时错误直接透传底层 MPI 错误码。
 
@@ -160,9 +160,9 @@ CMake 配置选项：
 
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
-| `TFTK_MPI_BUILD_EXAMPLES` | ON | 构建示例程序 |
-| `TFTK_MPI_BUILD_TESTS` | ON | 构建测试 |
-| `TFTK_MPI_ENABLE_STD_MACROS` | OFF | 默认启用标准 MPI 宏 |
+| `UNIMPI_BUILD_EXAMPLES` | ON | 构建示例程序 |
+| `UNIMPI_BUILD_TESTS` | ON | 构建测试 |
+| `UNIMPI_ENABLE_STD_MACROS` | OFF | 默认启用标准 MPI 宏 |
 
 ---
 
@@ -201,9 +201,9 @@ tests/
 ## 9. 项目结构
 
 ```
-tftk-mpi-wrapper/
+unimpi/
 ├── include/
-│   └── tftk_mpi.h
+│   └── unimpi.h
 ├── src/
 │   ├── core.c          # 初始化和核心逻辑
 │   ├── loader.c        # 动态库加载
@@ -226,19 +226,19 @@ tftk-mpi-wrapper/
 ### 函数指针风格
 
 ```c
-#include "tftk_mpi.h"
+#include "unimpi.h"
 
 int main(int argc, char **argv) {
     // 初始化（自动检测后端）
-    tftk_mpi_init(&argc, &argv);
+    unimpi_init(&argc, &argv);
     
     int rank, size;
-    tftk_mpi.comm_rank(MPI_COMM_WORLD, &rank);
-    tftk_mpi.comm_size(MPI_COMM_WORLD, &size);
+    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
+    unimpi.comm_size(MPI_COMM_WORLD, &size);
     
     printf("Hello from rank %d of %d\n", rank, size);
     
-    tftk_mpi_finalize();
+    unimpi_finalize();
     return 0;
 }
 ```
@@ -246,8 +246,8 @@ int main(int argc, char **argv) {
 ### 标准 MPI 风格
 
 ```c
-#define TFTK_MPI_USE_STD_NAMES
-#include "tftk_mpi.h"
+#define UNIMPI_USE_STD_NAMES
+#include "unimpi.h"
 
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
