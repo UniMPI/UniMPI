@@ -1,6 +1,6 @@
-# TFTK-MPI Wrapper
+# unimpi
 
-Zero-overhead MPI wrapper with runtime backend loading for OpenMPI, MPICH, Intel-MPI, and MS-MPI.
+Universal MPI wrapper with runtime backend loading for OpenMPI, MPICH, Intel-MPI, and MS-MPI.
 
 ## Features
 
@@ -12,20 +12,20 @@ Zero-overhead MPI wrapper with runtime backend loading for OpenMPI, MPICH, Intel
 ## Quick Start
 
 ```c
-#include "tftk_mpi.h"
+#include "unimpi.h"
 
 int main(int argc, char **argv) {
     /* Initialize (auto-detects backend) */
-    tftk_mpi_init(&argc, &argv);
+    unimpi_init(&argc, &argv);
 
     /* Use MPI through vtable */
     int rank, size;
-    tftk_mpi.comm_rank(TFTK_MPI_COMM_WORLD, &rank);
-    tftk_mpi.comm_size(TFTK_MPI_COMM_WORLD, &size);
+    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
+    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
 
     printf("Hello from %d of %d\n", rank, size);
 
-    tftk_mpi_finalize();
+    unimpi_finalize();
     return 0;
 }
 ```
@@ -40,20 +40,20 @@ cmake --build build
 ## Backend Selection
 
 Environment variables:
-- `TFTK_MPI_BACKEND=openmpi` - Use specific backend
-- `TFTK_MPI_LIBRARY=/path/to/libmpi.so` - Use custom library path
+- `UNIMPI_BACKEND=openmpi` - Use specific backend
+- `UNIMPI_LIBRARY=/path/to/libmpi.so` - Use custom library path
 
 ## API Styles
 
 ### Function Pointer Style (Zero Overhead)
 ```c
-tftk_mpi.send(buf, count, MPI_INT, dest, tag, TFTK_MPI_COMM_WORLD);
+unimpi.send(buf, count, MPI_INT, dest, tag, UNIMPI_COMM_WORLD);
 ```
 
 ### Standard MPI Style (with macros)
 ```c
-#define TFTK_MPI_USE_STD_NAMES
-#include "tftk_mpi.h"
+#define UNIMPI_USE_STD_NAMES
+#include "unimpi.h"
 MPI_Send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
 ```
 

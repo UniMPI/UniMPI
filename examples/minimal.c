@@ -1,33 +1,33 @@
 #include <stdio.h>
-#include "tftk_mpi.h"
+#include "unimpi.h"
 
 int main(int argc, char **argv) {
     int ret;
     int rank, size;
 
     /* Initialize TFTK-MPI (auto-detects backend) */
-    ret = tftk_mpi_init(&argc, &argv);
-    if (ret != TFTK_MPI_OK) {
-        fprintf(stderr, "TFTK-MPI init failed: %s\n", tftk_mpi_error_string(ret));
+    ret = unimpi_init(&argc, &argv);
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "TFTK-MPI init failed: %s\n", unimpi_error_string(ret));
         return 1;
     }
 
     /* Get backend name */
-    printf("Using backend: %s\n", tftk_mpi_get_backend_name());
+    printf("Using backend: %s\n", unimpi_get_backend_name());
 
     /* Get rank and size using vtable */
-    tftk_mpi.comm_rank(TFTK_MPI_COMM_WORLD, &rank);
-    tftk_mpi.comm_size(TFTK_MPI_COMM_WORLD, &size);
+    unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank);
+    unimpi.comm_size(UNIMPI_COMM_WORLD, &size);
 
     printf("Hello from rank %d of %d\n", rank, size);
 
     /* Barrier */
-    tftk_mpi.barrier(TFTK_MPI_COMM_WORLD);
+    unimpi.barrier(UNIMPI_COMM_WORLD);
 
     /* Finalize */
-    ret = tftk_mpi_finalize();
-    if (ret != TFTK_MPI_OK) {
-        fprintf(stderr, "TFTK-MPI finalize failed: %s\n", tftk_mpi_error_string(ret));
+    ret = unimpi_finalize();
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "TFTK-MPI finalize failed: %s\n", unimpi_error_string(ret));
         return 1;
     }
 

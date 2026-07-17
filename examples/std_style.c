@@ -1,17 +1,17 @@
 #include <stdio.h>
 
 /* Must define this before including header for standard MPI names */
-#define TFTK_MPI_USE_STD_NAMES
-#include "tftk_mpi.h"
+#define UNIMPI_USE_STD_NAMES
+#include "unimpi.h"
 
 int main(int argc, char **argv) {
     int ret;
     int rank, size;
 
     /* Initialize using standard MPI naming */
-    ret = tftk_mpi_init(&argc, &argv);
-    if (ret != TFTK_MPI_OK) {
-        fprintf(stderr, "TFTK-MPI init failed: %s\n", tftk_mpi_error_string(ret));
+    ret = unimpi_init(&argc, &argv);
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi init failed: %s\n", unimpi_error_string(ret));
         return 1;
     }
 
@@ -25,9 +25,9 @@ int main(int argc, char **argv) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     /* Finalize using standard MPI naming */
-    ret = tftk_mpi_finalize();
-    if (ret != TFTK_MPI_OK) {
-        fprintf(stderr, "TFTK-MPI finalize failed: %s\n", tftk_mpi_error_string(ret));
+    ret = unimpi_finalize();
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi finalize failed: %s\n", unimpi_error_string(ret));
         return 1;
     }
 
