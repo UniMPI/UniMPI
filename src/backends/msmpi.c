@@ -398,6 +398,108 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     unimpi.win_flush_local = (int (*)(int, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_flush_local");
 
+    /* Parallel I/O - File Operations */
+    unimpi.file_open = (int (*)(MPI_Comm, const char*, int, MPI_Info, MPI_File*))
+        unimpi_platform_dlsym(handle, "MPI_File_open");
+    unimpi.file_close = (int (*)(MPI_File*))
+        unimpi_platform_dlsym(handle, "MPI_File_close");
+    unimpi.file_delete = (int (*)(const char*, MPI_Info))
+        unimpi_platform_dlsym(handle, "MPI_File_delete");
+    unimpi.file_set_size = (int (*)(MPI_File, MPI_Offset))
+        unimpi_platform_dlsym(handle, "MPI_File_set_size");
+    unimpi.file_preallocate = (int (*)(MPI_File, MPI_Offset))
+        unimpi_platform_dlsym(handle, "MPI_File_preallocate");
+    unimpi.file_get_size = (int (*)(MPI_File, MPI_Offset*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_size");
+    unimpi.file_get_group = (int (*)(MPI_File, MPI_Group*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_group");
+    unimpi.file_get_amode = (int (*)(MPI_File, int*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_amode");
+
+    /* MPI-3 Extended file operations */
+    unimpi.file_get_info = (int (*)(MPI_File, MPI_Info*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_info");
+    unimpi.file_set_info = (int (*)(MPI_File, MPI_Info))
+        unimpi_platform_dlsym(handle, "MPI_File_set_info");
+    unimpi.file_seek = (int (*)(MPI_File, MPI_Offset, int))
+        unimpi_platform_dlsym(handle, "MPI_File_seek");
+    unimpi.file_get_position = (int (*)(MPI_File, MPI_Offset*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_position");
+    unimpi.file_get_byte_offset = (int (*)(MPI_File, MPI_Offset, MPI_Offset*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_byte_offset");
+
+    /* Parallel I/O - Read/Write */
+    unimpi.file_read = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read");
+    unimpi.file_read_all = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_all");
+    unimpi.file_write = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write");
+    unimpi.file_write_all = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_all");
+    unimpi.file_read_at = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_at");
+    unimpi.file_read_at_all = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_at_all");
+    unimpi.file_write_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_at");
+    unimpi.file_write_at_all = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_at_all");
+
+    /* MPI-3 Extended file read/write */
+    unimpi.file_read_shared = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_shared");
+    unimpi.file_write_shared = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_shared");
+    unimpi.file_read_ordered = (int (*)(MPI_File, void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_ordered");
+    unimpi.file_write_ordered = (int (*)(MPI_File, const void*, int, MPI_Datatype, UNIMPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_ordered");
+
+    /* Parallel I/O - Non-blocking */
+    unimpi.file_iread = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iread");
+    unimpi.file_iwrite = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iwrite");
+    unimpi.file_iread_at = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iread_at");
+    unimpi.file_iwrite_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iwrite_at");
+
+    /* Parallel I/O - Views */
+    unimpi.file_set_view = (int (*)(MPI_File, MPI_Offset, MPI_Datatype, MPI_Datatype, const char*, MPI_Info))
+        unimpi_platform_dlsym(handle, "MPI_File_set_view");
+    unimpi.file_get_view = (int (*)(MPI_File, MPI_Offset*, MPI_Datatype*, MPI_Datatype*, char*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_view");
+
+    /* Dynamic Process Management */
+    unimpi.comm_spawn = (int (*)(const char*, char*[], int, MPI_Info, int, MPI_Comm, MPI_Comm*, int[]))
+        unimpi_platform_dlsym(handle, "MPI_Comm_spawn");
+    unimpi.comm_spawn_multiple = (int (*)(int, char*[], char**[], const int[], const MPI_Info[], int, MPI_Comm, MPI_Comm*, int[]))
+        unimpi_platform_dlsym(handle, "MPI_Comm_spawn_multiple");
+    unimpi.comm_accept = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_accept");
+    unimpi.comm_connect = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_connect");
+    unimpi.comm_disconnect = (int (*)(MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_disconnect");
+
+    /* MPI-3 Comm join */
+    unimpi.comm_join = (int (*)(int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_join");
+
+    /* Port and Name Service */
+    unimpi.open_port = (int (*)(MPI_Info, char*))
+        unimpi_platform_dlsym(handle, "MPI_Open_port");
+    unimpi.close_port = (int (*)(const char*))
+        unimpi_platform_dlsym(handle, "MPI_Close_port");
+    unimpi.publish_name = (int (*)(const char*, MPI_Info, const char*))
+        unimpi_platform_dlsym(handle, "MPI_Publish_name");
+    unimpi.unpublish_name = (int (*)(const char*, MPI_Info, const char*))
+        unimpi_platform_dlsym(handle, "MPI_Unpublish_name");
+    unimpi.lookup_name = (int (*)(const char*, MPI_Info, char*))
+        unimpi_platform_dlsym(handle, "MPI_Lookup_name");
+
     /* Info Operations */
     unimpi.info_create = (int (*)(MPI_Info*))
         unimpi_platform_dlsym(handle, "MPI_Info_create");
