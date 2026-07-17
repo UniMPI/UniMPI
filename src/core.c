@@ -3,6 +3,7 @@
 #include "unimpi_loader.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 /* Global state */
 static int g_initialized = 0;
@@ -55,16 +56,61 @@ int unimpi_init(int *argc, char ***argv) {
 }
 
 int unimpi_init_with(const char *backend_name) {
-    /* TODO: Implement backend-specific initialization */
-    /* For now, set environment and call regular init */
-#ifdef _WIN32
-    char env_str[256];
-    snprintf(env_str, sizeof(env_str), "UNIMPI_BACKEND=%s", backend_name);
-    _putenv(env_str);
-#else
-    setenv("UNIMPI_BACKEND", backend_name, 1);
-#endif
-    return unimpi_init(NULL, NULL);
+    int ret;
+    const char *lib_path = NULL;
+
+    /* Check if already initialized */
+    if (g_initialized) {
+        return UNIMPI_ERR_ALREADY_INITIALIZED;
+    }
+
+    if (!backend_name) {
+        return UNIMPI_ERR_NO_BACKEND;
+    }
+
+    /* Find library path for the specified backend */
+    for (int i = 0; i < UNIMPI_MAX_BACKENDS; i++) {
+        if (strcmp(unimpi_backends[i].name, backend_name) == 0) {
+            lib_path = unimpi_backends[i].lib_name;
+            break;
+        }
+    }
+
+    /* If backend name not recognized, try using it directly as library path */
+    if (!lib_path) {
+        lib_path = backend_name;
+    }
+
+    fprintf(stderr, "[unimpi] Initializing with backend: %s (library: %s)\n", backend_name, lib_path);
+
+    /* Load backend library */
+    ret = unimpi_loader_load(lib_path, &g_handle);
+    if (ret != UNIMPI_OK) {
+        return ret;
+    }
+
+    /* Initialize vtable */
+    ret = unimpi_vtable_init(g_handle);
+    if (ret != UNIMPI_OK) {
+        unimpi_loader_unload(g_handle);
+        g_handle = NULL;
+        return ret;
+    }
+
+    /* Call MPI_Init through vtable */
+    ret = unimpi.init(NULL, NULL);
+    if (ret != 0) {
+        unimpi_vtable_cleanup();
+        unimpi_loader_unload(g_handle);
+        g_handle = NULL;
+        return UNIMPI_ERR_BACKEND_LOAD;
+    }
+
+    /* Set initialized state */
+    g_initialized = 1;
+    g_backend_name = lib_path;
+
+    return UNIMPI_OK;
 }
 
 int unimpi_finalize(void) {

@@ -4,6 +4,14 @@
 /* Standard MPI naming macros */
 /* Include this header or define UNIMPI_USE_STD_NAMES to use */
 
+/* MPI type mappings */
+#define MPI_Status UNIMPI_Status
+
+/* MPI Constants */
+#define MPI_INFO_NULL ((MPI_Info)0)
+#define MPI_LOCK_EXCLUSIVE 1
+#define MPI_LOCK_SHARED 2
+
 /* Environment */
 #define MPI_Init unimpi.init
 #define MPI_Finalize unimpi.finalize
