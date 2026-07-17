@@ -19,6 +19,7 @@ static unimpi_backend_type_t g_backend_type = UNIMPI_BACKEND_UNKNOWN;
 int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle);
 int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle);
 int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle);
+int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle);
 
 /* Get current backend type */
 unimpi_backend_type_t unimpi_get_backend_type(void) {
@@ -61,8 +62,9 @@ int unimpi_vtable_init(unimpi_lib_handle_t handle) {
             return unimpi_vtable_init_openmpi(handle);
         case UNIMPI_BACKEND_INTELMPI:
             return unimpi_vtable_init_intelmpi(handle);
+        case UNIMPI_BACKEND_MSMPI:
+            return unimpi_vtable_init_msmpi(handle);
         case UNIMPI_BACKEND_MPICH:
-        case UNIMPI_BACKEND_MSMPI:     /* MS-MPI is MPICH-derived */
             return unimpi_vtable_init_mpich(handle);
         default:
             /* Try generic initialization - use MPICH style as default */

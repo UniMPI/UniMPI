@@ -47,9 +47,13 @@ int unimpi_loader_detect_backend(const char **out_lib_path) {
 
     /* Priority 3: Auto-detect - try common paths */
     fprintf(stderr, "[unimpi] Auto-detecting MPI backend...\n");
-    /* For now, return first available backend */
-    /* In production, would dlopen each and verify */
+#ifdef _WIN32
+    /* On Windows, try MS-MPI first */
+    *out_lib_path = "msmpi.dll";
+#else
+    /* On Linux, try OpenMPI first */
     *out_lib_path = "libmpi.so.40";  /* OpenMPI v4.x default */
+#endif
     return UNIMPI_OK;
 }
 
@@ -85,6 +89,14 @@ unimpi_backend_type_t unimpi_loader_identify_backend(unimpi_lib_handle_t handle)
     }
 
     fprintf(stderr, "[unimpi] Identifying backend type...\n");
+
+    /* Check for MS-MPI first (Windows-specific) */
+#ifdef _WIN32
+    if (unimpi_platform_dlsym(handle, "MSMPI_Get_version") != NULL) {
+        fprintf(stderr, "[unimpi] Detected MS-MPI backend\n");
+        return UNIMPI_BACKEND_MSMPI;
+    }
+#endif
 
     /* Check for OpenMPI-specific symbols */
     if (unimpi_platform_dlsym(handle, "ompi_mpi_comm_world") != NULL) {
