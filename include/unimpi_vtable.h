@@ -2,6 +2,7 @@
 #define UNIMPI_VTABLE_H
 
 #include <stddef.h>
+#include "unimpi_platform.h"
 
 /* MPI opaque types - forward declarations */
 typedef int MPI_Comm;
@@ -478,5 +479,9 @@ extern unimpi_vtable_t unimpi;
 /* Function count for sanity checks */
 #define UNIMPI_VTABLE_COUNT \
     (sizeof(unimpi_vtable_t) / sizeof(void*))
+
+/* Vtable initialization and cleanup */
+int unimpi_vtable_init(unimpi_lib_handle_t handle);
+void unimpi_vtable_cleanup(void);
 
 #endif /* UNIMPI_VTABLE_H */

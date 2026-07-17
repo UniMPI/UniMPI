@@ -3,6 +3,12 @@
 #include <assert.h>
 #include "unimpi_loader.h"
 
+#ifdef _WIN32
+    #include <stdlib.h>
+    #define setenv(name, value, overwrite) _putenv(name "=" value)
+    #define unsetenv(name) _putenv(name "=")
+#endif
+
 void test_backend_detection_env(void) {
     /* Test with no environment variable */
     unsetenv("UNIMPI_BACKEND");

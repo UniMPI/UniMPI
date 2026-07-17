@@ -2,6 +2,7 @@
 #include "unimpi_vtable.h"
 #include "unimpi_loader.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 /* Global state */
 static int g_initialized = 0;
@@ -56,7 +57,13 @@ int unimpi_init(int *argc, char ***argv) {
 int unimpi_init_with(const char *backend_name) {
     /* TODO: Implement backend-specific initialization */
     /* For now, set environment and call regular init */
+#ifdef _WIN32
+    char env_str[256];
+    snprintf(env_str, sizeof(env_str), "UNIMPI_BACKEND=%s", backend_name);
+    _putenv(env_str);
+#else
     setenv("UNIMPI_BACKEND", backend_name, 1);
+#endif
     return unimpi_init(NULL, NULL);
 }
 
