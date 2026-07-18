@@ -11,6 +11,8 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
         unimpi_platform_dlsym(handle, "MPI_Init");
+    unimpi.init_thread = (int (*)(int*, char***, int, int*))
+        unimpi_platform_dlsym(handle, "MPI_Init_thread");
     unimpi.finalize = (int (*)(void))
         unimpi_platform_dlsym(handle, "MPI_Finalize");
     unimpi.initialized = (int (*)(int*))

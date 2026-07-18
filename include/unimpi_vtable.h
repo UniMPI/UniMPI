@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "unimpi_platform.h"
+#include "unimpi_loader.h"
 
 /* MPI opaque types - forward declarations
  * Use intptr_t to handle both integer handles (MPICH/MS-MPI)
@@ -538,5 +539,8 @@ extern unimpi_vtable_t unimpi;
 /* Vtable initialization and cleanup */
 int unimpi_vtable_init(unimpi_lib_handle_t handle);
 void unimpi_vtable_cleanup(void);
+
+/* Get current backend type */
+unimpi_backend_type_t unimpi_get_backend_type(void);
 
 #endif /* UNIMPI_VTABLE_H */
