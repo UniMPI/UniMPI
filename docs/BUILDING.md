@@ -24,7 +24,16 @@ This guide covers building `unimpi` from source on various platforms.
 
 - CMake >= 3.10
 - C99 compatible compiler (gcc, clang, MSVC)
-- One of: OpenMPI, MPICH, Intel-MPI (Linux/macOS) or MS-MPI (Windows)
+
+> **Note:** Building `unimpi` itself **does NOT require MPI**. It is a runtime-loading wrapper that works with any MPI implementation.
+> MPI is only needed when:
+> - Running real MPI tests (`-DUNIMPI_BUILD_MPI_TESTS=ON`)
+> - Running applications that call MPI functions
+
+### Optional (for testing)
+
+- OpenMPI, MPICH, or Intel-MPI (Linux/macOS)
+- MS-MPI (Windows)
 
 ### Supported Compilers
 
