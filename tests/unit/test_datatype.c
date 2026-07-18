@@ -17,17 +17,21 @@ void test_basic_types(void) {
     /* Just verify the types can be used in communication */
     if (rank == 0) {
         MPI_Status status;
-        /* Send to self to test basic types */
+        MPI_Request req;
+        /* Send to self using async to avoid deadlock */
+        TEST_CHECK_SUCCESS(MPI_Irecv(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD, &req));
         TEST_CHECK_SUCCESS(MPI_Send(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(MPI_Recv(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
         assert(buf_int == 42);
 
+        TEST_CHECK_SUCCESS(MPI_Irecv(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD, &req));
         TEST_CHECK_SUCCESS(MPI_Send(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(MPI_Recv(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
         assert(buf_double > 3.14 && buf_double < 3.15);
 
+        TEST_CHECK_SUCCESS(MPI_Irecv(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD, &req));
         TEST_CHECK_SUCCESS(MPI_Send(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(MPI_Recv(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
         assert(buf_char == 'X');
     }
 
@@ -69,9 +73,11 @@ void test_contiguous_type(void) {
 
     if (rank == 0) {
         MPI_Status status;
-        /* Send to self using new type */
+        MPI_Request req;
+        /* Send to self using new type - use async to avoid deadlock */
+        TEST_CHECK_SUCCESS(MPI_Irecv(recv, 1, newtype, 0, 103, MPI_COMM_WORLD, &req));
         TEST_CHECK_SUCCESS(MPI_Send(data, 1, newtype, 0, 103, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(MPI_Recv(recv, 1, newtype, 0, 103, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
 
         assert(recv[0] == 1);
         assert(recv[1] == 2);
@@ -107,8 +113,11 @@ void test_vector_type(void) {
 
     if (rank == 0) {
         MPI_Status status;
+        MPI_Request req;
+        /* Send to self using async to avoid deadlock */
+        TEST_CHECK_SUCCESS(MPI_Irecv(recv, 4, MPI_DOUBLE, 0, 104, MPI_COMM_WORLD, &req));
         TEST_CHECK_SUCCESS(MPI_Send(data, 1, newtype, 0, 104, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(MPI_Recv(recv, 4, MPI_DOUBLE, 0, 104, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
 
         /* Should receive elements 0,1,4,5 */
         assert(recv[0] == 0.0);
@@ -137,8 +146,11 @@ void test_dup_type(void) {
     int send = 123, recv = 0;
     if (rank == 0) {
         MPI_Status status;
+        MPI_Request req;
+        /* Send to self using async to avoid deadlock */
+        TEST_CHECK_SUCCESS(MPI_Irecv(&recv, 1, dup_type, 0, 105, MPI_COMM_WORLD, &req));
         TEST_CHECK_SUCCESS(MPI_Send(&send, 1, dup_type, 0, 105, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(MPI_Recv(&recv, 1, dup_type, 0, 105, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
         assert(recv == 123);
     }
 
