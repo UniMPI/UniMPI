@@ -124,6 +124,7 @@ int unimpi_loader_load(const char *lib_path, unimpi_lib_handle_t *out_handle) {
     unimpi_lib_handle_t handle = unimpi_platform_dlopen(lib_path);
     if (!handle) {
         fprintf(stderr, "[unimpi:ERROR] Failed to load backend library: %s\n", lib_path);
+        fprintf(stderr, "[unimpi:ERROR] %s\n", unimpi_platform_dlerror());
         return UNIMPI_ERR_BACKEND_LOAD;
     }
 

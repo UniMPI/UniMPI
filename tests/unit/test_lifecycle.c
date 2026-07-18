@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     printf("  Test: query functions...\n");
     int flag;
     assert(unimpi_mpi_initialized(&flag) == UNIMPI_OK);
-    assert(flag == 0);  /* Not currently initialized */
+    assert(flag == 1);  /* Was initialized (MPI_Initialized returns true after init) */
     assert(unimpi_mpi_finalized(&flag) == UNIMPI_OK);
     assert(flag == 1);  /* Was finalized */
     printf("    PASSED\n");

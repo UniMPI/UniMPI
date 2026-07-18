@@ -320,7 +320,11 @@ int unimpi_mpi_initialized(int *flag) {
     if (!flag) {
         return UNIMPI_ERR_INVALID_ARGUMENT;
     }
-    *flag = (g_state == UNIMPI_STATE_ACTIVE) ? 1 : 0;
+    /* MPI_Initialized returns true if MPI was ever initialized */
+    *flag = (g_state == UNIMPI_STATE_ACTIVE ||
+             g_state == UNIMPI_STATE_FINALIZING ||
+             g_state == UNIMPI_STATE_FINALIZED ||
+             g_state == UNIMPI_STATE_FINALIZE_FAILED) ? 1 : 0;
     return UNIMPI_OK;
 }
 
