@@ -46,13 +46,15 @@
 #define MPI_COMM_SELF UNIMPI_COMM_SELF
 
 /* Environment */
-#define MPI_Init unimpi.init
-#define MPI_Finalize unimpi.finalize
-#define MPI_Initialized unimpi.initialized
-#define MPI_Finalized unimpi.finalized
+#define MPI_Init unimpi_init
+#define MPI_Init_thread unimpi_init_thread
+#define MPI_Finalize unimpi_finalize
+#define MPI_Initialized unimpi_mpi_initialized
+#define MPI_Finalized unimpi_mpi_finalized
 #define MPI_Abort unimpi.abort
 #define MPI_Get_processor_name unimpi.get_processor_name
 #define MPI_Get_version unimpi.get_version
+#define MPI_Get_library_version unimpi.get_library_version
 #define MPI_Wtime unimpi.wtime
 #define MPI_Wtick unimpi.wtick
 #define MPI_Barrier unimpi.barrier
@@ -341,7 +343,10 @@
 #define MPI_Info_get_nthkey unimpi.info_get_nthkey
 
 /* Thread Support */
-#define MPI_Init_thread unimpi.init_thread
+#define MPI_THREAD_SINGLE UNIMPI_THREAD_SINGLE
+#define MPI_THREAD_FUNNELED UNIMPI_THREAD_FUNNELED
+#define MPI_THREAD_SERIALIZED UNIMPI_THREAD_SERIALIZED
+#define MPI_THREAD_MULTIPLE UNIMPI_THREAD_MULTIPLE
 #define MPI_Query_thread unimpi.query_thread
 #define MPI_Is_thread_main unimpi.is_thread_main
 
