@@ -98,8 +98,8 @@ static int check_can_initialize(void) {
             /* Allow retry after init failure */
             return UNIMPI_OK;
         case UNIMPI_STATE_FINALIZED:
-            /* Allow re-initialization after finalize */
-            return UNIMPI_OK;
+            /* MPI standard: cannot re-initialize after finalize */
+            return UNIMPI_ERR_FINALIZED;
         case UNIMPI_STATE_FINALIZING:
             return UNIMPI_ERR_INVALID_STATE;
         case UNIMPI_STATE_FINALIZE_FAILED:

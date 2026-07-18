@@ -4,17 +4,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "unimpi.h"
 
-/* Macro to check MPI function success and abort test on failure */
-#define TEST_CHECK_SUCCESS(expr) do { \
-    int _ret = (expr); \
-    if (_ret != 0) { \
-        fprintf(stderr, "Test failed: %s returned %d at %s:%d\n", \
-                #expr, _ret, __FILE__, __LINE__); \
-        MPI_Abort(MPI_COMM_WORLD, 1); \
-        exit(1); \
-    } \
-} while (0)
+static void test_check_success(int result, const char *expression,
+                               const char *file, int line) {
+    if (result != 0) {
+        fprintf(stderr, "%s:%d: %s returned error code %d\n",
+                file, line, expression, result);
+        abort();
+    }
+}
+
+#define TEST_CHECK_SUCCESS(expression) \
+    test_check_success((expression), #expression, __FILE__, __LINE__)
 
 #endif /* TEST_MPI_HELPERS_H */

@@ -117,8 +117,8 @@ void test_allgather(void) {
     assert(recv_buf != NULL);
 
     /* Allgather */
-    TEST_CHECK_SUCCESS(unimpi.allgather(&send_val, 1, MPI_INT, recv_buf, 1, MPI_INT,
-                                        MPI_COMM_WORLD));
+    TEST_CHECK_SUCCESS(unimpi.allgather(&send_val, 1, MPI_INT, recv_buf, 1,
+                                        MPI_INT, MPI_COMM_WORLD));
 
     /* All ranks should have all values */
     for (int i = 0; i < size; i++) {
@@ -176,13 +176,18 @@ void test_barrier(void) {
 
 int main(int argc, char **argv) {
     int ret = unimpi_init(&argc, &argv);
+    const char *backend_name;
+
     if (ret != UNIMPI_OK) {
-        fprintf(stderr, "Failed to initialize TFTK-MPI: %s\n", unimpi_error_string(ret));
+        fprintf(stderr, "Failed to initialize unimpi: %s\n",
+                unimpi_error_string(ret));
         return 1;
     }
 
     printf("Running collective communication tests...\n");
-    printf("Using backend: %s\n", unimpi_get_backend_name());
+    backend_name = unimpi_get_backend_name();
+    assert(backend_name != NULL);
+    printf("Using backend: %s\n", backend_name);
 
     test_bcast();
     test_reduce();
@@ -194,6 +199,6 @@ int main(int argc, char **argv) {
 
     printf("All collective tests passed!\n");
 
-    unimpi_finalize();
+    TEST_CHECK_SUCCESS(unimpi.finalize());
     return 0;
 }
