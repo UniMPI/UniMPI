@@ -1,0 +1,323 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev, master ]
+  pull_request:
+    branches: [ main, dev, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-mpi:
+    name: Linux ${{ matrix.backend }} ${{ matrix.build_type }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: openmpi
+            build_type: Debug
+            packages: openmpi-bin libopenmpi-dev
+          - backend: mpich
+            build_type: Release
+            packages: mpich libmpich-dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools and ${{ matrix.backend }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            ninja-build ${{ matrix.packages }}
+
+      - name: Resolve the matching launcher and library
+        id: mpi
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ matrix.backend }}" == "openmpi" ]]; then
+            if command -v mpirun.openmpi >/dev/null 2>&1; then
+              launcher="$(command -v mpirun.openmpi)"
+            else
+              launcher="$(command -v mpirun)"
+            fi
+            mapfile -t libraries < <(
+              ldconfig -p | awk '$1 ~ /^libmpi\.so\.[0-9]+$/ { print $NF }'
+            )
+            preflags="--oversubscribe"
+          else
+            if command -v mpiexec.mpich >/dev/null 2>&1; then
+              launcher="$(command -v mpiexec.mpich)"
+            else
+              launcher="$(command -v mpiexec)"
+            fi
+            mapfile -t libraries < <(
+              ldconfig -p | awk '$1 ~ /^libmpich\.so\.[0-9]+$/ { print $NF }'
+            )
+            preflags=""
+          fi
+
+          if [[ ${#libraries[@]} -eq 0 ]]; then
+            echo "Could not resolve the ${{ matrix.backend }} runtime library" >&2
+            exit 1
+          fi
+          library="$(readlink -f "${libraries[0]}")"
+          test -x "$launcher"
+          test -f "$library"
+
+          {
+            echo "launcher=$launcher"
+            echo "library=$library"
+            echo "preflags=$preflags"
+          } >> "$GITHUB_OUTPUT"
+
+          "$launcher" --version
+          echo "Runtime library: $library"
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_C_EXTENSIONS=OFF
+          -DUNIMPI_BUILD_TESTS=ON
+          -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
+          -DMPIEXEC_PREFLAGS=${{ steps.mpi.outputs.preflags }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test with real MPI
+        run: ctest --test-dir build --output-on-failure --timeout 180
+
+  linux-intelmpi:
+    name: Linux Intel MPI Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add the official Intel oneAPI repository
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            gpg-agent ninja-build wget
+          wget -qO- \
+            https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | gpg --dearmor \
+            | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg >/dev/null
+          repository="deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg]"
+          repository="$repository https://apt.repos.intel.com/oneapi all main"
+          echo "$repository" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update
+
+      - name: Install Intel MPI
+        run: >-
+          sudo apt-get install --no-install-recommends -y
+          intel-oneapi-mpi-devel
+
+      - name: Resolve the Intel MPI runtime tuple
+        id: mpi
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix=/opt/intel/oneapi/mpi/latest
+          launcher="$prefix/bin/mpiexec"
+          library=""
+          for candidate in \
+            "$prefix/lib/libmpi.so" \
+            "$prefix/lib/release/libmpi.so"; do
+            if [[ -f "$candidate" ]]; then
+              library="$(readlink -f "$candidate")"
+              break
+            fi
+          done
+          if [[ -z "$library" ]]; then
+            echo "Could not resolve the Intel MPI runtime library" >&2
+            exit 1
+          fi
+          launcher="$(readlink -f "$launcher")"
+          test -x "$launcher"
+          {
+            echo "launcher=$launcher"
+            echo "library=$library"
+          } >> "$GITHUB_OUTPUT"
+          echo "LD_LIBRARY_PATH=$(dirname "$library"):$prefix/lib" >> "$GITHUB_ENV"
+          "$launcher" --version
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_EXTENSIONS=OFF
+          -DUNIMPI_BUILD_TESTS=ON
+          -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
+          "-DMPIEXEC_PREFLAGS=-bootstrap;fork"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test with real Intel MPI
+        run: ctest --test-dir build --output-on-failure --timeout 180
+
+  windows-msmpi:
+    name: Windows x64 MS-MPI ${{ matrix.build_type }}
+    runs-on: windows-2022
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build_type: Release
+            shared: OFF
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the official MS-MPI runtime
+        shell: pwsh
+        run: |
+          $uri = "https://download.microsoft.com/download/7/2/7/" + `
+            "72731ebb-b63c-4170-ade7-836966263a8f/msmpisetup.exe"
+          $installer = Join-Path $env:RUNNER_TEMP "msmpisetup.exe"
+          $expected = "d09862be9fec0fe5377e2c472dd8c9aff9fbc2db7f2c1f488" + `
+            "0a59ed64d51339bdfe3cd70af0f3443ba864bfedf42d684c943ba8c805774816c" + `
+            "7760f70749d0f0"
+          Invoke-WebRequest -Uri $uri -OutFile $installer
+          $actual = (Get-FileHash $installer -Algorithm SHA512).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) {
+            throw "MS-MPI installer checksum mismatch"
+          }
+          $process = Start-Process -FilePath $installer -ArgumentList "-unattend" `
+            -Wait -PassThru
+          if ($process.ExitCode -notin 0, 3010) {
+            throw "MS-MPI installer failed with exit code $($process.ExitCode)"
+          }
+
+      - name: Configure the MS-MPI runtime
+        shell: pwsh
+        run: |
+          $runtime = Join-Path $env:ProgramFiles "Microsoft MPI\Bin"
+          $library = Join-Path $runtime "msmpi.dll"
+          $launcher = Join-Path $runtime "mpiexec.exe"
+          if (!(Test-Path $library) -or !(Test-Path $launcher)) {
+            throw "MS-MPI runtime installation is incomplete"
+          }
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+            -DBUILD_SHARED_LIBS=OFF `
+            -DUNIMPI_BUILD_TESTS=ON `
+            "-DMPIEXEC_EXECUTABLE=$launcher"
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Test with real MS-MPI
+        run: >-
+          ctest --test-dir build -C ${{ matrix.build_type }}
+          --output-on-failure --timeout 180
+
+  macos-mpi:
+    name: macOS ${{ matrix.backend }} ${{ matrix.build_type }}
+    runs-on: macos-14
+    timeout-minutes: 35
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: openmpi
+            formula: open-mpi
+            launcher: mpirun
+            build_type: Debug
+            preflags: --oversubscribe
+          - backend: mpich
+            formula: mpich
+            launcher: mpiexec
+            build_type: Release
+            preflags: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ${{ matrix.formula }} and Ninja
+        run: |
+          for formula in open-mpi mpich; do
+            if brew list --formula "$formula" >/dev/null 2>&1; then
+              brew unlink "$formula"
+            fi
+          done
+          brew install ${{ matrix.formula }} ninja
+
+      - name: Resolve the Homebrew runtime
+        id: mpi
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="$(brew --prefix ${{ matrix.formula }})"
+          launcher="$prefix/bin/${{ matrix.launcher }}"
+          test -x "$launcher"
+          {
+            echo "launcher=$launcher"
+          } >> "$GITHUB_OUTPUT"
+          "$launcher" --version
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_C_EXTENSIONS=OFF
+          -DUNIMPI_BUILD_TESTS=ON
+          -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
+          -DMPIEXEC_PREFLAGS=${{ matrix.preflags }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test with real MPI
+        run: ctest --test-dir build --output-on-failure --timeout 180
+
+  strict-c99-sanitizers:
+    name: Linux strict C99 ASan, UBSan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Clang and Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y clang ninja-build
+
+      - name: Configure strict instrumented build
+        run: >-
+          cmake -S . -B build-sanitized -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_C_EXTENSIONS=OFF
+          -DCMAKE_C_FLAGS=-Werror\ -fsanitize=address,undefined\ -fno-omit-frame-pointer
+          -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined
+          -DUNIMPI_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build-sanitized --parallel
+
+      - name: Test under sanitizers
+        run: >-
+          ctest --test-dir build-sanitized
+          --output-on-failure --timeout 180
