@@ -13,6 +13,68 @@ typedef struct ompi_group_t* ompi_group_t;
 typedef struct ompi_win_t* ompi_win_t;
 typedef struct ompi_file_t* ompi_file_t;
 
+/* Initialize OpenMPI-specific error codes */
+static void init_openmpi_error_codes(void) {
+    /* OpenMPI error codes differ from MPICH standard */
+    MPI_SUCCESS = 0;
+    MPI_ERR_BUFFER = 1;
+    MPI_ERR_COUNT = 2;
+    MPI_ERR_TYPE = 3;
+    MPI_ERR_TAG = 4;
+    MPI_ERR_COMM = 5;
+    MPI_ERR_RANK = 6;
+    MPI_ERR_REQUEST = 7;
+    MPI_ERR_ROOT = 8;
+    MPI_ERR_GROUP = 9;
+    MPI_ERR_OP = 10;
+    MPI_ERR_TOPOLOGY = 11;
+    MPI_ERR_DIMS = 12;
+    MPI_ERR_ARG = 13;
+    MPI_ERR_UNKNOWN = 14;
+    MPI_ERR_TRUNCATE = 15;
+    MPI_ERR_OTHER = 16;
+    MPI_ERR_INTERN = 17;
+    MPI_ERR_IN_STATUS = 17;    /* OpenMPI: 17 (MPICH: 18) */
+    MPI_ERR_PENDING = 18;      /* OpenMPI: 18 (MPICH: 19) */
+    MPI_ERR_ACCESS = 20;
+    MPI_ERR_AMODE = 21;
+    MPI_ERR_ASSERT = 22;
+    MPI_ERR_BAD_FILE = 23;
+    MPI_ERR_BASE = 24;
+    MPI_ERR_CONVERSION = 25;
+    MPI_ERR_DISP = 26;
+    MPI_ERR_DUP_DATAREP = 27;
+    MPI_ERR_FILE_EXISTS = 28;
+    MPI_ERR_FILE_IN_USE = 29;
+    MPI_ERR_FILE = 30;
+    MPI_ERR_INFO_KEY = 31;
+    MPI_ERR_INFO_NOKEY = 32;
+    MPI_ERR_INFO_VALUE = 33;
+    MPI_ERR_INFO = 34;
+    MPI_ERR_IO = 35;
+    MPI_ERR_KEYVAL = 36;
+    MPI_ERR_LOCKTYPE = 37;
+    MPI_ERR_NAME = 38;
+    MPI_ERR_NO_MEM = 39;
+    MPI_ERR_NOT_SAME = 40;
+    MPI_ERR_NO_SPACE = 41;
+    MPI_ERR_NO_SUCH_FILE = 42;
+    MPI_ERR_PORT = 43;
+    MPI_ERR_QUOTA = 44;
+    MPI_ERR_READ_ONLY = 45;
+    MPI_ERR_RMA_CONFLICT = 46;  /* OpenMPI specific */
+    MPI_ERR_RMA_SYNC = 47;      /* OpenMPI specific */
+    MPI_ERR_SERVICE = 48;       /* OpenMPI specific */
+    MPI_ERR_SIZE = 49;          /* OpenMPI specific */
+    MPI_ERR_SPAWN = 50;         /* OpenMPI specific */
+    MPI_ERR_UNSUPPORTED_DATAREP = 51;      /* OpenMPI specific */
+    MPI_ERR_UNSUPPORTED_OPERATION = 52;  /* OpenMPI specific */
+    MPI_ERR_WIN = 53;           /* OpenMPI specific */
+    MPI_ERR_PROC_FAILED = 74;   /* OpenMPI: MPI_ERR_PROC_ABORTED */
+    MPI_ERR_PROC_FAIL_STOP = 75;
+    MPI_ERR_LASTCODE = 76;
+}
+
 /* Helper: Get pointer value from OpenMPI global symbol */
 static intptr_t get_ompi_ptr(unimpi_lib_handle_t handle, const char *symbol) {
     void **ptr = (void**)unimpi_platform_dlsym(handle, symbol);
@@ -624,6 +686,9 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     get_openmpi_comm_values(handle);
     get_openmpi_datatype_values(handle);
     get_openmpi_op_values(handle);
+
+    /* Initialize OpenMPI-specific error codes */
+    init_openmpi_error_codes();
 
     return UNIMPI_OK;
 }

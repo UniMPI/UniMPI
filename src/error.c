@@ -7,64 +7,64 @@
 /* Global debug level */
 static int g_debug_level = UNIMPI_DBG_NONE;
 
-/* MPI Error Code Globals - initialized by backend */
+/* MPI Error Code Globals - initialized by each backend */
 int MPI_SUCCESS = 0;
-int MPI_ERR_BUFFER = 1;
-int MPI_ERR_COUNT = 2;
-int MPI_ERR_TYPE = 3;
-int MPI_ERR_TAG = 4;
-int MPI_ERR_COMM = 5;
-int MPI_ERR_RANK = 6;
-int MPI_ERR_REQUEST = 7;
-int MPI_ERR_ROOT = 8;
-int MPI_ERR_GROUP = 9;
-int MPI_ERR_OP = 10;
-int MPI_ERR_TOPOLOGY = 11;
-int MPI_ERR_DIMS = 12;
-int MPI_ERR_ARG = 13;
-int MPI_ERR_UNKNOWN = 14;
-int MPI_ERR_TRUNCATE = 15;
-int MPI_ERR_OTHER = 16;
-int MPI_ERR_INTERN = 17;
-int MPI_ERR_IN_STATUS = 18;
-int MPI_ERR_PENDING = 19;
-int MPI_ERR_ACCESS = 20;
-int MPI_ERR_AMODE = 21;
-int MPI_ERR_ASSERT = 22;
-int MPI_ERR_BAD_FILE = 23;
-int MPI_ERR_BASE = 24;
-int MPI_ERR_CONVERSION = 25;
-int MPI_ERR_DISP = 26;
-int MPI_ERR_DUP_DATAREP = 27;
-int MPI_ERR_FILE_EXISTS = 28;
-int MPI_ERR_FILE_IN_USE = 29;
-int MPI_ERR_FILE = 30;
-int MPI_ERR_INFO_KEY = 31;
-int MPI_ERR_INFO_NOKEY = 32;
-int MPI_ERR_INFO_VALUE = 33;
-int MPI_ERR_INFO = 34;
-int MPI_ERR_IO = 35;
-int MPI_ERR_KEYVAL = 36;
-int MPI_ERR_LOCKTYPE = 37;
-int MPI_ERR_NAME = 38;
-int MPI_ERR_NO_MEM = 39;
-int MPI_ERR_NOT_SAME = 40;
-int MPI_ERR_NO_SPACE = 41;
-int MPI_ERR_NO_SUCH_FILE = 42;
-int MPI_ERR_PORT = 43;
-int MPI_ERR_QUOTA = 44;
-int MPI_ERR_READ_ONLY = 45;
-int MPI_ERR_RMA_CONFLICT = 46;
-int MPI_ERR_RMA_SYNC = 47;
-int MPI_ERR_SERVICE = 48;
-int MPI_ERR_SIZE = 49;
-int MPI_ERR_SPAWN = 50;
-int MPI_ERR_UNSUPPORTED_DATAREP = 51;
-int MPI_ERR_UNSUPPORTED_OPERATION = 52;
-int MPI_ERR_WIN = 53;
-int MPI_ERR_PROC_FAILED = 54;
-int MPI_ERR_PROC_FAIL_STOP = 55;
-int MPI_ERR_LASTCODE = 56;
+int MPI_ERR_BUFFER = 0;
+int MPI_ERR_COUNT = 0;
+int MPI_ERR_TYPE = 0;
+int MPI_ERR_TAG = 0;
+int MPI_ERR_COMM = 0;
+int MPI_ERR_RANK = 0;
+int MPI_ERR_REQUEST = 0;
+int MPI_ERR_ROOT = 0;
+int MPI_ERR_GROUP = 0;
+int MPI_ERR_OP = 0;
+int MPI_ERR_TOPOLOGY = 0;
+int MPI_ERR_DIMS = 0;
+int MPI_ERR_ARG = 0;
+int MPI_ERR_UNKNOWN = 0;
+int MPI_ERR_TRUNCATE = 0;
+int MPI_ERR_OTHER = 0;
+int MPI_ERR_INTERN = 0;
+int MPI_ERR_IN_STATUS = 0;
+int MPI_ERR_PENDING = 0;
+int MPI_ERR_ACCESS = 0;
+int MPI_ERR_AMODE = 0;
+int MPI_ERR_ASSERT = 0;
+int MPI_ERR_BAD_FILE = 0;
+int MPI_ERR_BASE = 0;
+int MPI_ERR_CONVERSION = 0;
+int MPI_ERR_DISP = 0;
+int MPI_ERR_DUP_DATAREP = 0;
+int MPI_ERR_FILE_EXISTS = 0;
+int MPI_ERR_FILE_IN_USE = 0;
+int MPI_ERR_FILE = 0;
+int MPI_ERR_INFO_KEY = 0;
+int MPI_ERR_INFO_NOKEY = 0;
+int MPI_ERR_INFO_VALUE = 0;
+int MPI_ERR_INFO = 0;
+int MPI_ERR_IO = 0;
+int MPI_ERR_KEYVAL = 0;
+int MPI_ERR_LOCKTYPE = 0;
+int MPI_ERR_NAME = 0;
+int MPI_ERR_NO_MEM = 0;
+int MPI_ERR_NOT_SAME = 0;
+int MPI_ERR_NO_SPACE = 0;
+int MPI_ERR_NO_SUCH_FILE = 0;
+int MPI_ERR_PORT = 0;
+int MPI_ERR_QUOTA = 0;
+int MPI_ERR_READ_ONLY = 0;
+int MPI_ERR_RMA_CONFLICT = 0;
+int MPI_ERR_RMA_SYNC = 0;
+int MPI_ERR_SERVICE = 0;
+int MPI_ERR_SIZE = 0;
+int MPI_ERR_SPAWN = 0;
+int MPI_ERR_UNSUPPORTED_DATAREP = 0;
+int MPI_ERR_UNSUPPORTED_OPERATION = 0;
+int MPI_ERR_WIN = 0;
+int MPI_ERR_PROC_FAILED = 0;
+int MPI_ERR_PROC_FAIL_STOP = 0;
+int MPI_ERR_LASTCODE = 0;
 
 /* Thread levels */
 int MPI_THREAD_SINGLE = 0;
@@ -149,28 +149,9 @@ int MPI_MAX_OBJECT_NAME = 128;
 int MPI_MAX_PORT_NAME = 256;
 int MPI_MAX_DATAREP_STRING = 128;
 
-/* Initialize error codes for specific backend
- * Called during vtable_init for each backend
+/* Error code initialization is handled by each backend
+ * in their respective vtable_init_* functions
  */
-int unimpi_init_error_codes(unimpi_backend_type_t backend_type) {
-    switch (backend_type) {
-        case UNIMPI_BACKEND_OPENMPI:
-            /* OpenMPI uses standard error class values */
-            /* Most error codes match standard, but some differ */
-            MPI_ERR_IN_STATUS = 17;    /* OpenMPI specific */
-            MPI_ERR_PENDING = 18;      /* OpenMPI specific */
-            break;
-
-        case UNIMPI_BACKEND_MPICH:
-        case UNIMPI_BACKEND_INTELMPI:
-        case UNIMPI_BACKEND_MSMPI:
-        default:
-            /* Legacy backends use standard values */
-            /* Already set to defaults above */
-            break;
-    }
-    return UNIMPI_OK;
-}
 
 const char* unimpi_mpi_error_string(int error_code) {
     /* Map MPI error codes to strings using runtime values */

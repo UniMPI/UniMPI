@@ -116,11 +116,6 @@ int unimpi_vtable_init(unimpi_lib_handle_t handle) {
             break;
     }
 
-    /* Initialize error codes for the detected backend */
-    if (ret == UNIMPI_OK) {
-        unimpi_init_error_codes(g_backend_type);
-    }
-
     return ret;
 }
 

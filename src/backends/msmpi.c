@@ -4,6 +4,68 @@
 #include "unimpi.h"
 #include <string.h>
 
+/* MS-MPI uses MPICH-compatible error codes */
+static void init_msmpi_error_codes(void) {
+    /* MS-MPI (based on MPICH) uses standard error class values */
+    MPI_SUCCESS = 0;
+    MPI_ERR_BUFFER = 1;
+    MPI_ERR_COUNT = 2;
+    MPI_ERR_TYPE = 3;
+    MPI_ERR_TAG = 4;
+    MPI_ERR_COMM = 5;
+    MPI_ERR_RANK = 6;
+    MPI_ERR_REQUEST = 7;
+    MPI_ERR_ROOT = 8;
+    MPI_ERR_GROUP = 9;
+    MPI_ERR_OP = 10;
+    MPI_ERR_TOPOLOGY = 11;
+    MPI_ERR_DIMS = 12;
+    MPI_ERR_ARG = 13;
+    MPI_ERR_UNKNOWN = 14;
+    MPI_ERR_TRUNCATE = 15;
+    MPI_ERR_OTHER = 16;
+    MPI_ERR_INTERN = 17;
+    MPI_ERR_IN_STATUS = 18;
+    MPI_ERR_PENDING = 19;
+    MPI_ERR_ACCESS = 20;
+    MPI_ERR_AMODE = 21;
+    MPI_ERR_ASSERT = 22;
+    MPI_ERR_BAD_FILE = 23;
+    MPI_ERR_BASE = 24;
+    MPI_ERR_CONVERSION = 25;
+    MPI_ERR_DISP = 26;
+    MPI_ERR_DUP_DATAREP = 27;
+    MPI_ERR_FILE_EXISTS = 28;
+    MPI_ERR_FILE_IN_USE = 29;
+    MPI_ERR_FILE = 30;
+    MPI_ERR_INFO_KEY = 31;
+    MPI_ERR_INFO_NOKEY = 32;
+    MPI_ERR_INFO_VALUE = 33;
+    MPI_ERR_INFO = 34;
+    MPI_ERR_IO = 35;
+    MPI_ERR_KEYVAL = 36;
+    MPI_ERR_LOCKTYPE = 37;
+    MPI_ERR_NAME = 38;
+    MPI_ERR_NO_MEM = 39;
+    MPI_ERR_NOT_SAME = 40;
+    MPI_ERR_NO_SPACE = 41;
+    MPI_ERR_NO_SUCH_FILE = 42;
+    MPI_ERR_PORT = 43;
+    MPI_ERR_QUOTA = 44;
+    MPI_ERR_READ_ONLY = 45;
+    MPI_ERR_RMA_CONFLICT = 46;
+    MPI_ERR_RMA_SYNC = 47;
+    MPI_ERR_SERVICE = 48;
+    MPI_ERR_SIZE = 49;
+    MPI_ERR_SPAWN = 50;
+    MPI_ERR_UNSUPPORTED_DATAREP = 51;
+    MPI_ERR_UNSUPPORTED_OPERATION = 52;
+    MPI_ERR_WIN = 53;
+    MPI_ERR_PROC_FAILED = 54;
+    MPI_ERR_PROC_FAIL_STOP = 55;
+    MPI_ERR_LASTCODE = 56;
+}
+
 /* MS-MPI uses different predefined communicator values than MPICH */
 /* MPI_COMM_WORLD = 0x44000000, MPI_COMM_SELF = 0x44000001 */
 
@@ -581,6 +643,9 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Set MS-MPI specific communicator values */
     UNIMPI_COMM_WORLD = (MPI_Comm)0x44000000;
     UNIMPI_COMM_SELF = (MPI_Comm)0x44000001;
+
+    /* Initialize MS-MPI error codes (same as MPICH) */
+    init_msmpi_error_codes();
 
     return UNIMPI_OK;
 }

@@ -74,7 +74,6 @@ UNIMPI_API const char* unimpi_get_library_path(void);
 UNIMPI_API const char* unimpi_error_string(int error_code);
 UNIMPI_API int unimpi_error_class(int error_code, int *error_class);
 UNIMPI_API const char* unimpi_mpi_error_string(int error_code);
-UNIMPI_API int unimpi_init_error_codes(unimpi_backend_type_t backend_type);
 
 /* Diagnostics */
 UNIMPI_API void unimpi_set_debug_level(int level);
