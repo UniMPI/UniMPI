@@ -1,6 +1,9 @@
 # Tests CMakeLists.txt
 enable_testing()
 
+# Include directories for tests
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/mpi)
+
 # Find MPI for testing
 find_package(MPI COMPONENTS C)
 
@@ -46,13 +49,17 @@ function(add_mpi_test name target np)
     endif()
 endfunction()
 
+# ============================================
+# Internal tests (unimpi internal functions, no MPI dependency)
+# ============================================
+
 # Error handling test
-add_executable(test_error unit/test_error.c)
+add_executable(test_error internal/test_error.c)
 target_link_libraries(test_error unimpi)
 add_test(NAME test_error COMMAND test_error)
 
 # Loader test
-add_executable(test_loader unit/test_loader.c)
+add_executable(test_loader internal/test_loader.c)
 target_link_libraries(test_loader unimpi)
 add_test(NAME test_loader COMMAND test_loader)
 
@@ -63,39 +70,46 @@ set_target_properties(fake_mpi PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-# Lifecycle tests
-add_executable(test_lifecycle unit/test_lifecycle.c)
+# Lifecycle tests (internal API)
+add_executable(test_lifecycle internal/test_lifecycle.c)
 target_link_libraries(test_lifecycle unimpi)
 add_test(NAME test_lifecycle COMMAND test_lifecycle)
 
-add_executable(test_lifecycle_macros unit/test_lifecycle_macros.c)
+# Vtable validation test
+add_executable(test_vtable_validation internal/test_vtable_validation.c)
+target_link_libraries(test_vtable_validation unimpi)
+add_test(NAME test_vtable_validation COMMAND test_vtable_validation)
+
+# ============================================
+# MPI layer tests (standard MPI API)
+# ============================================
+
+# Lifecycle tests (MPI standard API via macros)
+add_executable(test_lifecycle_macros mpi/test_lifecycle_macros.c)
 target_link_libraries(test_lifecycle_macros unimpi)
 add_test(NAME test_lifecycle_macros_init
     COMMAND test_lifecycle_macros init)
 add_test(NAME test_lifecycle_macros_thread
     COMMAND test_lifecycle_macros thread)
 
-# Vtable validation test
-add_executable(test_vtable_validation unit/test_vtable_validation.c)
-target_link_libraries(test_vtable_validation unimpi)
-add_test(NAME test_vtable_validation COMMAND test_vtable_validation)
-
 # Point-to-point communication tests
-add_executable(test_p2p unit/test_p2p.c)
+add_executable(test_p2p mpi/test_p2p.c)
 target_link_libraries(test_p2p unimpi)
 add_mpi_test(test_p2p test_p2p 2)
 
 # Collective communication tests
-add_executable(test_collective unit/test_collective.c)
+add_executable(test_collective mpi/test_collective.c)
 target_link_libraries(test_collective unimpi)
 add_mpi_test(test_collective test_collective 4)
 
 # Datatype tests
-add_executable(test_datatype unit/test_datatype.c)
+add_executable(test_datatype mpi/test_datatype.c)
 target_link_libraries(test_datatype unimpi)
 add_mpi_test(test_datatype test_datatype 2)
 
+# ============================================
 # Benchmarks (not run by ctest by default)
+# ============================================
 add_executable(bench_latency benchmark/bench_latency.c)
 target_link_libraries(bench_latency unimpi)
 
