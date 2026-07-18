@@ -12,26 +12,26 @@ void test_basic_types(void) {
     double buf_double = 3.14159;
     char buf_char = 'X';
 
-    TEST_CHECK_SUCCESS(unimpi.comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
 
     /* Just verify the types can be used in communication */
     if (rank == 0) {
         MPI_Status status;
         /* Send to self to test basic types */
-        TEST_CHECK_SUCCESS(unimpi.send(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(unimpi.recv(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Send(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Recv(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD, &status));
         assert(buf_int == 42);
 
-        TEST_CHECK_SUCCESS(unimpi.send(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(unimpi.recv(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Send(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Recv(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD, &status));
         assert(buf_double > 3.14 && buf_double < 3.15);
 
-        TEST_CHECK_SUCCESS(unimpi.send(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(unimpi.recv(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Send(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Recv(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD, &status));
         assert(buf_char == 'X');
     }
 
-    TEST_CHECK_SUCCESS(unimpi.barrier(MPI_COMM_WORLD));
+    TEST_CHECK_SUCCESS(MPI_Barrier(MPI_COMM_WORLD));
 
     if (rank == 0) {
         printf("  Basic types test passed\n");
@@ -42,11 +42,11 @@ void test_type_size(void) {
     int rank;
     int size_int, size_double;
 
-    TEST_CHECK_SUCCESS(unimpi.comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
 
     /* Get type sizes */
-    TEST_CHECK_SUCCESS(unimpi.type_size(MPI_INT, &size_int));
-    TEST_CHECK_SUCCESS(unimpi.type_size(MPI_DOUBLE, &size_double));
+    TEST_CHECK_SUCCESS(MPI_Type_size(MPI_INT, &size_int));
+    TEST_CHECK_SUCCESS(MPI_Type_size(MPI_DOUBLE, &size_double));
 
     if (rank == 0) {
         assert(size_int == sizeof(int));
@@ -61,17 +61,17 @@ void test_contiguous_type(void) {
     int data[4] = {1, 2, 3, 4};
     int recv[4] = {0, 0, 0, 0};
 
-    TEST_CHECK_SUCCESS(unimpi.comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
 
     /* Create contiguous type of 4 ints */
-    TEST_CHECK_SUCCESS(unimpi.type_contiguous(4, MPI_INT, &newtype));
-    TEST_CHECK_SUCCESS(unimpi.type_commit(&newtype));
+    TEST_CHECK_SUCCESS(MPI_Type_contiguous(4, MPI_INT, &newtype));
+    TEST_CHECK_SUCCESS(MPI_Type_commit(&newtype));
 
     if (rank == 0) {
         MPI_Status status;
         /* Send to self using new type */
-        TEST_CHECK_SUCCESS(unimpi.send(data, 1, newtype, 0, 103, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(unimpi.recv(recv, 1, newtype, 0, 103, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Send(data, 1, newtype, 0, 103, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Recv(recv, 1, newtype, 0, 103, MPI_COMM_WORLD, &status));
 
         assert(recv[0] == 1);
         assert(recv[1] == 2);
@@ -79,8 +79,8 @@ void test_contiguous_type(void) {
         assert(recv[3] == 4);
     }
 
-    TEST_CHECK_SUCCESS(unimpi.type_free(&newtype));
-    TEST_CHECK_SUCCESS(unimpi.barrier(MPI_COMM_WORLD));
+    TEST_CHECK_SUCCESS(MPI_Type_free(&newtype));
+    TEST_CHECK_SUCCESS(MPI_Barrier(MPI_COMM_WORLD));
 
     if (rank == 0) {
         printf("  Contiguous type test passed\n");
@@ -94,7 +94,7 @@ void test_vector_type(void) {
     double data[16];
     double recv[8] = {0};
 
-    TEST_CHECK_SUCCESS(unimpi.comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
 
     /* Initialize data */
     for (int i = 0; i < 16; i++) {
@@ -102,13 +102,13 @@ void test_vector_type(void) {
     }
 
     /* Create vector type: 2 blocks of 2 doubles, stride 4 */
-    TEST_CHECK_SUCCESS(unimpi.type_vector(2, 2, 4, MPI_DOUBLE, &newtype));
-    TEST_CHECK_SUCCESS(unimpi.type_commit(&newtype));
+    TEST_CHECK_SUCCESS(MPI_Type_vector(2, 2, 4, MPI_DOUBLE, &newtype));
+    TEST_CHECK_SUCCESS(MPI_Type_commit(&newtype));
 
     if (rank == 0) {
         MPI_Status status;
-        TEST_CHECK_SUCCESS(unimpi.send(data, 1, newtype, 0, 104, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(unimpi.recv(recv, 4, MPI_DOUBLE, 0, 104, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Send(data, 1, newtype, 0, 104, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Recv(recv, 4, MPI_DOUBLE, 0, 104, MPI_COMM_WORLD, &status));
 
         /* Should receive elements 0,1,4,5 */
         assert(recv[0] == 0.0);
@@ -117,8 +117,8 @@ void test_vector_type(void) {
         assert(recv[3] == 5.0);
     }
 
-    TEST_CHECK_SUCCESS(unimpi.type_free(&newtype));
-    TEST_CHECK_SUCCESS(unimpi.barrier(MPI_COMM_WORLD));
+    TEST_CHECK_SUCCESS(MPI_Type_free(&newtype));
+    TEST_CHECK_SUCCESS(MPI_Barrier(MPI_COMM_WORLD));
 
     if (rank == 0) {
         printf("  Vector type test passed\n");
@@ -129,21 +129,21 @@ void test_dup_type(void) {
     int rank;
     MPI_Datatype dup_type;
 
-    TEST_CHECK_SUCCESS(unimpi.comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
 
     /* Duplicate MPI_INT */
-    TEST_CHECK_SUCCESS(unimpi.type_dup(MPI_INT, &dup_type));
+    TEST_CHECK_SUCCESS(MPI_Type_dup(MPI_INT, &dup_type));
 
     int send = 123, recv = 0;
     if (rank == 0) {
         MPI_Status status;
-        TEST_CHECK_SUCCESS(unimpi.send(&send, 1, dup_type, 0, 105, MPI_COMM_WORLD));
-        TEST_CHECK_SUCCESS(unimpi.recv(&recv, 1, dup_type, 0, 105, MPI_COMM_WORLD, &status));
+        TEST_CHECK_SUCCESS(MPI_Send(&send, 1, dup_type, 0, 105, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Recv(&recv, 1, dup_type, 0, 105, MPI_COMM_WORLD, &status));
         assert(recv == 123);
     }
 
-    TEST_CHECK_SUCCESS(unimpi.type_free(&dup_type));
-    TEST_CHECK_SUCCESS(unimpi.barrier(MPI_COMM_WORLD));
+    TEST_CHECK_SUCCESS(MPI_Type_free(&dup_type));
+    TEST_CHECK_SUCCESS(MPI_Barrier(MPI_COMM_WORLD));
 
     if (rank == 0) {
         printf("  Dup type test passed\n");
@@ -151,12 +151,11 @@ void test_dup_type(void) {
 }
 
 int main(int argc, char **argv) {
-    int ret = unimpi_init(&argc, &argv);
+    int ret = MPI_Init(&argc, &argv);
     const char *backend_name;
 
-    if (ret != UNIMPI_OK) {
-        fprintf(stderr, "Failed to initialize unimpi: %s\n",
-                unimpi_error_string(ret));
+    if (ret != MPI_SUCCESS) {
+        fprintf(stderr, "Failed to initialize MPI: error code %d\n", ret);
         return 1;
     }
 
@@ -173,6 +172,6 @@ int main(int argc, char **argv) {
 
     printf("All datatype tests passed!\n");
 
-    TEST_CHECK_SUCCESS(unimpi.finalize());
+    TEST_CHECK_SUCCESS(MPI_Finalize());
     return 0;
 }
