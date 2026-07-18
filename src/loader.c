@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 /* Backend definitions */
 const unimpi_backend_info_t unimpi_backends[UNIMPI_MAX_BACKENDS] = {
@@ -11,6 +12,45 @@ const unimpi_backend_info_t unimpi_backends[UNIMPI_MAX_BACKENDS] = {
     {UNIMPI_BACKEND_INTELMPI,  "intelmpi",  "libmpi.so",    3},
     {UNIMPI_BACKEND_MSMPI,     "msmpi",     "msmpi.dll",    5}   /* Windows only */
 };
+
+/* Check if a backend is supported on the current platform */
+static int backend_supported_on_platform(unimpi_backend_type_t type) {
+#ifdef _WIN32
+    /* Windows only supports MS-MPI */
+    return type == UNIMPI_BACKEND_MSMPI;
+#elif defined(__APPLE__)
+    /* macOS supports OpenMPI and MPICH */
+    return type == UNIMPI_BACKEND_OPENMPI || type == UNIMPI_BACKEND_MPICH;
+#elif defined(__linux__)
+    /* Linux supports OpenMPI, MPICH, and Intel MPI */
+    return type == UNIMPI_BACKEND_OPENMPI ||
+           type == UNIMPI_BACKEND_MPICH ||
+           type == UNIMPI_BACKEND_INTELMPI;
+#else
+    (void)type;
+    return 0;
+#endif
+}
+
+/* Check if the library path indicates a standard MPI ABI library */
+static int path_names_standard_abi(const char *path) {
+    if (!path) return 0;
+
+    size_t length = strlen(path);
+    char lowered[256];
+
+    if (length >= sizeof(lowered)) {
+        length = sizeof(lowered) - 1;
+    }
+
+    for (size_t i = 0; i < length; i++) {
+        lowered[i] = (char)tolower((unsigned char)path[i]);
+    }
+    lowered[length] = '\0';
+
+    return strstr(lowered, "mpi_abi") != NULL ||
+           strstr(lowered, "mpi-abi") != NULL;
+}
 
 const char* unimpi_loader_get_env_backend(void) {
     return getenv("UNIMPI_BACKEND");
@@ -61,6 +101,13 @@ int unimpi_loader_load(const char *lib_path, unimpi_lib_handle_t *out_handle) {
     if (!lib_path) {
         fprintf(stderr, "[unimpi:ERROR] No backend library path provided\n");
         return UNIMPI_ERR_NO_BACKEND;
+    }
+
+    /* Reject standard MPI ABI libraries */
+    if (path_names_standard_abi(lib_path)) {
+        fprintf(stderr, "[unimpi:ERROR] Standard MPI ABI library is not supported: %s\n", lib_path);
+        fprintf(stderr, "  unimpi requires a native MPI implementation (OpenMPI, MPICH, etc.)\n");
+        return UNIMPI_ERR_ABI_MISMATCH;
     }
 
     fprintf(stderr, "[unimpi] Loading backend library: %s\n", lib_path);
@@ -123,6 +170,32 @@ unimpi_backend_type_t unimpi_loader_identify_backend(unimpi_lib_handle_t handle)
 
     fprintf(stderr, "[unimpi:WARN] Could not identify backend type\n");
     return UNIMPI_BACKEND_UNKNOWN;
+}
+
+int unimpi_loader_check_platform_support(unimpi_backend_type_t backend, const char *path) {
+    /* Check if the backend is supported on this platform */
+    if (!backend_supported_on_platform(backend)) {
+        fprintf(stderr, "[unimpi:ERROR] Backend '%s' is not supported on this platform\n",
+                unimpi_backends[backend].name);
+#ifdef _WIN32
+        fprintf(stderr, "  Only MS-MPI is supported on Windows\n");
+#elif defined(__APPLE__)
+        fprintf(stderr, "  OpenMPI and MPICH are supported on macOS\n");
+#elif defined(__linux__)
+        fprintf(stderr, "  OpenMPI, MPICH, and Intel MPI are supported on Linux\n");
+#endif
+        return UNIMPI_ERR_BACKEND_NOT_SUPPORTED;
+    }
+
+    /* Additional check: reject standard ABI libraries for MPICH/IntelMPI */
+    if ((backend == UNIMPI_BACKEND_MPICH || backend == UNIMPI_BACKEND_INTELMPI) &&
+        path_names_standard_abi(path)) {
+        fprintf(stderr, "[unimpi:ERROR] Standard MPI ABI library is not supported: %s\n", path);
+        fprintf(stderr, "  unimpi requires native MPICH/Intel MPI libraries\n");
+        return UNIMPI_ERR_ABI_MISMATCH;
+    }
+
+    return UNIMPI_OK;
 }
 
 void unimpi_diagnose_backend(const char *lib_path) {

@@ -89,6 +89,13 @@ int unimpi_vtable_init(unimpi_lib_handle_t handle) {
     g_backend_type = unimpi_loader_identify_backend(handle);
     g_backend_handle = handle;
 
+    /* Check if the backend is supported on this platform */
+    const char *lib_path = unimpi_get_backend_name();
+    ret = unimpi_loader_check_platform_support(g_backend_type, lib_path);
+    if (ret != UNIMPI_OK) {
+        return ret;
+    }
+
     /* Initialize based on backend type */
     switch (g_backend_type) {
         case UNIMPI_BACKEND_OPENMPI:
