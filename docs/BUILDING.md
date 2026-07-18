@@ -7,10 +7,13 @@ This guide covers building `unimpi` from source on various platforms.
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
+- [Quick Build](#quick-build)
 - [Linux / macOS](#linux--macos)
 - [Windows](#windows)
 - [CMake Options](#cmake-options)
 - [Installation](#installation)
+- [Consuming with CMake](#consuming-with-cmake)
+- [Real MPI Tests](#real-mpi-tests)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -21,7 +24,7 @@ This guide covers building `unimpi` from source on various platforms.
 
 - CMake >= 3.10
 - C99 compatible compiler (gcc, clang, MSVC)
-- At least one MPI implementation
+- One of: OpenMPI, MPICH, Intel-MPI (Linux/macOS) or MS-MPI (Windows)
 
 ### Supported Compilers
 
@@ -34,9 +37,7 @@ This guide covers building `unimpi` from source on various platforms.
 
 ---
 
-## Linux / macOS
-
-### Quick Build
+## Quick Build
 
 ```bash
 # Clone repository
@@ -51,17 +52,33 @@ cmake --build build
 cd build && ctest --output-on-failure
 ```
 
+On Windows with Visual Studio:
+```cmd
+cmake -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
+ctest -C Release --output-on-failure
+```
+
+---
+
+## Linux / macOS
+
+### Standard Build
+
+```bash
+cmake -B build .
+cmake --build build
+```
+
 ### With Specific MPI
 
 ```bash
 # With OpenMPI
-cmake -B build . \
-    -DCMAKE_C_COMPILER=mpicc
+cmake -B build . -DCMAKE_C_COMPILER=mpicc
 
 # With Intel MPI (after sourcing setvars.sh)
 source /opt/intel/oneapi/setvars.sh
-cmake -B build . \
-    -DCMAKE_C_COMPILER=mpiicc
+cmake -B build . -DCMAKE_C_COMPILER=mpiicc
 
 # With MPICH
 cmake -B build . \
@@ -84,8 +101,8 @@ cmake -B build . -DBUILD_SHARED_LIBS=ON
 
 ### Using Visual Studio
 
-1. Install MS-MPI SDK
-2. Open CMake GUI or use command line:
+1. Install MS-MPI SDK from https://www.microsoft.com/download/details.aspx?id=57467
+2. Build:
 
 ```cmd
 cmake -B build -G "Visual Studio 17 2022" -A x64
@@ -97,8 +114,7 @@ cmake --build build --config Release
 ```bash
 # Ensure MinGW is in PATH
 cmake -B build -G "MinGW Makefiles" \
-    -DCMAKE_C_COMPILER=gcc \
-    -DCMAKE_PREFIX_PATH="C:/Program Files/Microsoft MPI/Bin"
+    -DCMAKE_C_COMPILER=gcc
 cmake --build build
 ```
 
@@ -110,25 +126,25 @@ cmake --build build
 |--------|---------|-------------|
 | `UNIMPI_BUILD_EXAMPLES` | ON | Build example programs |
 | `UNIMPI_BUILD_TESTS` | ON | Build test suite |
+| `UNIMPI_BUILD_MPI_TESTS` | OFF | Register tests requiring MPI runtime |
 | `UNIMPI_ENABLE_STD_MACROS` | OFF | Enable standard MPI naming macros |
 | `BUILD_SHARED_LIBS` | OFF | Build shared instead of static library |
 | `CMAKE_INSTALL_PREFIX` | /usr/local | Installation prefix |
 
-### Example: Minimal Build
+### Examples
 
 ```bash
+# Minimal build (library only)
 cmake -B build . \
     -DUNIMPI_BUILD_EXAMPLES=OFF \
     -DUNIMPI_BUILD_TESTS=OFF \
     -DCMAKE_BUILD_TYPE=Release
-```
 
-### Example: Debug Build with Tests
-
-```bash
+# Debug build with all tests
 cmake -B build . \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DUNIMPI_BUILD_TESTS=ON
+    -DUNIMPI_BUILD_TESTS=ON \
+    -DUNIMPI_BUILD_MPI_TESTS=ON
 ```
 
 ---
@@ -149,7 +165,7 @@ cmake -B build . -DCMAKE_INSTALL_PREFIX=$HOME/.local
 cmake --build build
 cmake --install build
 
-# Update PATH and LD_LIBRARY_PATH
+# Update PATH
 export PATH=$HOME/.local/bin:$PATH
 export LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH
 ```
@@ -162,52 +178,59 @@ sudo cmake --build build --target uninstall
 
 ---
 
-## Platform-Specific Notes
+## Consuming with CMake
 
-### Ubuntu/Debian
+After installation, downstream projects can use:
 
-```bash
-# Install dependencies
-sudo apt-get install cmake build-essential
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(myapp C)
 
-# Install MPI (choose one)
-sudo apt-get install libopenmpi-dev    # OpenMPI
-sudo apt-get install libmpich-dev      # MPICH
+find_package(unimpi CONFIG REQUIRED)
+add_executable(myapp myapp.c)
+target_link_libraries(myapp PRIVATE unimpi::unimpi)
 ```
 
-### CentOS/RHEL/Fedora
+Configure with the install prefix:
 
 ```bash
-# Install dependencies
-sudo yum install cmake gcc
-
-# Install MPI (choose one)
-sudo yum install openmpi-devel         # OpenMPI
-sudo yum install mpich-devel           # MPICH
+cmake -B build . -DCMAKE_PREFIX_PATH=$HOME/.local
+cmake --build build
 ```
 
-### macOS
+---
+
+## Real MPI Tests
+
+By default, only fixture-based unit tests run. To enable real MPI tests:
 
 ```bash
-# Using Homebrew
-brew install cmake
+cmake -B build . \
+    -DUNIMPI_BUILD_MPI_TESTS=ON \
+    -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun
 
-# Install MPI (choose one)
-brew install openmpi                   # OpenMPI
-brew install mpich                     # MPICH
+cmake --build build
+ctest --output-on-failure
 ```
 
-### Windows with MSYS2
+For specific backends:
 
 ```bash
-# Install MinGW and MS-MPI
-pacman -S mingw-w64-x86_64-cmake
-pacman -S mingw-w64-x86_64-gcc
+# OpenMPI with oversubscribe
+cmake -B build . \
+    -DUNIMPI_BUILD_MPI_TESTS=ON \
+    -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun \
+    -DMPIEXEC_PREFLAGS=--oversubscribe
 
-# Download MS-MPI SDK from Microsoft
-# Set environment variables
-export MSMPI_INC=/c/Program\ Files/Microsoft\ SDKs/MPI/Include
-export MSMPI_LIB64=/c/Program\ Files/Microsoft\ SDKs/MPI/Lib/x64
+# Intel MPI
+cmake -B build . \
+    -DUNIMPI_BUILD_MPI_TESTS=ON \
+    -DMPIEXEC_EXECUTABLE=/opt/intel/oneapi/mpi/latest/bin/mpiexec
+
+# Windows MS-MPI
+cmake -B build . \
+    -DUNIMPI_BUILD_MPI_TESTS=ON \
+    -DMPIEXEC_EXECUTABLE="C:/Program Files/Microsoft MPI/Bin/mpiexec.exe"
 ```
 
 ---
@@ -226,24 +249,17 @@ cmake -B build . \
     -DMPI_C_LIBRARIES=/usr/lib/x86_64-linux-gnu/libmpi.so
 ```
 
-### Linker errors on Linux
+### Linker errors on Linux (dlopen)
 
+Should be automatic, but if needed:
 ```bash
-# If getting undefined reference to dlopen
-# (should be automatic, but if needed):
 cmake -B build . -DCMAKE_C_FLAGS="-ldl"
 ```
 
 ### Windows: Cannot find msmpi.dll
 
-```cmd
-# Ensure MS-MPI is installed
-# Download from: https://www.microsoft.com/download/details.aspx?id=57467
-
-# Set environment
-cmake -B build . \
-    -DMSMPI_DIR="C:/Program Files/Microsoft MPI"
-```
+Download and install MS-MPI from:
+https://www.microsoft.com/download/details.aspx?id=57467
 
 ### Tests fail to find MPI library
 
@@ -253,20 +269,36 @@ export LD_LIBRARY_PATH=/path/to/mpi/lib:$LD_LIBRARY_PATH
 cd build && ctest
 ```
 
+### Windows: "The system cannot find the file specified"
+
+Ensure MS-MPI Bin directory is in PATH:
+```cmd
+set PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%
+```
+
 ---
 
-## Verifying Build
+## Platform-Specific Notes
+
+### Ubuntu/Debian
 
 ```bash
-# Check library was built
-ls -la build/libunimpi.a
+sudo apt-get install cmake build-essential
+sudo apt-get install libopenmpi-dev    # or libmpich-dev
+```
 
-# Check examples were built
-ls -la build/examples/minimal
+### CentOS/RHEL/Fedora
 
-# Run a quick test
-export UNIMPI_BACKEND=openmpi
-./build/examples/minimal
+```bash
+sudo yum install cmake gcc
+sudo yum install openmpi-devel         # or mpich-devel
+```
+
+### macOS (Homebrew)
+
+```bash
+brew install cmake
+brew install openmpi                   # or mpich
 ```
 
 ---
@@ -276,7 +308,7 @@ export UNIMPI_BACKEND=openmpi
 ### Building for Windows from Linux (MinGW)
 
 ```bash
-# Install MinGW cross-compiler
+# Install cross-compiler
 sudo apt-get install mingw-w64
 
 # Create toolchain file
