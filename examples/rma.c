@@ -6,6 +6,7 @@
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
+    int ret;
     int rank, size;
     MPI_Win win;
     double *win_buf = NULL;
@@ -15,7 +16,11 @@ int main(int argc, char **argv) {
     MPI_Info info;
 
     /* Initialize unimpi */
-    unimpi_init(&argc, &argv);
+    ret = unimpi_init(&argc, &argv);
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi init failed: %s\n", unimpi_error_string(ret));
+        return 1;
+    }
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -65,7 +70,11 @@ int main(int argc, char **argv) {
 
     MPI_Win_free(&win);
     MPI_Info_free(&info);
-    unimpi_finalize();
+    ret = unimpi_finalize();
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi finalize failed: %s\n", unimpi_error_string(ret));
+        return 1;
+    }
 
     return 0;
 }

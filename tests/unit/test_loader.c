@@ -1,10 +1,15 @@
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "unimpi.h"
 #include "unimpi_loader.h"
 
 #ifdef _WIN32
-    #include <stdlib.h>
     #define setenv(name, value, overwrite) _putenv(name "=" value)
     #define unsetenv(name) _putenv(name "=")
 #endif
@@ -48,12 +53,20 @@ void test_backend_info(void) {
     printf("  Backend info tests passed\n");
 }
 
+void test_output_validation(void) {
+    assert(unimpi_loader_detect_backend(NULL) == UNIMPI_ERR_INVALID_ARGUMENT);
+    assert(unimpi_loader_load("unused-library-name", NULL) ==
+           UNIMPI_ERR_INVALID_ARGUMENT);
+
+    printf("  Loader output validation passed\n");
+}
+
 int main(void) {
     printf("Running loader tests...\n");
 
     test_backend_detection_env();
     test_backend_info();
-
+    test_output_validation();
 
     printf("All loader tests passed!\n");
     return 0;

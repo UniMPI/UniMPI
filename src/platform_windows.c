@@ -27,3 +27,11 @@ const char* unimpi_platform_dlerror(void) {
                    error_buffer, sizeof(error_buffer), NULL);
     return error_buffer;
 }
+
+const char* unimpi_platform_load_advice(void) {
+    return "Troubleshooting:\n"
+           "1. Check if MS-MPI is installed: C:\\Program Files\\Microsoft MPI\\Bin\n"
+           "2. Verify msmpi.dll is in C:\\Windows\\System32\\\n"
+           "3. Ensure the executable architecture matches the MPI library\n"
+           "4. Reinstall Microsoft MPI Runtime if needed\n";
+}

@@ -5,6 +5,10 @@ project(unimpi VERSION 0.1.0 LANGUAGES C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wall -Wextra -Werror=implicit-function-declaration)
+endif()
+
 # Options
 option(UNIMPI_BUILD_EXAMPLES "Build example programs" ON)
 option(UNIMPI_BUILD_TESTS "Build tests" ON)

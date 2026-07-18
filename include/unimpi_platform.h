@@ -21,5 +21,6 @@ unimpi_lib_handle_t unimpi_platform_dlopen(const char *path);
 void unimpi_platform_dlclose(unimpi_lib_handle_t handle);
 void* unimpi_platform_dlsym(unimpi_lib_handle_t handle, const char *symbol);
 const char* unimpi_platform_dlerror(void);
+const char* unimpi_platform_load_advice(void);
 
 #endif /* UNIMPI_PLATFORM_H */

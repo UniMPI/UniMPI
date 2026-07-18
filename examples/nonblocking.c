@@ -5,6 +5,7 @@
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
+    int ret;
     int rank, size;
     int sendbuf, recvbuf;
     MPI_Request requests[2];
@@ -12,7 +13,11 @@ int main(int argc, char **argv) {
     int flag;
 
     /* Initialize unimpi (auto-detects backend) */
-    unimpi_init(&argc, &argv);
+    ret = unimpi_init(&argc, &argv);
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi init failed: %s\n", unimpi_error_string(ret));
+        return 1;
+    }
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -79,6 +84,10 @@ int main(int argc, char **argv) {
     MPI_Wait(&barrier_req, &statuses[0]);
     printf("Rank %d: Barrier completed\n", rank);
 
-    unimpi_finalize();
+    ret = unimpi_finalize();
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi finalize failed: %s\n", unimpi_error_string(ret));
+        return 1;
+    }
     return 0;
 }

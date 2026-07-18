@@ -2,6 +2,7 @@
 #include "unimpi_vtable.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 /* Global debug level */
 static int g_debug_level = UNIMPI_DBG_NONE;
@@ -263,6 +264,10 @@ const char* unimpi_error_string(int error_code) {
 }
 
 int unimpi_error_class(int error_code, int *error_class) {
+    if (!error_class) {
+        return UNIMPI_ERR_INVALID_ARGUMENT;
+    }
+
     /* Map TFTK errors to MPI error classes */
     switch (error_code) {
         case UNIMPI_OK:

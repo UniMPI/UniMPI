@@ -5,14 +5,20 @@
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
+    int ret;
     int rank, size;
     int sendbuf, recvbuf;
     int *sendbuf_all = NULL;
     int *recvbuf_all = NULL;
     int root = 0;
+    size_t gathered_count;
 
     /* Initialize unimpi */
-    unimpi_init(&argc, &argv);
+    ret = unimpi_init(&argc, &argv);
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi init failed: %s\n", unimpi_error_string(ret));
+        return 1;
+    }
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -22,6 +28,13 @@ int main(int argc, char **argv) {
         unimpi_finalize();
         return 1;
     }
+
+    if ((size_t)size > (size_t)-1 / (size_t)size / sizeof(*recvbuf_all)) {
+        fprintf(stderr, "Collective buffer size is too large\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return 1;
+    }
+    gathered_count = (size_t)size * (size_t)size;
 
     printf("Rank %d: Starting collective operations example\n", rank);
 
@@ -56,8 +69,15 @@ int main(int argc, char **argv) {
     printf("Rank %d: AllReduce result (MAX) = %d (expected: %d)\n", rank, recvbuf, size);
 
     /* ==================== Gather ==================== */
-    sendbuf_all = (int *)malloc(size * sizeof(int));
-    recvbuf_all = (int *)malloc(size * sizeof(int));
+    sendbuf_all = (int *)malloc((size_t)size * sizeof(*sendbuf_all));
+    recvbuf_all = (int *)malloc(gathered_count * sizeof(*recvbuf_all));
+    if (!sendbuf_all || !recvbuf_all) {
+        fprintf(stderr, "Failed to allocate collective buffers\n");
+        free(sendbuf_all);
+        free(recvbuf_all);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return 1;
+    }
 
     for (int i = 0; i < size; i++) {
         sendbuf_all[i] = rank * 10 + i;  /* Each rank creates unique data */
@@ -70,12 +90,12 @@ int main(int argc, char **argv) {
     printf("\n");
 
     MPI_Gather(sendbuf_all, size, MPI_INT,
-               recvbuf_all, size, MPI_INT,
+               rank == root ? recvbuf_all : NULL, size, MPI_INT,
                root, MPI_COMM_WORLD);
 
     if (rank == root) {
         printf("Rank %d: Gather received: ", rank);
-        for (int i = 0; i < size * size; i++) {
+        for (size_t i = 0; i < gathered_count; i++) {
             printf("%d ", recvbuf_all[i]);
         }
         printf("\n");
@@ -87,7 +107,7 @@ int main(int argc, char **argv) {
                   MPI_COMM_WORLD);
 
     printf("Rank %d: AllGather received: ", rank);
-    for (int i = 0; i < size * size; i++) {
+    for (size_t i = 0; i < gathered_count; i++) {
         printf("%d ", recvbuf_all[i]);
     }
     printf("\n");
@@ -121,6 +141,10 @@ int main(int argc, char **argv) {
     free(recvbuf_all);
 
     printf("Rank %d: Collective operations complete\n", rank);
-    unimpi_finalize();
+    ret = unimpi_finalize();
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi finalize failed: %s\n", unimpi_error_string(ret));
+        return 1;
+    }
     return 0;
 }

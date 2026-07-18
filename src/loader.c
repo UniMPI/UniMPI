@@ -61,6 +61,10 @@ const char* unimpi_loader_get_env_libpath(void) {
 }
 
 int unimpi_loader_detect_backend(const char **out_lib_path) {
+    if (!out_lib_path) {
+        return UNIMPI_ERR_INVALID_ARGUMENT;
+    }
+
     const char *env_backend = unimpi_loader_get_env_backend();
     const char *env_libpath = unimpi_loader_get_env_libpath();
 
@@ -98,6 +102,11 @@ int unimpi_loader_detect_backend(const char **out_lib_path) {
 }
 
 int unimpi_loader_load(const char *lib_path, unimpi_lib_handle_t *out_handle) {
+    if (!out_handle) {
+        return UNIMPI_ERR_INVALID_ARGUMENT;
+    }
+    *out_handle = NULL;
+
     if (!lib_path) {
         fprintf(stderr, "[unimpi:ERROR] No backend library path provided\n");
         return UNIMPI_ERR_NO_BACKEND;
@@ -214,12 +223,8 @@ void unimpi_diagnose_backend(const char *lib_path) {
     if (ret != UNIMPI_OK) {
         fprintf(stderr, "Failed to load backend: %s\n", unimpi_error_string(ret));
 
-        /* Try to provide more specific advice */
         if (ret == UNIMPI_ERR_BACKEND_LOAD) {
-            fprintf(stderr, "\nTroubleshooting:\n");
-            fprintf(stderr, "1. Check if the library exists: ls -la %s\n", lib_path);
-            fprintf(stderr, "2. Check library dependencies: ldd %s\n", lib_path);
-            fprintf(stderr, "3. Ensure LD_LIBRARY_PATH includes the MPI library directory\n");
+            fprintf(stderr, "%s", unimpi_platform_load_advice());
         }
         return;
     }
