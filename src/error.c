@@ -249,22 +249,17 @@ int unimpi_error_class(int error_code, int *error_class) {
         return UNIMPI_ERR_INVALID_ARGUMENT;
     }
 
-    /* Map TFTK errors to MPI error classes */
-    switch (error_code) {
-        case UNIMPI_OK:
-            *error_class = 0; /* MPI_SUCCESS */
-            break;
-        case UNIMPI_ERR_INVALID_ARGUMENT:
-            *error_class = 2; /* MPI_ERR_ARG */
-            break;
-        case UNIMPI_ERR_NO_BACKEND:
-        case UNIMPI_ERR_BACKEND_LOAD:
-        case UNIMPI_ERR_BACKEND_INIT_FAILED:
-            *error_class = 15; /* MPI_ERR_OTHER */
-            break;
-        default:
-            *error_class = 15; /* MPI_ERR_OTHER */
-            break;
+    /* Map TFTK errors to MPI error classes using runtime variables */
+    if (error_code == UNIMPI_OK) {
+        *error_class = MPI_SUCCESS;
+    } else if (error_code == UNIMPI_ERR_INVALID_ARGUMENT) {
+        *error_class = MPI_ERR_ARG;
+    } else if (error_code == UNIMPI_ERR_NO_BACKEND ||
+               error_code == UNIMPI_ERR_BACKEND_LOAD ||
+               error_code == UNIMPI_ERR_BACKEND_INIT_FAILED) {
+        *error_class = MPI_ERR_OTHER;
+    } else {
+        *error_class = MPI_ERR_UNKNOWN;
     }
     return UNIMPI_OK;
 }
