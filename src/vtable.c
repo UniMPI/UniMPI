@@ -92,17 +92,29 @@ int unimpi_vtable_init(unimpi_lib_handle_t handle) {
     /* Initialize based on backend type */
     switch (g_backend_type) {
         case UNIMPI_BACKEND_OPENMPI:
-            return unimpi_vtable_init_openmpi(handle);
+            ret = unimpi_vtable_init_openmpi(handle);
+            break;
         case UNIMPI_BACKEND_INTELMPI:
-            return unimpi_vtable_init_intelmpi(handle);
+            ret = unimpi_vtable_init_intelmpi(handle);
+            break;
         case UNIMPI_BACKEND_MSMPI:
-            return unimpi_vtable_init_msmpi(handle);
+            ret = unimpi_vtable_init_msmpi(handle);
+            break;
         case UNIMPI_BACKEND_MPICH:
-            return unimpi_vtable_init_mpich(handle);
+            ret = unimpi_vtable_init_mpich(handle);
+            break;
         default:
             /* Try generic initialization - use MPICH style as default */
-            return unimpi_vtable_init_mpich(handle);
+            ret = unimpi_vtable_init_mpich(handle);
+            break;
     }
+
+    /* Initialize error codes for the detected backend */
+    if (ret == UNIMPI_OK) {
+        unimpi_init_error_codes(g_backend_type);
+    }
+
+    return ret;
 }
 
 /* Cleanup vtable */

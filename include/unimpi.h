@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 #include "unimpi_vtable.h"
+#include "unimpi_loader.h"
+#include "unimpi_errors.h"
 
 /* Compatibility typedef - UNIMPI_Status is the same as MPI_Status */
 typedef MPI_Status UNIMPI_Status;
@@ -48,6 +50,8 @@ const char* unimpi_get_backend_name(void);
 /* Error handling */
 const char* unimpi_error_string(int error_code);
 int unimpi_error_class(int error_code, int *error_class);
+const char* unimpi_mpi_error_string(int error_code);
+int unimpi_init_error_codes(unimpi_backend_type_t backend_type);
 
 /* Diagnostics */
 void unimpi_set_debug_level(int level);

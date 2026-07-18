@@ -22,15 +22,50 @@ typedef intptr_t MPI_Message;
 typedef long MPI_Aint;
 typedef long long MPI_Offset;
 
-/* Status struct - must be defined before MPI_Status */
-struct MPI_Status {
+/* Status struct - must be defined before MPI_Status
+ * Union to accommodate different backend layouts:
+ * - Legacy (MPICH/MS-MPI): 20 bytes with internal count fields
+ * - OpenMPI: 96+ bytes with different layout
+ */
+
+/* Legacy backend status layout (MPICH/Intel MPI/MS-MPI) */
+struct unimpi_status_legacy {
+    int count_lo;                /* Lower 32-bits of count */
+    int count_hi_and_cancelled;  /* Upper 32-bits and cancelled flag */
     int MPI_SOURCE;
     int MPI_TAG;
     int MPI_ERROR;
-    int count;
-    int cancelled;
+};  /* 20 bytes total */
+
+/* OpenMPI status layout (larger, different field order) */
+struct unimpi_status_openmpi {
+    int MPI_SOURCE;
+    int MPI_TAG;
+    int MPI_ERROR;
+    int _cancelled;
+    size_t _ucount;              /* Actual count as size_t */
+    /* OpenMPI may have additional internal fields */
+    char _padding[80];           /* Ensure at least 96 bytes total */
+};  /* ~96-100 bytes */
+
+/* Union accommodating all backend status layouts */
+union MPI_Status {
+    /* Common interface - standard field access */
+    struct {
+        int MPI_SOURCE;
+        int MPI_TAG;
+        int MPI_ERROR;
+        int _internal[5];        /* Reserved for internal use */
+    } base;
+
+    /* Backend-specific layouts */
+    struct unimpi_status_legacy legacy;
+    struct unimpi_status_openmpi openmpi;
+
+    /* Raw buffer for maximum size */
+    char _raw[128];
 };
-typedef struct MPI_Status MPI_Status;
+typedef union MPI_Status MPI_Status;
 
 /* MPI predefined operations - will be resolved at runtime from backend */
 extern MPI_Op UNIMPI_MAX;
