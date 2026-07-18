@@ -70,6 +70,34 @@ set_target_properties(fake_mpi PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
+# Fake MPI libraries for backend identification testing
+add_library(fake_openmpi_identity SHARED fixtures/fake_mpi_identity.c)
+target_compile_definitions(fake_openmpi_identity PRIVATE UNIMPI_FAKE_OPENMPI)
+set_target_properties(fake_openmpi_identity PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_library(fake_mpich_identity SHARED fixtures/fake_mpi_identity.c)
+target_compile_definitions(fake_mpich_identity PRIVATE UNIMPI_FAKE_MPICH)
+set_target_properties(fake_mpich_identity PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_library(fake_intelmpi_identity SHARED fixtures/fake_mpi_identity.c)
+target_compile_definitions(fake_intelmpi_identity PRIVATE UNIMPI_FAKE_INTELMPI)
+set_target_properties(fake_intelmpi_identity PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_library(fake_unknown_identity SHARED fixtures/fake_mpi_identity.c)
+set_target_properties(fake_unknown_identity PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
 # Lifecycle tests (internal API)
 add_executable(test_lifecycle internal/test_lifecycle.c)
 target_link_libraries(test_lifecycle unimpi)
@@ -79,6 +107,16 @@ add_test(NAME test_lifecycle COMMAND test_lifecycle)
 add_executable(test_vtable_validation internal/test_vtable_validation.c)
 target_link_libraries(test_vtable_validation unimpi)
 add_test(NAME test_vtable_validation COMMAND test_vtable_validation)
+
+# Backend identification test
+add_executable(test_backend_identification internal/test_backend_identification.c)
+target_link_libraries(test_backend_identification unimpi)
+add_test(NAME test_backend_identification
+    COMMAND test_backend_identification
+            $<TARGET_FILE:fake_openmpi_identity>
+            $<TARGET_FILE:fake_mpich_identity>
+            $<TARGET_FILE:fake_intelmpi_identity>
+            $<TARGET_FILE:fake_unknown_identity>)
 
 # ============================================
 # MPI layer tests (standard MPI API)
