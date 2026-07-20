@@ -1,4 +1,5 @@
 /* src/backends/openmpi.c */
+#include <stdio.h>
 #include "unimpi_vtable.h"
 #include "unimpi_platform.h"
 #include "unimpi.h"
@@ -75,7 +76,9 @@ static void init_openmpi_error_codes(void) {
     MPI_ERR_LASTCODE = 76;
 }
 
-/* Helper: Get pointer value from OpenMPI global symbol */
+/* Helper: Get pointer value from OpenMPI global symbol (for communicators)
+ * For communicator symbols, we need to dereference to get the actual pointer value
+ */
 static intptr_t get_ompi_ptr(unimpi_lib_handle_t handle, const char *symbol) {
     void **ptr = (void**)unimpi_platform_dlsym(handle, symbol);
     if (ptr) {
@@ -84,50 +87,150 @@ static intptr_t get_ompi_ptr(unimpi_lib_handle_t handle, const char *symbol) {
     return 0;
 }
 
-/* Get predefined communicator values from OpenMPI globals */
+/* Helper: Get the address of an OpenMPI global symbol (for datatypes/ops)
+ * For datatype/op symbols, the symbol itself is the pointer we need
+ */
+static intptr_t get_ompi_symbol_addr(unimpi_lib_handle_t handle, const char *symbol) {
+    void *addr = unimpi_platform_dlsym(handle, symbol);
+    if (addr) {
+        return (intptr_t)addr;
+    }
+    return 0;
+}
+
+/* Get predefined communicator values from OpenMPI globals
+ * Note: OpenMPI uses different symbol patterns across versions:
+ * - Modern OpenMPI (≥1.7): Uses "_addr" suffix symbols that contain pointers
+ * - Older OpenMPI (<1.7): Direct symbols are the pointer values
+ */
 static int get_openmpi_comm_values(unimpi_lib_handle_t handle) {
-    intptr_t world = get_ompi_ptr(handle, "ompi_mpi_comm_world");
-    intptr_t self = get_ompi_ptr(handle, "ompi_mpi_comm_self");
-    if (world) UNIMPI_COMM_WORLD = world;
-    if (self) UNIMPI_COMM_SELF = self;
+    intptr_t world = 0;
+    intptr_t self = 0;
+
+    /* Try _addr variants first (modern OpenMPI, initialized before MPI_Init) */
+    void **world_addr = (void**)unimpi_platform_dlsym(handle, "ompi_mpi_comm_world_addr");
+    void **self_addr = (void**)unimpi_platform_dlsym(handle, "ompi_mpi_comm_self_addr");
+
+    if (world_addr && *world_addr) {
+        world = (intptr_t)(*world_addr);
+    }
+    if (self_addr && *self_addr) {
+        self = (intptr_t)(*self_addr);
+    }
+
+    /* Fallback to direct symbols for older OpenMPI versions */
+    if (!world) {
+        void *world_direct = unimpi_platform_dlsym(handle, "ompi_mpi_comm_world");
+        if (world_direct) {
+            world = (intptr_t)world_direct;
+        }
+    }
+    if (!self) {
+        void *self_direct = unimpi_platform_dlsym(handle, "ompi_mpi_comm_self");
+        if (self_direct) {
+            self = (intptr_t)self_direct;
+        }
+    }
+
+    /* Validate that we got valid communicator values */
+    if (!world || !self) {
+        /* At least one communicator failed to load - this is a critical error */
+        fprintf(stderr, "[unimpi:ERROR] Failed to load OpenMPI communicator symbols\n");
+        fprintf(stderr, "  UNIMPI_COMM_WORLD: %s\n", world ? "OK" : "FAILED");
+        fprintf(stderr, "  UNIMPI_COMM_SELF: %s\n", self ? "OK" : "FAILED");
+        return UNIMPI_ERR_BACKEND_INIT_FAILED;
+    }
+
+    UNIMPI_COMM_WORLD = world;
+    UNIMPI_COMM_SELF = self;
+
     return UNIMPI_OK;
 }
 
-/* Get predefined datatype values from OpenMPI globals */
+/* Get predefined datatype values from OpenMPI globals
+ * For datatypes, we use get_ompi_symbol_addr which returns the symbol address directly
+ */
 static int get_openmpi_datatype_values(unimpi_lib_handle_t handle) {
-    UNIMPI_CHAR = get_ompi_ptr(handle, "ompi_mpi_char");
-    UNIMPI_SIGNED_CHAR = get_ompi_ptr(handle, "ompi_mpi_signed_char");
-    UNIMPI_UNSIGNED_CHAR = get_ompi_ptr(handle, "ompi_mpi_unsigned_char");
-    UNIMPI_BYTE = get_ompi_ptr(handle, "ompi_mpi_byte");
-    UNIMPI_SHORT = get_ompi_ptr(handle, "ompi_mpi_short");
-    UNIMPI_UNSIGNED_SHORT = get_ompi_ptr(handle, "ompi_mpi_unsigned_short");
-    UNIMPI_INT = get_ompi_ptr(handle, "ompi_mpi_int");
-    UNIMPI_UNSIGNED = get_ompi_ptr(handle, "ompi_mpi_unsigned");
-    UNIMPI_LONG = get_ompi_ptr(handle, "ompi_mpi_long");
-    UNIMPI_UNSIGNED_LONG = get_ompi_ptr(handle, "ompi_mpi_unsigned_long");
-    UNIMPI_FLOAT = get_ompi_ptr(handle, "ompi_mpi_float");
-    UNIMPI_DOUBLE = get_ompi_ptr(handle, "ompi_mpi_double");
-    UNIMPI_LONG_DOUBLE = get_ompi_ptr(handle, "ompi_mpi_long_double");
-    UNIMPI_LONG_LONG_INT = get_ompi_ptr(handle, "ompi_mpi_long_long_int");
+    int failed_count = 0;
+
+    /* Table of datatype symbol mappings */
+    static const struct {
+        const char *symbol;
+        MPI_Datatype *dest;
+    } datatype_map[] = {
+        {"ompi_mpi_char", &UNIMPI_CHAR},
+        {"ompi_mpi_signed_char", &UNIMPI_SIGNED_CHAR},
+        {"ompi_mpi_unsigned_char", &UNIMPI_UNSIGNED_CHAR},
+        {"ompi_mpi_byte", &UNIMPI_BYTE},
+        {"ompi_mpi_short", &UNIMPI_SHORT},
+        {"ompi_mpi_unsigned_short", &UNIMPI_UNSIGNED_SHORT},
+        {"ompi_mpi_int", &UNIMPI_INT},
+        {"ompi_mpi_unsigned", &UNIMPI_UNSIGNED},
+        {"ompi_mpi_long", &UNIMPI_LONG},
+        {"ompi_mpi_unsigned_long", &UNIMPI_UNSIGNED_LONG},
+        {"ompi_mpi_float", &UNIMPI_FLOAT},
+        {"ompi_mpi_double", &UNIMPI_DOUBLE},
+        {"ompi_mpi_long_double", &UNIMPI_LONG_DOUBLE},
+        {"ompi_mpi_long_long_int", &UNIMPI_LONG_LONG_INT},
+        {"ompi_mpi_unsigned_long_long", &UNIMPI_UNSIGNED_LONG_LONG},
+    };
+
+    /* Load all datatypes from table */
+    for (size_t i = 0; i < sizeof(datatype_map) / sizeof(datatype_map[0]); i++) {
+        *datatype_map[i].dest = get_ompi_symbol_addr(handle, datatype_map[i].symbol);
+        if (!*datatype_map[i].dest) {
+            failed_count++;
+        }
+    }
+
+    /* LONG_LONG is an alias for LONG_LONG_INT */
     UNIMPI_LONG_LONG = UNIMPI_LONG_LONG_INT;
-    UNIMPI_UNSIGNED_LONG_LONG = get_ompi_ptr(handle, "ompi_mpi_unsigned_long_long");
+
+    if (failed_count > 0) {
+        fprintf(stderr, "[unimpi:WARN] Failed to load %d OpenMPI datatype symbols\n", failed_count);
+        /* Don't fail - some datatypes might not be critical */
+    }
+
     return UNIMPI_OK;
 }
 
-/* Get predefined operation values from OpenMPI globals */
+/* Get predefined operation values from OpenMPI globals
+ * For operations, we use get_ompi_symbol_addr which returns the symbol address directly
+ */
 static int get_openmpi_op_values(unimpi_lib_handle_t handle) {
-    UNIMPI_MAX = get_ompi_ptr(handle, "ompi_mpi_op_max");
-    UNIMPI_MIN = get_ompi_ptr(handle, "ompi_mpi_op_min");
-    UNIMPI_SUM = get_ompi_ptr(handle, "ompi_mpi_op_sum");
-    UNIMPI_PROD = get_ompi_ptr(handle, "ompi_mpi_op_prod");
-    UNIMPI_LAND = get_ompi_ptr(handle, "ompi_mpi_op_land");
-    UNIMPI_BAND = get_ompi_ptr(handle, "ompi_mpi_op_band");
-    UNIMPI_LOR = get_ompi_ptr(handle, "ompi_mpi_op_lor");
-    UNIMPI_BOR = get_ompi_ptr(handle, "ompi_mpi_op_bor");
-    UNIMPI_LXOR = get_ompi_ptr(handle, "ompi_mpi_op_lxor");
-    UNIMPI_BXOR = get_ompi_ptr(handle, "ompi_mpi_op_bxor");
-    UNIMPI_MINLOC = get_ompi_ptr(handle, "ompi_mpi_op_minloc");
-    UNIMPI_MAXLOC = get_ompi_ptr(handle, "ompi_mpi_op_maxloc");
+    int failed_count = 0;
+
+    /* Table of operation symbol mappings */
+    static const struct {
+        const char *symbol;
+        MPI_Op *dest;
+    } op_map[] = {
+        {"ompi_mpi_op_max", &UNIMPI_MAX},
+        {"ompi_mpi_op_min", &UNIMPI_MIN},
+        {"ompi_mpi_op_sum", &UNIMPI_SUM},
+        {"ompi_mpi_op_prod", &UNIMPI_PROD},
+        {"ompi_mpi_op_land", &UNIMPI_LAND},
+        {"ompi_mpi_op_band", &UNIMPI_BAND},
+        {"ompi_mpi_op_lor", &UNIMPI_LOR},
+        {"ompi_mpi_op_bor", &UNIMPI_BOR},
+        {"ompi_mpi_op_lxor", &UNIMPI_LXOR},
+        {"ompi_mpi_op_bxor", &UNIMPI_BXOR},
+        {"ompi_mpi_op_minloc", &UNIMPI_MINLOC},
+        {"ompi_mpi_op_maxloc", &UNIMPI_MAXLOC},
+    };
+
+    /* Load all operations from table */
+    for (size_t i = 0; i < sizeof(op_map) / sizeof(op_map[0]); i++) {
+        *op_map[i].dest = get_ompi_symbol_addr(handle, op_map[i].symbol);
+        if (!*op_map[i].dest) {
+            failed_count++;
+        }
+    }
+
+    if (failed_count > 0) {
+        fprintf(stderr, "[unimpi:WARN] Failed to load %d OpenMPI operation symbols\n", failed_count);
+    }
+
     return UNIMPI_OK;
 }
 
@@ -683,9 +786,19 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Attr_delete");
 
     /* Get predefined values from OpenMPI globals */
-    get_openmpi_comm_values(handle);
-    get_openmpi_datatype_values(handle);
-    get_openmpi_op_values(handle);
+    int ret;
+    ret = get_openmpi_comm_values(handle);
+    if (ret != UNIMPI_OK) {
+        return ret;
+    }
+    ret = get_openmpi_datatype_values(handle);
+    if (ret != UNIMPI_OK) {
+        return ret;
+    }
+    ret = get_openmpi_op_values(handle);
+    if (ret != UNIMPI_OK) {
+        return ret;
+    }
 
     /* Initialize OpenMPI-specific error codes */
     init_openmpi_error_codes();

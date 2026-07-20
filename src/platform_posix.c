@@ -23,6 +23,7 @@ const char* unimpi_platform_load_advice(void) {
     return "Troubleshooting:\n"
            "1. Check if the library exists: ls -la <library_path>\n"
            "2. Check library dependencies: ldd <library_path>\n"
-           "3. Ensure LD_LIBRARY_PATH includes the MPI library directory\n"
-           "4. Verify MPI is installed: mpirun --version\n";
+           "3. List all cached libraries: ldconfig -p | grep <library_name>\n"
+           "4. Ensure LD_LIBRARY_PATH includes the MPI library directory\n"
+           "5. Verify MPI is installed: mpirun --version\n";
 }
