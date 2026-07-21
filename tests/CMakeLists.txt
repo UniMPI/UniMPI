@@ -166,6 +166,13 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_datatype test_datatype 2)
 endif()
 
+# Extended P2P tests
+add_executable(test_p2p_extended mpi/test_p2p_extended.c)
+target_link_libraries(test_p2p_extended unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_p2p_extended test_p2p_extended 2)
+endif()
+
 # ============================================
 # Benchmarks (not run by ctest by default)
 # ============================================
