@@ -244,6 +244,63 @@ cmake -B build . \
 
 ---
 
+## Testing
+
+### Run All Tests
+
+```bash
+cd build && ctest --output-on-failure
+```
+
+### Run Specific Tests
+
+```bash
+# Internal tests (no MPI runtime needed)
+./build/tests/test_error
+./build/tests/test_loader
+./build/tests/test_platform
+./build/tests/test_memory_safety
+
+# MPI tests (requires mpirun/mpiexec)
+mpirun -np 2 ./build/tests/test_p2p
+mpirun -np 4 ./build/tests/test_collective
+mpirun -np 2 ./build/tests/test_datatype
+mpirun -np 4 ./build/tests/test_communicator
+mpirun -np 4 ./build/tests/test_group
+mpirun -np 2 ./build/tests/test_p2p_extended
+mpirun -np 2 ./build/tests/test_datatype_extended
+mpirun -np 4 ./build/tests/test_collective_extended
+```
+
+### Generate Coverage Report
+
+```bash
+# Install dependencies
+sudo apt-get install lcov
+
+# Generate report
+./scripts/coverage_report.sh
+
+# View HTML report
+firefox build-coverage/coverage_html/index.html
+```
+
+### Test Coverage Summary
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| **Basic** | test_error, test_loader, test_platform, test_vtable_validation | Core functionality |
+| **Lifecycle** | test_lifecycle, test_lifecycle_macros, test_memory_safety | Init/finalize |
+| **P2P** | test_p2p, test_p2p_extended | Point-to-point communication |
+| **Collective** | test_collective, test_collective_extended | Broadcast, reduce, gather |
+| **Datatype** | test_datatype, test_datatype_extended | Type construction |
+| **Communicator** | test_communicator, test_group | Comm/Group operations |
+| **Backend** | test_backend_identification | Auto-detection |
+
+**Total: 17 test suites**
+
+---
+
 ## Troubleshooting
 
 ### CMake cannot find MPI

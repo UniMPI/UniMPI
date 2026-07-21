@@ -214,6 +214,9 @@ add_test(NAME test_platform COMMAND test_platform)
 # ============================================
 # Benchmarks (not run by ctest by default)
 # ============================================
+add_executable(test_benchmarks mpi/test_benchmarks.c)
+target_link_libraries(test_benchmarks unimpi)
+
 add_executable(bench_latency benchmark/bench_latency.c)
 target_link_libraries(bench_latency unimpi)
 
