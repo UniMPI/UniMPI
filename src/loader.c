@@ -8,8 +8,8 @@
 /* Backend definitions */
 const unimpi_backend_info_t unimpi_backends[UNIMPI_MAX_BACKENDS] = {
     {UNIMPI_BACKEND_OPENMPI,   "openmpi",   "libmpi.so.40", 2},  /* Try .40 first, then .20 */
-    {UNIMPI_BACKEND_MPICH,     "mpich",     "libmpich.so",  4},
-    {UNIMPI_BACKEND_INTELMPI,  "intelmpi",  "libmpi.so",    3},
+    {UNIMPI_BACKEND_MPICH,     "mpich",     "libmpi.so",    4},  /* MPICH provides libmpi symlink */
+    {UNIMPI_BACKEND_INTELMPI,  "intelmpi",  "libmpi.so",    3},  /* Intel MPI uses libmpi.so */
     {UNIMPI_BACKEND_MSMPI,     "msmpi",     "msmpi.dll",    5}   /* Windows only */
 };
 
@@ -161,21 +161,24 @@ unimpi_backend_type_t unimpi_loader_identify_backend(unimpi_lib_handle_t handle)
         return UNIMPI_BACKEND_OPENMPI;
     }
 
-    /* Check for MPICH-specific symbols (also used by Intel MPI) */
-    if (unimpi_platform_dlsym(handle, "MPIR_Comm_world") != NULL) {
-        /* Check if it's actually Intel MPI by looking for Intel-specific symbols */
-        if (unimpi_platform_dlsym(handle, "__I_MPI___cpu_core_type") != NULL) {
-            fprintf(stderr, "[unimpi] Detected Intel MPI backend\n");
-            return UNIMPI_BACKEND_INTELMPI;
-        }
+    /* Check for Intel MPI-specific symbols */
+    if (unimpi_platform_dlsym(handle, "__I_MPI___cpu_core_type") != NULL) {
+        fprintf(stderr, "[unimpi] Detected Intel MPI backend\n");
+        return UNIMPI_BACKEND_INTELMPI;
+    }
+
+    /* Check for MPICH-specific symbols (e.g., MPIR_Err_create_code, MPIR_Dup_fn)
+     * MPICH 4.x uses different internal symbols than older versions */
+    if (unimpi_platform_dlsym(handle, "MPIR_Err_create_code") != NULL ||
+        unimpi_platform_dlsym(handle, "MPIR_Dup_fn") != NULL) {
         fprintf(stderr, "[unimpi] Detected MPICH backend\n");
         return UNIMPI_BACKEND_MPICH;
     }
 
-    /* Additional check for Intel MPI - look for I_MPI specific symbols */
-    if (unimpi_platform_dlsym(handle, "__I_MPI___cpu_core_type") != NULL) {
-        fprintf(stderr, "[unimpi] Detected Intel MPI backend (alternative detection)\n");
-        return UNIMPI_BACKEND_INTELMPI;
+    /* Legacy check for older MPICH/Intel MPI versions */
+    if (unimpi_platform_dlsym(handle, "MPIR_Comm_world") != NULL) {
+        fprintf(stderr, "[unimpi] Detected MPICH backend (legacy interface)\n");
+        return UNIMPI_BACKEND_MPICH;
     }
 
     fprintf(stderr, "[unimpi:WARN] Could not identify backend type\n");

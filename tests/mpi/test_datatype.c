@@ -8,9 +8,9 @@
 
 void test_basic_types(void) {
     int rank;
-    int buf_int = 42;
-    double buf_double = 3.14159;
-    char buf_char = 'X';
+    int send_int = 42, recv_int = 0;
+    double send_double = 3.14159, recv_double = 0.0;
+    char send_char = 'X', recv_char = '\0';
 
     TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
 
@@ -19,20 +19,20 @@ void test_basic_types(void) {
         MPI_Status status;
         MPI_Request req;
         /* Send to self using async to avoid deadlock */
-        TEST_CHECK_SUCCESS(MPI_Irecv(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD, &req));
-        TEST_CHECK_SUCCESS(MPI_Send(&buf_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Irecv(&recv_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD, &req));
+        TEST_CHECK_SUCCESS(MPI_Send(&send_int, 1, MPI_INT, 0, 100, MPI_COMM_WORLD));
         TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
-        assert(buf_int == 42);
+        assert(recv_int == 42);
 
-        TEST_CHECK_SUCCESS(MPI_Irecv(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD, &req));
-        TEST_CHECK_SUCCESS(MPI_Send(&buf_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Irecv(&recv_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD, &req));
+        TEST_CHECK_SUCCESS(MPI_Send(&send_double, 1, MPI_DOUBLE, 0, 101, MPI_COMM_WORLD));
         TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
-        assert(buf_double > 3.14 && buf_double < 3.15);
+        assert(recv_double > 3.14 && recv_double < 3.15);
 
-        TEST_CHECK_SUCCESS(MPI_Irecv(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD, &req));
-        TEST_CHECK_SUCCESS(MPI_Send(&buf_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD));
+        TEST_CHECK_SUCCESS(MPI_Irecv(&recv_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD, &req));
+        TEST_CHECK_SUCCESS(MPI_Send(&send_char, 1, MPI_CHAR, 0, 102, MPI_COMM_WORLD));
         TEST_CHECK_SUCCESS(MPI_Wait(&req, &status));
-        assert(buf_char == 'X');
+        assert(recv_char == 'X');
     }
 
     TEST_CHECK_SUCCESS(MPI_Barrier(MPI_COMM_WORLD));

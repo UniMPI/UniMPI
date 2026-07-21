@@ -3,21 +3,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "unimpi.h"
 
 #define ITERATIONS 10000
 
 static double get_time(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + ts.tv_nsec * 1e-9;
+    return unimpi.wtime();
 }
 
 void measure_init_overhead(void) {
     int rank;
-    double start, end;
-    double total_time = 0;
 
     unimpi.comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -31,13 +26,11 @@ void measure_init_overhead(void) {
 }
 
 void measure_vtable_call_overhead(void) {
-    int rank, size;
+    int rank;
     double start, end;
-    double direct_time, vtable_time;
-    int val = 0;
+    double vtable_time;
 
     unimpi.comm_rank(MPI_COMM_WORLD, &rank);
-    unimpi.comm_size(MPI_COMM_WORLD, &size);
 
     if (rank == 0) {
         /* Measure vtable call overhead by calling a simple function many times */

@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "unimpi.h"
 
 #define WARMUP_ITERATIONS 10
@@ -11,9 +10,7 @@
 #define MAX_BUF_SIZE (1024 * 1024)
 
 static double get_time(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + ts.tv_nsec * 1e-9;
+    return unimpi.wtime();
 }
 
 void benchmark_bcast(int buf_size) {

@@ -1,7 +1,6 @@
 /* collective.c - Collective communication examples (Reduce, Allreduce, Broadcast, Gather) */
 #include <stdio.h>
 #include <stdlib.h>
-#define UNIMPI_USE_STD_NAMES
 #include "unimpi.h"
 
 int main(int argc, char **argv) {

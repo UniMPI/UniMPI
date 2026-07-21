@@ -2,7 +2,6 @@
 /* Simplified version for MS-MPI compatibility */
 #include <stdio.h>
 #include <stdlib.h>
-#define UNIMPI_USE_STD_NAMES
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
@@ -10,7 +9,6 @@ int main(int argc, char **argv) {
     int rank, size;
     MPI_Win win;
     double *win_buf = NULL;
-    double local_buf[10];
     MPI_Aint win_size;
     int disp_unit;
     MPI_Info info;

@@ -8,7 +8,6 @@
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
-    int rank = -1;
     (void)argv;
 
     printf("Running lifecycle tests...\n");

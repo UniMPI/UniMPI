@@ -76,17 +76,6 @@ static void init_openmpi_error_codes(void) {
     MPI_ERR_LASTCODE = 76;
 }
 
-/* Helper: Get pointer value from OpenMPI global symbol (for communicators)
- * For communicator symbols, we need to dereference to get the actual pointer value
- */
-static intptr_t get_ompi_ptr(unimpi_lib_handle_t handle, const char *symbol) {
-    void **ptr = (void**)unimpi_platform_dlsym(handle, symbol);
-    if (ptr) {
-        return (intptr_t)(*ptr);
-    }
-    return 0;
-}
-
 /* Helper: Get the address of an OpenMPI global symbol (for datatypes/ops)
  * For datatype/op symbols, the symbol itself is the pointer we need
  */

@@ -65,14 +65,30 @@ static void init_mpich_error_codes(void) {
     MPI_ERR_LASTCODE = 56;
 }
 
-/* MPICH uses integers for communicators */
+/* Try to get communicator values from legacy symbol or use MPICH defaults */
 static int get_mpich_comm_world(unimpi_lib_handle_t handle, MPI_Comm *comm) {
+    /* Try legacy MPICH symbol first (older versions < 4.0) */
     int *ptr = (int*)unimpi_platform_dlsym(handle, "MPIR_Comm_world");
     if (ptr) {
         *comm = *ptr;
         return UNIMPI_OK;
     }
-    *comm = 91;
+    /* For MPICH 4.x, use the hardcoded value.
+     * MPICH defines MPI_COMM_WORLD as ((MPI_Comm)0x44000000) */
+    *comm = (MPI_Comm)0x44000000;
+    return UNIMPI_OK;
+}
+
+static int get_mpich_comm_self(unimpi_lib_handle_t handle, MPI_Comm *comm) {
+    /* Try legacy MPICH symbol first (older versions < 4.0) */
+    int *ptr = (int*)unimpi_platform_dlsym(handle, "MPIR_Comm_self");
+    if (ptr) {
+        *comm = *ptr;
+        return UNIMPI_OK;
+    }
+    /* For MPICH 4.x, use the hardcoded value.
+     * MPICH defines MPI_COMM_SELF as ((MPI_Comm)0x44000001) */
+    *comm = (MPI_Comm)0x44000001;
     return UNIMPI_OK;
 }
 
@@ -647,6 +663,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
 
     /* Get predefined communicator values */
     get_mpich_comm_world(handle, &UNIMPI_COMM_WORLD);
+    get_mpich_comm_self(handle, &UNIMPI_COMM_SELF);
 
     /* Initialize MPICH-standard error codes */
     init_mpich_error_codes();

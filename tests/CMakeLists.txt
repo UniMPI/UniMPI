@@ -1,34 +1,45 @@
 # Tests CMakeLists.txt
 enable_testing()
 
+# The test suite uses assert() for both checks and some checked calls. Keep
+# assertions enabled even when the library itself is built in Release mode.
+if(MSVC)
+    add_compile_options(/UNDEBUG)
+else()
+    add_compile_options(-UNDEBUG)
+endif()
+
 # Include directories for tests
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/mpi)
 
-# Find MPI for testing
-find_package(MPI COMPONENTS C)
+# Configure the executor only when real MPI tests were requested.
+set(UNIMPI_REAL_MPI_TESTS_ENABLED OFF)
+if(UNIMPI_BUILD_MPI_TESTS)
+    find_package(MPI COMPONENTS C)
 
-# Configure MPI executor (for CI)
-if(NOT MPIEXEC_EXECUTABLE)
-    if(MPI_C_EXECUTABLE)
-        set(MPIEXEC_EXECUTABLE "${MPI_C_EXECUTABLE}")
-    elseif(WIN32)
-        find_program(MPIEXEC_EXECUTABLE NAMES mpiexec.exe msmpi.exe PATHS "C:/Program Files/Microsoft MPI/Bin" DOC "MPI executor")
-    else()
-        find_program(MPIEXEC_EXECUTABLE NAMES mpirun mpiexec DOC "MPI executor")
+    if(NOT MPIEXEC_EXECUTABLE)
+        if(MPI_C_EXECUTABLE)
+            set(MPIEXEC_EXECUTABLE "${MPI_C_EXECUTABLE}")
+        elseif(WIN32)
+            find_program(MPIEXEC_EXECUTABLE NAMES mpiexec.exe msmpi.exe PATHS "C:/Program Files/Microsoft MPI/Bin" DOC "MPI executor")
+        else()
+            find_program(MPIEXEC_EXECUTABLE NAMES mpirun mpiexec DOC "MPI executor")
+        endif()
     endif()
-endif()
 
-if(MPIEXEC_EXECUTABLE)
-    message(STATUS "MPI executor: ${MPIEXEC_EXECUTABLE}")
-else()
-    message(WARNING "MPI executor not found - MPI tests will be disabled")
-endif()
+    if(MPIEXEC_EXECUTABLE)
+        message(STATUS "MPI executor: ${MPIEXEC_EXECUTABLE}")
+        set(UNIMPI_REAL_MPI_TESTS_ENABLED ON)
+    else()
+        message(WARNING "MPI executor not found - real MPI tests will be disabled")
+    endif()
 
-# Parse preflags if provided
-if(MPIEXEC_PREFLAGS)
-    separate_arguments(MPIEXEC_PREFLAGS_LIST UNIX_COMMAND "${MPIEXEC_PREFLAGS}")
-else()
-    set(MPIEXEC_PREFLAGS_LIST "")
+    # Parse preflags if provided
+    if(MPIEXEC_PREFLAGS)
+        separate_arguments(MPIEXEC_PREFLAGS_LIST UNIX_COMMAND "${MPIEXEC_PREFLAGS}")
+    else()
+        set(MPIEXEC_PREFLAGS_LIST "")
+    endif()
 endif()
 
 # Helper function to add MPI tests
@@ -101,7 +112,9 @@ set_target_properties(fake_unknown_identity PROPERTIES
 # Lifecycle tests (internal API)
 add_executable(test_lifecycle internal/test_lifecycle.c)
 target_link_libraries(test_lifecycle unimpi)
-add_test(NAME test_lifecycle COMMAND test_lifecycle)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_test(NAME test_lifecycle COMMAND test_lifecycle)
+endif()
 
 # Vtable validation test
 add_executable(test_vtable_validation internal/test_vtable_validation.c)
@@ -125,25 +138,33 @@ add_test(NAME test_backend_identification
 # Lifecycle tests (MPI standard API via macros)
 add_executable(test_lifecycle_macros mpi/test_lifecycle_macros.c)
 target_link_libraries(test_lifecycle_macros unimpi)
-add_test(NAME test_lifecycle_macros_init
-    COMMAND test_lifecycle_macros init)
-add_test(NAME test_lifecycle_macros_thread
-    COMMAND test_lifecycle_macros thread)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_test(NAME test_lifecycle_macros_init
+        COMMAND test_lifecycle_macros init)
+    add_test(NAME test_lifecycle_macros_thread
+        COMMAND test_lifecycle_macros thread)
+endif()
 
 # Point-to-point communication tests
 add_executable(test_p2p mpi/test_p2p.c)
 target_link_libraries(test_p2p unimpi)
-add_mpi_test(test_p2p test_p2p 2)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_p2p test_p2p 2)
+endif()
 
 # Collective communication tests
 add_executable(test_collective mpi/test_collective.c)
 target_link_libraries(test_collective unimpi)
-add_mpi_test(test_collective test_collective 4)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_collective test_collective 4)
+endif()
 
 # Datatype tests
 add_executable(test_datatype mpi/test_datatype.c)
 target_link_libraries(test_datatype unimpi)
-add_mpi_test(test_datatype test_datatype 2)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_datatype test_datatype 2)
+endif()
 
 # ============================================
 # Benchmarks (not run by ctest by default)

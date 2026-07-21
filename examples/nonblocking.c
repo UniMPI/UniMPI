@@ -1,7 +1,6 @@
 /* nonblocking.c - Non-blocking communication example using Isend/Irecv */
 #include <stdio.h>
 #include <string.h>
-#define UNIMPI_USE_STD_NAMES
 #include "unimpi.h"
 
 int main(int argc, char **argv) {

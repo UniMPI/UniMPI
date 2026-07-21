@@ -1,7 +1,5 @@
 #include <stdio.h>
 
-/* Must define this before including header for standard MPI names */
-#define UNIMPI_USE_STD_NAMES
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
