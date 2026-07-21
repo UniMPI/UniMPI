@@ -89,6 +89,9 @@ extern MPI_Comm UNIMPI_COMM_SELF;
 /* MPI predefined Info */
 extern MPI_Info UNIMPI_INFO_NULL;
 
+/* MPI predefined request constant */
+extern MPI_Request UNIMPI_REQUEST_NULL;
+
 /* MPI predefined datatypes - will be resolved at runtime from backend */
 extern MPI_Datatype UNIMPI_CHAR;
 extern MPI_Datatype UNIMPI_SIGNED_CHAR;

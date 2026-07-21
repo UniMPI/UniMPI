@@ -11,12 +11,7 @@
  */
 
 #include "request_array_wrappers.h"
-
-#ifdef __GNUC__
-#define UNIMPI_UNUSED __attribute__((unused))
-#else
-#define UNIMPI_UNUSED
-#endif
+#include <stdlib.h>  /* malloc, free */
 
 /* ---- Real backend function pointers (set during backend init) ---- */
 static int (*real_waitall)(int, int*, MPI_Status*);
@@ -36,10 +31,7 @@ void unimpi_wrapper_set_waitany(int (*fn)(int, int*, int*, MPI_Status*)) { real_
 void unimpi_wrapper_set_waitsome(int (*fn)(int, int*, int*, int*, MPI_Status*)) { real_waitsome = fn; }
 void unimpi_wrapper_set_startall(int (*fn)(int, int*)) { real_startall = fn; }
 
-/* ---- Conversion helper ---- */
-/* Convert an array of UNIMPI's intptr_t MPI_Request (8 bytes each) to
- * the native int (4 bytes each) used by MPICH/Intel MPI.
- * Returns the number of elements in the native array (== count). */
+/* ---- Conversion helpers ---- */
 static void reqs_to_native(const MPI_Request *src, int *dst, int count) {
     int i;
     for (i = 0; i < count; i++) {
@@ -47,7 +39,6 @@ static void reqs_to_native(const MPI_Request *src, int *dst, int count) {
     }
 }
 
-/* Convert a native int array back to UNIMPI's intptr_t MPI_Request array. */
 static void reqs_from_native(const int *src, MPI_Request *dst, int count) {
     int i;
     for (i = 0; i < count; i++) {
@@ -56,94 +47,123 @@ static void reqs_from_native(const int *src, MPI_Request *dst, int count) {
 }
 
 /* ---- Wrappers ---- */
+/* Note: MSVC does not support C99 VLAs, so we use malloc/free for the
+ * native request arrays. */
 
 int unimpi_wrap_waitall(int count, MPI_Request *array_of_requests,
                          MPI_Status *array_of_statuses) {
+    int ret;
+    int *native;
     if (count <= 0 || !array_of_requests) {
         return real_waitall(count, (int*)array_of_requests, array_of_statuses);
     }
-    /* VLA for native request array */
-    int native[count];
+    native = (int*)malloc((size_t)count * sizeof(int));
+    if (!native) return -1;
     reqs_to_native(array_of_requests, native, count);
-    int ret = real_waitall(count, native, array_of_statuses);
+    ret = real_waitall(count, native, array_of_statuses);
     reqs_from_native(native, array_of_requests, count);
+    free(native);
     return ret;
 }
 
 int unimpi_wrap_testany(int count, MPI_Request *array_of_requests,
                          int *index, int *flag, MPI_Status *status) {
+    int ret;
+    int *native;
     if (count <= 0 || !array_of_requests) {
         return real_testany(count, (int*)array_of_requests, index, flag, status);
     }
-    int native[count];
+    native = (int*)malloc((size_t)count * sizeof(int));
+    if (!native) return -1;
     reqs_to_native(array_of_requests, native, count);
-    int ret = real_testany(count, native, index, flag, status);
+    ret = real_testany(count, native, index, flag, status);
     reqs_from_native(native, array_of_requests, count);
+    free(native);
     return ret;
 }
 
 int unimpi_wrap_testsome(int incount, MPI_Request *array_of_requests,
                           int *outcount, int *array_of_indices,
                           MPI_Status *array_of_statuses) {
+    int ret;
+    int *native;
     if (incount <= 0 || !array_of_requests) {
         return real_testsome(incount, (int*)array_of_requests, outcount,
                              array_of_indices, array_of_statuses);
     }
-    int native[incount];
+    native = (int*)malloc((size_t)incount * sizeof(int));
+    if (!native) return -1;
     reqs_to_native(array_of_requests, native, incount);
-    int ret = real_testsome(incount, native, outcount, array_of_indices,
-                            array_of_statuses);
+    ret = real_testsome(incount, native, outcount, array_of_indices,
+                        array_of_statuses);
     reqs_from_native(native, array_of_requests, incount);
+    free(native);
     return ret;
 }
 
 int unimpi_wrap_testall(int count, MPI_Request *array_of_requests,
                          int *flag, MPI_Status *array_of_statuses) {
+    int ret;
+    int *native;
     if (count <= 0 || !array_of_requests) {
         return real_testall(count, (int*)array_of_requests, flag,
                             array_of_statuses);
     }
-    int native[count];
+    native = (int*)malloc((size_t)count * sizeof(int));
+    if (!native) return -1;
     reqs_to_native(array_of_requests, native, count);
-    int ret = real_testall(count, native, flag, array_of_statuses);
+    ret = real_testall(count, native, flag, array_of_statuses);
     reqs_from_native(native, array_of_requests, count);
+    free(native);
     return ret;
 }
 
 int unimpi_wrap_waitany(int count, MPI_Request *array_of_requests,
                          int *index, MPI_Status *status) {
+    int ret;
+    int *native;
     if (count <= 0 || !array_of_requests) {
         return real_waitany(count, (int*)array_of_requests, index, status);
     }
-    int native[count];
+    native = (int*)malloc((size_t)count * sizeof(int));
+    if (!native) return -1;
     reqs_to_native(array_of_requests, native, count);
-    int ret = real_waitany(count, native, index, status);
+    ret = real_waitany(count, native, index, status);
     reqs_from_native(native, array_of_requests, count);
+    free(native);
     return ret;
 }
 
 int unimpi_wrap_waitsome(int incount, MPI_Request *array_of_requests,
                           int *outcount, int *array_of_indices,
                           MPI_Status *array_of_statuses) {
+    int ret;
+    int *native;
     if (incount <= 0 || !array_of_requests) {
         return real_waitsome(incount, (int*)array_of_requests, outcount,
                              array_of_indices, array_of_statuses);
     }
-    int native[incount];
+    native = (int*)malloc((size_t)incount * sizeof(int));
+    if (!native) return -1;
     reqs_to_native(array_of_requests, native, incount);
-    int ret = real_waitsome(incount, native, outcount, array_of_indices,
-                            array_of_statuses);
+    ret = real_waitsome(incount, native, outcount, array_of_indices,
+                        array_of_statuses);
     reqs_from_native(native, array_of_requests, incount);
+    free(native);
     return ret;
 }
 
 int unimpi_wrap_startall(int count, MPI_Request *array_of_requests) {
+    int ret;
+    int *native;
     if (count <= 0 || !array_of_requests) {
         return real_startall(count, (int*)array_of_requests);
     }
-    int native[count];
+    native = (int*)malloc((size_t)count * sizeof(int));
+    if (!native) return -1;
     reqs_to_native(array_of_requests, native, count);
-    int ret = real_startall(count, native);
+    ret = real_startall(count, native);
     reqs_from_native(native, array_of_requests, count);
+    free(native);
     return ret;
 }

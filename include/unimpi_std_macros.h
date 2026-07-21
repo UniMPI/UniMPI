@@ -45,6 +45,9 @@
 #define MPI_COMM_WORLD UNIMPI_COMM_WORLD
 #define MPI_COMM_SELF UNIMPI_COMM_SELF
 
+/* Predefined request constant */
+#define MPI_REQUEST_NULL UNIMPI_REQUEST_NULL
+
 /* Environment */
 #define MPI_Init unimpi_init
 #define MPI_Init_thread unimpi_init_thread

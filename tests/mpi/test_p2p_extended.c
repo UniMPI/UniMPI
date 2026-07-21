@@ -99,7 +99,9 @@ void test_sendrecv(void) {
 void test_waitall(void) {
     int rank, size;
     int buf1 = 1, buf2 = 2;
-    MPI_Request req[2];
+
+    /* Explicitly initialize requests to MPI_REQUEST_NULL for Intel MPI compatibility */
+    MPI_Request req[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
     MPI_Status status[2];
 
     TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));

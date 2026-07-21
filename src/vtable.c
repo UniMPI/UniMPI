@@ -12,6 +12,7 @@ unimpi_vtable_t unimpi = {0};
 MPI_Comm UNIMPI_COMM_WORLD = 0;
 MPI_Comm UNIMPI_COMM_SELF = 0;
 MPI_Info UNIMPI_INFO_NULL = 0;
+MPI_Request UNIMPI_REQUEST_NULL = 0;
 
 /* MPI Datatypes - filled at runtime */
 MPI_Datatype UNIMPI_CHAR = (MPI_Datatype)0x4c000101;

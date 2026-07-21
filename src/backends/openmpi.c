@@ -133,6 +133,9 @@ static int get_openmpi_comm_values(unimpi_lib_handle_t handle) {
     UNIMPI_COMM_WORLD = world;
     UNIMPI_COMM_SELF = self;
 
+    /* Get MPI_REQUEST_NULL - it's the address of ompi_request_null global */
+    UNIMPI_REQUEST_NULL = get_ompi_symbol_addr(handle, "ompi_request_null");
+
     return UNIMPI_OK;
 }
 
