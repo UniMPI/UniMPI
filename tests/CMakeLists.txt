@@ -180,6 +180,37 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_communicator test_communicator 4)
 endif()
 
+# Group tests
+add_executable(test_group mpi/test_group.c)
+target_link_libraries(test_group unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_group test_group 4)
+endif()
+
+# Extended datatype tests
+add_executable(test_datatype_extended mpi/test_datatype_extended.c)
+target_link_libraries(test_datatype_extended unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_datatype_extended test_datatype_extended 2)
+endif()
+
+# Extended collective tests
+add_executable(test_collective_extended mpi/test_collective_extended.c)
+target_link_libraries(test_collective_extended unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_collective_extended test_collective_extended 4)
+endif()
+
+# Memory safety tests
+add_executable(test_memory_safety internal/test_memory_safety.c)
+target_link_libraries(test_memory_safety unimpi)
+add_test(NAME test_memory_safety COMMAND test_memory_safety)
+
+# Platform tests
+add_executable(test_platform internal/test_platform.c)
+target_link_libraries(test_platform unimpi)
+add_test(NAME test_platform COMMAND test_platform)
+
 # ============================================
 # Benchmarks (not run by ctest by default)
 # ============================================
