@@ -173,6 +173,13 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_p2p_extended test_p2p_extended 2)
 endif()
 
+# Communicator tests
+add_executable(test_communicator mpi/test_communicator.c)
+target_link_libraries(test_communicator unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_communicator test_communicator 4)
+endif()
+
 # ============================================
 # Benchmarks (not run by ctest by default)
 # ============================================
