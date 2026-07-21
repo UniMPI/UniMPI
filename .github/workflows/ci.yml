@@ -31,7 +31,7 @@ jobs:
             packages: mpich libmpich-dev
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install build tools and ${{ matrix.backend }}
         run: |
@@ -46,38 +46,75 @@ jobs:
           set -euo pipefail
 
           if [[ "${{ matrix.backend }}" == "openmpi" ]]; then
-            if command -v mpirun.openmpi >/dev/null 2>&1; then
-              launcher="$(command -v mpirun.openmpi)"
-            else
-              launcher="$(command -v mpirun)"
-            fi
-            mapfile -t libraries < <(
-              ldconfig -p | awk '$1 ~ /^libmpi\.so\.[0-9]+$/ { print $NF }'
-            )
+            launcher="$(command -v mpirun)"
+            # Use pkg-config or mpicc to get library info
+            libdir="$(pkg-config --variable=libdir ompi 2>/dev/null || mpicc --showme:libdir 2>/dev/null || echo "")"
             preflags="--oversubscribe"
           else
-            if command -v mpiexec.mpich >/dev/null 2>&1; then
-              launcher="$(command -v mpiexec.mpich)"
-            else
-              launcher="$(command -v mpiexec)"
-            fi
-            mapfile -t libraries < <(
-              ldconfig -p | awk '$1 ~ /^libmpich\.so\.[0-9]+$/ { print $NF }'
-            )
+            launcher="$(command -v mpiexec)"
+            # For MPICH, use pkg-config to get libdir
+            libdir="$(pkg-config --variable=libdir mpich 2>/dev/null || \
+                      pkg-config --variable=libdir mpich-gcc 2>/dev/null || echo "")"
             preflags=""
           fi
 
-          if [[ ${#libraries[@]} -eq 0 ]]; then
-            echo "Could not resolve the ${{ matrix.backend }} runtime library" >&2
+          test -x "$launcher"
+
+          # Find libmpi.so in the library directory
+          library=""
+          if [[ -n "$libdir" ]]; then
+            for candidate in "$libdir"/libmpi.so*; do
+              if [[ -f "$candidate" && ! -L "$candidate" ]]; then
+                library="$candidate"
+                break
+              elif [[ -f "$candidate" ]]; then
+                # It's a symlink, resolve it
+                library="$(readlink -f "$candidate")"
+                break
+              fi
+            done
+          fi
+
+          # Fallback 1: Try common MPI installation paths
+          if [[ -z "$library" ]]; then
+            for common_path in /usr/lib /usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu/openmpi/lib /usr/lib/x86_64-linux-gnu/mpich/lib; do
+              # Look for libmpi.so (not libmpich.so) to get the standard MPI interface
+              if [[ -f "$common_path/libmpi.so" ]]; then
+                library="$common_path/libmpi.so"
+                break
+              elif [[ -f "$common_path/libmpi.so.40" ]]; then
+                library="$common_path/libmpi.so.40"
+                break
+              elif [[ -f "$common_path/libmpi.so.12" ]]; then
+                library="$common_path/libmpi.so.12"
+                break
+              fi
+            done
+          fi
+
+          # Fallback 2: use ldconfig as last resort
+          if [[ -z "$library" ]]; then
+            library_path="$(ldconfig -p 2>/dev/null | grep 'libmpi\.so' | head -1 | awk '{print $NF}' || echo "")"
+            if [[ -n "$library_path" && -f "$library_path" ]]; then
+              library="$(readlink -f "$library_path")"
+            fi
+          fi
+
+          if [[ -z "$library" ]]; then
+            echo "Could not find libmpi.so using any method" >&2
+            echo "Debug info:" >&2
+            echo "  libdir: ${libdir:-'(empty)'}" >&2
+            echo "  mpicc --showme:libdir: $(mpicc --showme:libdir 2>/dev/null || echo 'N/A')" >&2
+            echo "  ldconfig libmpi: $(ldconfig -p 2>/dev/null | grep libmpi | head -5 || echo 'N/A')" >&2
             exit 1
           fi
-          library="$(readlink -f "${libraries[0]}")"
-          test -x "$launcher"
-          test -f "$library"
+
+          library_dir="$(dirname "$library")"
 
           {
             echo "launcher=$launcher"
             echo "library=$library"
+            echo "library_dir=$library_dir"
             echo "preflags=$preflags"
           } >> "$GITHUB_OUTPUT"
 
@@ -90,6 +127,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_C_EXTENSIONS=OFF
           -DUNIMPI_BUILD_TESTS=ON
+          -DUNIMPI_BUILD_MPI_TESTS=ON
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
           -DMPIEXEC_PREFLAGS=${{ steps.mpi.outputs.preflags }}
 
@@ -97,6 +135,9 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test with real MPI
+        env:
+          LD_LIBRARY_PATH: ${{ steps.mpi.outputs.library_dir }}:${{ env.LD_LIBRARY_PATH }}
+          UNIMPI_LIBRARY: ${{ steps.mpi.outputs.library }}
         run: ctest --test-dir build --output-on-failure --timeout 180
 
   linux-intelmpi:
@@ -105,7 +146,7 @@ jobs:
     timeout-minutes: 40
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Add the official Intel oneAPI repository
         run: |
@@ -131,6 +172,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          source /opt/intel/oneapi/mpi/latest/env/vars.sh
           prefix=/opt/intel/oneapi/mpi/latest
           launcher="$prefix/bin/mpiexec"
           library=""
@@ -156,18 +198,22 @@ jobs:
           "$launcher" --version
 
       - name: Configure
-        run: >-
-          cmake -S . -B build -G Ninja
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_C_EXTENSIONS=OFF
-          -DUNIMPI_BUILD_TESTS=ON
-          -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
+        run: |
+          source /opt/intel/oneapi/mpi/latest/env/vars.sh
+          cmake -S . -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_EXTENSIONS=OFF \
+          -DUNIMPI_BUILD_TESTS=ON \
+          -DUNIMPI_BUILD_MPI_TESTS=ON \
+          -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }} \
           "-DMPIEXEC_PREFLAGS=-bootstrap;fork"
 
       - name: Build
         run: cmake --build build --parallel
 
       - name: Test with real Intel MPI
+        env:
+          UNIMPI_LIBRARY: ${{ steps.mpi.outputs.library }}
         run: ctest --test-dir build --output-on-failure --timeout 180
 
   windows-msmpi:
@@ -182,7 +228,7 @@ jobs:
             shared: OFF
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install the official MS-MPI runtime
         shell: pwsh
@@ -198,8 +244,8 @@ jobs:
           if ($actual -ne $expected) {
             throw "MS-MPI installer checksum mismatch"
           }
-          $process = Start-Process -FilePath $installer -ArgumentList "-unattend" `
-            -Wait -PassThru
+          $process = Start-Process -FilePath $installer `
+            -ArgumentList "-unattend", "-full", "-force" -Wait -PassThru
           if ($process.ExitCode -notin 0, 3010) {
             throw "MS-MPI installer failed with exit code $($process.ExitCode)"
           }
@@ -208,14 +254,17 @@ jobs:
         shell: pwsh
         run: |
           $runtime = Join-Path $env:ProgramFiles "Microsoft MPI\Bin"
-          $library = Join-Path $runtime "msmpi.dll"
           $launcher = Join-Path $runtime "mpiexec.exe"
-          if (!(Test-Path $library) -or !(Test-Path $launcher)) {
+          $library = Join-Path $env:WINDIR "System32\msmpi.dll"
+          if (!(Test-Path $launcher) -or !(Test-Path $library)) {
             throw "MS-MPI runtime installation is incomplete"
           }
+          "UNIMPI_LIBRARY=$library" | Out-File `
+            -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
             -DBUILD_SHARED_LIBS=OFF `
             -DUNIMPI_BUILD_TESTS=ON `
+            -DUNIMPI_BUILD_MPI_TESTS=ON `
             "-DMPIEXEC_EXECUTABLE=$launcher"
 
       - name: Build
@@ -249,7 +298,7 @@ jobs:
             preflags: ""
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install ${{ matrix.formula }} and Ninja
         run: |
@@ -267,11 +316,16 @@ jobs:
           set -euo pipefail
           prefix="$(brew --prefix ${{ matrix.formula }})"
           launcher="$prefix/bin/${{ matrix.launcher }}"
+          library="$prefix/lib/libmpi.dylib"
           test -x "$launcher"
+          test -f "$library"
           {
             echo "launcher=$launcher"
+            echo "library=$library"
+            echo "library_dir=$prefix/lib"
           } >> "$GITHUB_OUTPUT"
           "$launcher" --version
+          echo "Runtime library: $library"
 
       - name: Configure
         run: >-
@@ -279,6 +333,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_C_EXTENSIONS=OFF
           -DUNIMPI_BUILD_TESTS=ON
+          -DUNIMPI_BUILD_MPI_TESTS=ON
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
           -DMPIEXEC_PREFLAGS=${{ matrix.preflags }}
 
@@ -286,6 +341,8 @@ jobs:
         run: cmake --build build --parallel
 
       - name: Test with real MPI
+        env:
+          UNIMPI_LIBRARY: ${{ steps.mpi.outputs.library }}
         run: ctest --test-dir build --output-on-failure --timeout 180
 
   strict-c99-sanitizers:
@@ -297,7 +354,7 @@ jobs:
       UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Clang and Ninja
         run: |
