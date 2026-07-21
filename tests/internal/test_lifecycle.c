@@ -8,8 +8,6 @@
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
-    (void)argv;
-
     printf("Running lifecycle tests...\n");
 
     /* Test 1: Cannot finalize before init */
@@ -19,7 +17,7 @@ int main(int argc, char **argv) {
 
     /* Test 2: Normal init/finalize cycle */
     printf("  Test: normal init/finalize...\n");
-    assert(unimpi_init(&argc, NULL) == UNIMPI_OK);
+    assert(unimpi_init(&argc, &argv) == UNIMPI_OK);
     assert(unimpi_is_initialized());
     assert(unimpi_get_backend_name() != NULL);
     printf("    Backend: %s\n", unimpi_get_backend_name());

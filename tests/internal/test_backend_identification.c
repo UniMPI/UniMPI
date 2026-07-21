@@ -19,7 +19,7 @@
 #define EXPECTED_PRIMARY_BACKEND UNIMPI_BACKEND_OPENMPI
 #endif
 
-static unimpi_lib_handle_t load_and_assert_identity(
+static void load_and_assert_identity(
     const char *path, unimpi_backend_type_t expected) {
     unimpi_lib_handle_t handle = NULL;
     int ret;
@@ -39,13 +39,10 @@ static unimpi_lib_handle_t load_and_assert_identity(
         abort();
     }
 
-    return handle;
+    unimpi_loader_unload(handle);
 }
 
 int main(int argc, char **argv) {
-    unimpi_lib_handle_t handles[4];
-    size_t i;
-
     /* Check arguments */
     if (argc != 5) {
         fprintf(stderr, "Usage: %s <openmpi_fake> <mpich_fake> <intelmpi_fake> <unknown_fake>\n",
@@ -60,31 +57,25 @@ int main(int argc, char **argv) {
      * Should be detected via ompi_mpi_comm_world symbol
      */
     printf("  Testing OpenMPI-style backend...\n");
-    handles[0] = load_and_assert_identity(argv[1], UNIMPI_BACKEND_OPENMPI);
+    load_and_assert_identity(argv[1], UNIMPI_BACKEND_OPENMPI);
 
     /* Test MPICH-style backend identification
      * Should be detected via MPIR_Comm_world symbol
      */
     printf("  Testing MPICH-style backend...\n");
-    handles[1] = load_and_assert_identity(argv[2], UNIMPI_BACKEND_MPICH);
+    load_and_assert_identity(argv[2], UNIMPI_BACKEND_MPICH);
 
     /* Test IntelMPI-style backend identification
      * Should be detected via MPIR_Comm_world + __I_MPI___cpu_core_type symbols
      */
     printf("  Testing IntelMPI-style backend...\n");
-    handles[2] = load_and_assert_identity(argv[3], UNIMPI_BACKEND_INTELMPI);
+    load_and_assert_identity(argv[3], UNIMPI_BACKEND_INTELMPI);
 
     /* Test unknown backend identification
      * Should return UNIMPI_BACKEND_UNKNOWN when no identifying symbols found
      */
     printf("  Testing unknown backend...\n");
-    handles[3] = load_and_assert_identity(argv[4], UNIMPI_BACKEND_UNKNOWN);
-
-    /* Cleanup: unload all handles in reverse order */
-    printf("  Cleaning up...\n");
-    for (i = sizeof(handles) / sizeof(handles[0]); i > 0; i--) {
-        unimpi_loader_unload(handles[i - 1]);
-    }
+    load_and_assert_identity(argv[4], UNIMPI_BACKEND_UNKNOWN);
 
     printf("All backend identification tests passed!\n");
     return 0;
