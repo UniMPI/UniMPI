@@ -45,6 +45,7 @@ set(UNIMPI_BACKEND_SOURCES
     src/backends/mpich.c
     src/backends/intelmpi.c
     src/backends/msmpi.c
+    src/backends/request_array_wrappers.c
 )
 
 # Create library
