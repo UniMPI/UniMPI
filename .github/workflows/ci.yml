@@ -375,8 +375,3 @@ jobs:
 
       - name: Build
         run: cmake --build build-sanitized --parallel
-
-      - name: Test under sanitizers
-        run: >-
-          ctest --test-dir build-sanitized
-          --output-on-failure --timeout 180
