@@ -549,10 +549,19 @@ typedef struct {
                               const int *array_of_distribs, const int *array_of_dargs,
                               const int *array_of_psizes, int order, MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*type_dup)(MPI_Datatype oldtype, MPI_Datatype *newtype);
+    int (*type_create_resized)(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent,
+                               MPI_Datatype *newtype);
 
     /* Datatypes - query */
     int (*type_get_extent)(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
     int (*type_get_true_extent)(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);
+    int (*type_get_envelope)(MPI_Datatype datatype, int *num_integers,
+                             int *num_addresses, int *num_datatypes,
+                             int *combiner);
+    int (*type_get_contents)(MPI_Datatype datatype, int max_integers,
+                             int max_addresses, int max_datatypes,
+                             int *array_of_integers, MPI_Aint *array_of_addresses,
+                             MPI_Datatype *array_of_datatypes);
     int (*type_get_size)(MPI_Datatype datatype, int *size);
     int (*type_size)(MPI_Datatype datatype, int *size);
     int (*type_get_name)(MPI_Datatype datatype, char *type_name, int *resultlen);

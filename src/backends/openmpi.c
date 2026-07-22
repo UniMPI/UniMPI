@@ -415,6 +415,14 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     unimpi.type_dup = (int (*)(MPI_Datatype, MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_dup");
 
+    /* MPI-2.2 Extended datatypes */
+    unimpi.type_create_resized = (int (*)(MPI_Datatype, MPI_Aint, MPI_Aint, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_resized");
+    unimpi.type_get_envelope = (int (*)(MPI_Datatype, int*, int*, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Type_get_envelope");
+    unimpi.type_get_contents = (int (*)(MPI_Datatype, int, int, int, int*, MPI_Aint*, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_get_contents");
+
     /* Datatypes - Query */
     unimpi.type_get_extent = (int (*)(MPI_Datatype, MPI_Aint*, MPI_Aint*))
         unimpi_platform_dlsym(handle, "MPI_Type_get_extent");

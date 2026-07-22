@@ -164,6 +164,8 @@
 #define MPI_Type_create_indexed_block unimpi.type_create_indexed_block
 #define MPI_Type_create_subarray unimpi.type_create_subarray
 #define MPI_Type_dup unimpi.type_dup
+#define MPI_Type_create_resized(oldtype, lb, extent, newtype) \
+    unimpi.type_create_resized(oldtype, lb, extent, newtype)
 
 /* MPI-3 Extended datatypes */
 #define MPI_Type_hvector unimpi.type_hvector
@@ -178,6 +180,12 @@
 
 /* MPI-3 Extended datatype query */
 #define MPI_Type_get_true_extent unimpi.type_get_true_extent
+#define MPI_Type_get_envelope(datatype, num_integers, num_addresses, num_datatypes, combiner) \
+    unimpi.type_get_envelope(datatype, num_integers, num_addresses, num_datatypes, combiner)
+#define MPI_Type_get_contents(datatype, max_integers, max_addresses, max_datatypes, \
+                               array_of_integers, array_of_addresses, array_of_datatypes) \
+    unimpi.type_get_contents(datatype, max_integers, max_addresses, max_datatypes, \
+                              array_of_integers, array_of_addresses, array_of_datatypes)
 #define MPI_Type_size unimpi.type_size
 #define MPI_Type_extent unimpi.type_extent
 #define MPI_Type_lb unimpi.type_lb
