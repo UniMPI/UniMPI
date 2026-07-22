@@ -88,7 +88,7 @@ void test_reduce_scatter(void) {
 void test_gatherv(void) {
     int rank, size;
     int *send_buf, *recv_buf = NULL;
-    int *recv_counts, *displs;
+    int *recv_counts = NULL, *displs = NULL;
 
     TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
