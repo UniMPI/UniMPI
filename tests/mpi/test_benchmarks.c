@@ -82,11 +82,12 @@ void benchmark_bcast(void) {
 
 void benchmark_reduce(void) {
     int rank, size;
-    int send_val = rank;
-    int recv_val = 0;
 
     TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
+
+    int send_val = rank;
+    int recv_val = 0;
 
     /* Warmup */
     for (int i = 0; i < WARMUP_ITERATIONS; i++) {
