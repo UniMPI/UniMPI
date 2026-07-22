@@ -201,6 +201,13 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_collective_extended test_collective_extended 4)
 endif()
 
+# Topology tests
+add_executable(test_topology test_topology.c)
+target_link_libraries(test_topology unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_topology test_topology 4)
+endif()
+
 # Memory safety tests
 add_executable(test_memory_safety internal/test_memory_safety.c)
 target_link_libraries(test_memory_safety unimpi)

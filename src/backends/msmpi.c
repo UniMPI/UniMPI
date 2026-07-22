@@ -332,6 +332,44 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     unimpi.comm_set_info = (int (*)(MPI_Comm, MPI_Info))
         unimpi_platform_dlsym(handle, "MPI_Comm_set_info");
 
+    /* Process Topologies - Cartesian */
+    unimpi.cart_create = (int (*)(MPI_Comm, int, const int*, const int*, int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Cart_create");
+    unimpi.cartdim_get = (int (*)(MPI_Comm, int*))
+        unimpi_platform_dlsym(handle, "MPI_Cartdim_get");
+    unimpi.cart_get = (int (*)(MPI_Comm, int, int*, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Cart_get");
+    unimpi.cart_rank = (int (*)(MPI_Comm, const int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Cart_rank");
+    unimpi.cart_coords = (int (*)(MPI_Comm, int, int, int*))
+        unimpi_platform_dlsym(handle, "MPI_Cart_coords");
+    unimpi.cart_shift = (int (*)(MPI_Comm, int, int, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Cart_shift");
+    unimpi.cart_sub = (int (*)(MPI_Comm, const int*, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Cart_sub");
+    unimpi.cart_map = (int (*)(MPI_Comm, int, const int*, const int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Cart_map");
+    unimpi.dims_create = (int (*)(int, int, int*))
+        unimpi_platform_dlsym(handle, "MPI_Dims_create");
+
+    /* Process Topologies - Graph */
+    unimpi.graph_create = (int (*)(MPI_Comm, int, const int*, const int*, int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Graph_create");
+    unimpi.graphdims_get = (int (*)(MPI_Comm, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Graphdims_get");
+    unimpi.graph_get = (int (*)(MPI_Comm, int, int, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Graph_get");
+    unimpi.graph_neighbors_count = (int (*)(MPI_Comm, int, int*))
+        unimpi_platform_dlsym(handle, "MPI_Graph_neighbors_count");
+    unimpi.graph_neighbors = (int (*)(MPI_Comm, int, int, int*))
+        unimpi_platform_dlsym(handle, "MPI_Graph_neighbors");
+    unimpi.graph_map = (int (*)(MPI_Comm, int, const int*, const int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Graph_map");
+
+    /* Topology Testing */
+    unimpi.topo_test = (int (*)(MPI_Comm, int*))
+        unimpi_platform_dlsym(handle, "MPI_Topo_test");
+
     /* Datatypes - Creation */
     unimpi.type_commit = (int (*)(MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_commit");
@@ -657,6 +695,11 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
 
     /* Initialize MS-MPI error codes (same as MPICH) */
     init_msmpi_error_codes();
+
+    /* Initialize topology type constants (MS-MPI: same as MPICH) */
+    UNIMPI_GRAPH = 1;
+    UNIMPI_CART = 2;
+    UNIMPI_DIST_GRAPH = 3;
 
     return UNIMPI_OK;
 }

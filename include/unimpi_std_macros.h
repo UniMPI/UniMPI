@@ -48,6 +48,11 @@
 /* Predefined request constant */
 #define MPI_REQUEST_NULL UNIMPI_REQUEST_NULL
 
+/* Topology types */
+#define MPI_CART UNIMPI_CART
+#define MPI_GRAPH UNIMPI_GRAPH
+#define MPI_DIST_GRAPH UNIMPI_DIST_GRAPH
+
 /* Environment */
 #define MPI_Init unimpi_init
 #define MPI_Init_thread unimpi_init_thread
@@ -232,6 +237,44 @@
 #define MPI_Comm_compare unimpi.comm_compare
 #define MPI_Comm_get_info unimpi.comm_get_info
 #define MPI_Comm_set_info unimpi.comm_set_info
+
+/* Process Topologies - Cartesian */
+#define MPI_Cart_create(comm_old, ndims, dims, periods, reorder, comm_cart) \
+    unimpi.cart_create(comm_old, ndims, dims, periods, reorder, comm_cart)
+#define MPI_Cartdim_get(comm, ndims) \
+    unimpi.cartdim_get(comm, ndims)
+#define MPI_Cart_get(comm, maxdims, dims, periods, coords) \
+    unimpi.cart_get(comm, maxdims, dims, periods, coords)
+#define MPI_Cart_rank(comm, coords, rank) \
+    unimpi.cart_rank(comm, coords, rank)
+#define MPI_Cart_coords(comm, rank, maxdims, coords) \
+    unimpi.cart_coords(comm, rank, maxdims, coords)
+#define MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest) \
+    unimpi.cart_shift(comm, direction, disp, rank_source, rank_dest)
+#define MPI_Cart_sub(comm, remain_dims, newcomm) \
+    unimpi.cart_sub(comm, remain_dims, newcomm)
+#define MPI_Cart_map(comm, ndims, dims, periods, newrank) \
+    unimpi.cart_map(comm, ndims, dims, periods, newrank)
+#define MPI_Dims_create(nnodes, ndims, dims) \
+    unimpi.dims_create(nnodes, ndims, dims)
+
+/* Process Topologies - Graph */
+#define MPI_Graph_create(comm_old, nnodes, index, edges, reorder, comm_graph) \
+    unimpi.graph_create(comm_old, nnodes, index, edges, reorder, comm_graph)
+#define MPI_Graphdims_get(comm, nnodes, nedges) \
+    unimpi.graphdims_get(comm, nnodes, nedges)
+#define MPI_Graph_get(comm, maxindex, maxedges, index, edges) \
+    unimpi.graph_get(comm, maxindex, maxedges, index, edges)
+#define MPI_Graph_neighbors_count(comm, rank, nneighbors) \
+    unimpi.graph_neighbors_count(comm, rank, nneighbors)
+#define MPI_Graph_neighbors(comm, rank, maxneighbors, neighbors) \
+    unimpi.graph_neighbors(comm, rank, maxneighbors, neighbors)
+#define MPI_Graph_map(comm, nnodes, index, edges, newrank) \
+    unimpi.graph_map(comm, nnodes, index, edges, newrank)
+
+/* Topology Testing */
+#define MPI_Topo_test(comm, status) \
+    unimpi.topo_test(comm, status)
 
 /* RMA - Window creation */
 #define MPI_Win_create unimpi.win_create

@@ -92,6 +92,11 @@ extern MPI_Info UNIMPI_INFO_NULL;
 /* MPI predefined request constant */
 extern MPI_Request UNIMPI_REQUEST_NULL;
 
+/* MPI topology types - resolved at runtime from backend */
+extern int UNIMPI_CART;
+extern int UNIMPI_GRAPH;
+extern int UNIMPI_DIST_GRAPH;
+
 /* MPI predefined datatypes - will be resolved at runtime from backend */
 extern MPI_Datatype UNIMPI_CHAR;
 extern MPI_Datatype UNIMPI_SIGNED_CHAR;
@@ -333,6 +338,35 @@ typedef struct {
     int (*comm_get_name)(MPI_Comm comm, char *comm_name, int *resultlen);
     int (*comm_get_info)(MPI_Comm comm, MPI_Info *info_used);
     int (*comm_set_info)(MPI_Comm comm, MPI_Info info);
+
+    /* Process Topologies - Cartesian */
+    int (*cart_create)(MPI_Comm comm_old, int ndims, const int *dims,
+                      const int *periods, int reorder, MPI_Comm *comm_cart);
+    int (*dims_create)(int nnodes, int ndims, int *dims);
+    int (*cartdim_get)(MPI_Comm comm, int *ndims);
+    int (*cart_get)(MPI_Comm comm, int maxdims, int *dims,
+                    int *periods, int *coords);
+    int (*cart_rank)(MPI_Comm comm, const int *coords, int *rank);
+    int (*cart_coords)(MPI_Comm comm, int rank, int maxdims, int *coords);
+    int (*cart_shift)(MPI_Comm comm, int direction, int disp,
+                      int *rank_source, int *rank_dest);
+    int (*cart_sub)(MPI_Comm comm, const int *remain_dims, MPI_Comm *newcomm);
+    int (*cart_map)(MPI_Comm comm, int ndims, const int *dims,
+                    const int *periods, int *newrank);
+
+    /* Process Topologies - Graph */
+    int (*graph_create)(MPI_Comm comm_old, int nnodes, const int *index,
+                       const int *edges, int reorder, MPI_Comm *comm_graph);
+    int (*graphdims_get)(MPI_Comm comm, int *nnodes, int *nedges);
+    int (*graph_get)(MPI_Comm comm, int maxindex, int maxedges,
+                     int *index, int *edges);
+    int (*graph_neighbors_count)(MPI_Comm comm, int rank, int *nneighbors);
+    int (*graph_neighbors)(MPI_Comm comm, int rank, int maxneighbors, int *neighbors);
+    int (*graph_map)(MPI_Comm comm, int nnodes, const int *index,
+                     const int *edges, int *newrank);
+
+    /* Topology Testing */
+    int (*topo_test)(MPI_Comm comm, int *status);
 
     /* RMA/One-Sided - Window creation */
     int (*win_create)(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win);
