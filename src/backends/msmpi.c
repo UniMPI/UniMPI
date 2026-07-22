@@ -689,6 +689,20 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_call_errhandler");
     unimpi.win_create_errhandler = (int (*)(void (*)(MPI_Win*, int*, ...), MPI_Errhandler*))
         unimpi_platform_dlsym(handle, "MPI_Win_create_errhandler");
+    unimpi.win_create_keyval = (int (*)(MPI_Win_copy_attr_function*, MPI_Win_delete_attr_function*, int*, void*))
+        unimpi_platform_dlsym(handle, "MPI_Win_create_keyval");
+    unimpi.win_free_keyval = (int (*)(int*))
+        unimpi_platform_dlsym(handle, "MPI_Win_free_keyval");
+    unimpi.win_set_attr = (int (*)(MPI_Win, int, void*))
+        unimpi_platform_dlsym(handle, "MPI_Win_set_attr");
+    unimpi.win_get_attr = (int (*)(MPI_Win, int, void*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Win_get_attr");
+    unimpi.win_delete_attr = (int (*)(MPI_Win, int))
+        unimpi_platform_dlsym(handle, "MPI_Win_delete_attr");
+    unimpi.win_get_group = (int (*)(MPI_Win, MPI_Group*))
+        unimpi_platform_dlsym(handle, "MPI_Win_get_group");
+    unimpi.win_call_errhandler = (int (*)(MPI_Win, int))
+        unimpi_platform_dlsym(handle, "MPI_Win_call_errhandler");
     unimpi.file_create_errhandler = (int (*)(void (*)(MPI_File*, int*, ...), MPI_Errhandler*))
         unimpi_platform_dlsym(handle, "MPI_File_create_errhandler");
     unimpi.add_error_class = (int (*)(int*))
@@ -712,6 +726,9 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
 
     /* MS-MPI uses MPICH-compatible request null value */
     UNIMPI_REQUEST_NULL = (MPI_Request)0x2c000000;
+
+    /* MS-MPI uses MPICH-compatible info null value */
+    UNIMPI_INFO_NULL = (MPI_Info)0x1c000000;
 
     /* Initialize MS-MPI error codes (same as MPICH) */
     init_msmpi_error_codes();

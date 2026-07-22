@@ -23,6 +23,12 @@ typedef intptr_t MPI_Message;
 typedef long MPI_Aint;
 typedef long long MPI_Offset;
 
+/* MPI Window attribute callback function types */
+typedef int (MPI_Win_copy_attr_function)(MPI_Win oldwin, int win_keyval, void *extra_state,
+                                         void *attribute_val_in, void *attribute_val_out, int *flag);
+typedef int (MPI_Win_delete_attr_function)(MPI_Win win, int win_keyval, void *attribute_val,
+                                           void *extra_state);
+
 /* Status struct - must be defined before MPI_Status
  * Union to accommodate different backend layouts:
  * - Legacy (MPICH/MS-MPI): 20 bytes with internal count fields
@@ -521,6 +527,15 @@ typedef struct {
     int (*comm_create_errhandler)(void (*handler_fn)(MPI_Comm *, int *, ...), MPI_Errhandler *errhandler);
     int (*comm_call_errhandler)(MPI_Comm comm, int errorcode);
     int (*win_create_errhandler)(void (*handler_fn)(MPI_Win *, int *, ...), MPI_Errhandler *errhandler);
+    int (*win_create_keyval)(MPI_Win_copy_attr_function *copy_fn,
+                             MPI_Win_delete_attr_function *delete_fn,
+                             int *keyval, void *extra_state);
+    int (*win_free_keyval)(int *keyval);
+    int (*win_set_attr)(MPI_Win win, int win_keyval, void *attribute_val);
+    int (*win_get_attr)(MPI_Win win, int win_keyval, void *attribute_val, int *flag);
+    int (*win_delete_attr)(MPI_Win win, int win_keyval);
+    int (*win_get_group)(MPI_Win win, MPI_Group *group);
+    int (*win_call_errhandler)(MPI_Win win, int errorcode);
     int (*file_create_errhandler)(void (*handler_fn)(MPI_File *, int *, ...), MPI_Errhandler *errhandler);
     int (*add_error_class)(int *errorclass);
     int (*add_error_code)(int errorclass, int *errorcode);

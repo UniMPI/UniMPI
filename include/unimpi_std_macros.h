@@ -437,6 +437,13 @@
 #define MPI_Comm_create_errhandler unimpi.comm_create_errhandler
 #define MPI_Comm_call_errhandler unimpi.comm_call_errhandler
 #define MPI_Win_create_errhandler unimpi.win_create_errhandler
+#define MPI_Win_create_keyval unimpi.win_create_keyval
+#define MPI_Win_free_keyval unimpi.win_free_keyval
+#define MPI_Win_set_attr unimpi.win_set_attr
+#define MPI_Win_get_attr unimpi.win_get_attr
+#define MPI_Win_delete_attr unimpi.win_delete_attr
+#define MPI_Win_get_group unimpi.win_get_group
+#define MPI_Win_call_errhandler unimpi.win_call_errhandler
 #define MPI_File_create_errhandler unimpi.file_create_errhandler
 #define MPI_Add_error_class unimpi.add_error_class
 #define MPI_Add_error_code unimpi.add_error_code

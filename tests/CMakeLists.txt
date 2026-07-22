@@ -222,6 +222,13 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_datatype_extended2 test_datatype_extended2 2)
 endif()
 
+# RMA extension tests (MPI-2.2)
+add_executable(test_rma_extended mpi/test_rma_extended.c)
+target_link_libraries(test_rma_extended unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_rma_extended test_rma_extended 2)
+endif()
+
 # Memory safety tests
 add_executable(test_memory_safety internal/test_memory_safety.c)
 target_link_libraries(test_memory_safety unimpi)

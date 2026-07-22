@@ -9,10 +9,10 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 
 | Standard | Functions | UNIMPI Support | Coverage |
 |----------|-----------|----------------|----------|
-| MPI-2.2 | ~300 | ~180 | ~60% |
-| MPI-3.0 | ~430 | ~220 | ~51% |
-| MPI-3.1 | ~440 | ~230 | ~52% |
-| MPI-4.0 | ~500 | ~236 | ~47% |
+| MPI-2.2 | ~300 | ~187 | ~62% |
+| MPI-3.0 | ~430 | ~227 | ~53% |
+| MPI-3.1 | ~440 | ~237 | ~54% |
+| MPI-4.0 | ~500 | ~243 | ~49% |
 
 ## Support by Category
 
@@ -147,7 +147,7 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 | MPI_Graph_map | ✅ | Graph mapping |
 | MPI_Topo_test | ✅ | Topology type |
 
-### ⚠️ One-Sided Communication (RMA) (15/25 - 60%)
+### ⚠️ One-Sided Communication (RMA) (22/25 - 88%)
 
 | Function | Status | Notes |
 |----------|--------|-------|
@@ -162,6 +162,13 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 | MPI_Get_accumulate | ✅ | MPI-3 atomic |
 | MPI_Fetch_and_op | ✅ | MPI-3 atomic |
 | MPI_Compare_and_swap | ✅ | MPI-3 atomic |
+| MPI_Win_create_keyval | ✅ | MPI 2.2 - Create window attribute key |
+| MPI_Win_free_keyval | ✅ | MPI 2.2 - Free window attribute key |
+| MPI_Win_set_attr | ✅ | MPI 2.2 - Set window attribute |
+| MPI_Win_get_attr | ✅ | MPI 2.2 - Get window attribute |
+| MPI_Win_delete_attr | ✅ | MPI 2.2 - Delete window attribute |
+| MPI_Win_get_group | ✅ | MPI 2.2 - Get window group |
+| MPI_Win_call_errhandler | ✅ | MPI 2.2 - Call window error handler |
 
 **Missing:**
 - MPI_Rput/Rget (MPI-3 request-based RMA)
@@ -237,7 +244,8 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 - ✅ Comprehensive P2P and collective communication
 - ✅ Full communicator and group operations
 - ✅ Complete process topology support (Cartesian and Graph)
-- ✅ Good RMA support (basic + MPI-3 atomics)
+- ✅ Full MPI-2.2 RMA window attributes (create_keyval, set_attr, get_attr, delete_attr, get_group)
+- ✅ Good RMA support (basic + MPI-2.2 attributes + MPI-3 atomics)
 - ✅ Message probing (including MPI-3 matched probes)
 
 ### Gaps
