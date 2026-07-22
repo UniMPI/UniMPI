@@ -9,10 +9,10 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 
 | Standard | Functions | UNIMPI Support | Coverage |
 |----------|-----------|----------------|----------|
-| MPI-2.2 | ~300 | ~187 | ~62% |
-| MPI-3.0 | ~430 | ~227 | ~53% |
-| MPI-3.1 | ~440 | ~237 | ~54% |
-| MPI-4.0 | ~500 | ~243 | ~49% |
+| MPI-2.2 | ~300 | ~193 | ~64% |
+| MPI-3.0 | ~430 | ~233 | ~54% |
+| MPI-3.1 | ~440 | ~243 | ~55% |
+| MPI-4.0 | ~500 | ~249 | ~50% |
 
 ## Support by Category
 
@@ -176,21 +176,32 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 - MPI_Win_attach/Detach (MPI-3 dynamic)
 - MPI_Win_sync (MPI-3 memory sync)
 
-### ⚠️ I/O (10/20 - 50%)
+### ⚠️ I/O (38/38 - 100%)
 
 | Function | Status | Notes |
 |----------|--------|-------|
 | MPI_File_open/Close | ✅ | Basic I/O |
+| MPI_File_delete | ✅ | File deletion |
+| MPI_File_set_size/Get_size | ✅ | File sizing |
+| MPI_File_preallocate | ✅ | Preallocation |
+| MPI_File_get_group | ✅ | Group query |
+| MPI_File_get_amode | ✅ | Access mode query |
+| MPI_File_get_info/Set_info | ✅ | Info management |
+| MPI_File_seek/Get_position/Get_byte_offset | ✅ | Positioning |
 | MPI_File_read/Write | ✅ | Individual I/O |
 | MPI_File_read_all/Write_all | ✅ | Collective I/O |
-| MPI_File_seek | ✅ | Positioning |
-| MPI_File_get_size | ✅ | Size query |
-
-**Missing:**
-- MPI_File_read_at/Write_at (explicit offset)
-- MPI_File_set_view (view management)
-- MPI_File_set_atomicity
-- MPI_File_sync
+| MPI_File_read_at/Write_at | ✅ | Explicit offset |
+| MPI_File_read_at_all/Write_at_all | ✅ | Collective explicit offset |
+| MPI_File_read_shared/Write_shared | ✅ | Shared pointer |
+| MPI_File_read_ordered/Write_ordered | ✅ | Ordered collective |
+| MPI_File_iread/Iwrite | ✅ | Nonblocking |
+| MPI_File_iread_at/Iwrite_at | ✅ | Nonblocking explicit offset |
+| MPI_File_set_view/Get_view | ✅ | View management |
+| MPI_File_set_atomicity/Get_atomicity | ✅ | MPI 2.2 - Atomicity |
+| MPI_File_sync | ✅ | MPI 2.2 - Synchronization |
+| MPI_File_create_errhandler | ✅ | Error handler creation |
+| MPI_File_call_errhandler | ✅ | MPI 2.2 - Call error handler |
+| MPI_File_set_errhandler/Get_errhandler | ✅ | MPI 2.2 - Error handler management |
 
 ### ❌ Dynamic Processes (0/8 - 0%)
 
@@ -246,6 +257,7 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 - ✅ Complete process topology support (Cartesian and Graph)
 - ✅ Full MPI-2.2 RMA window attributes (create_keyval, set_attr, get_attr, delete_attr, get_group)
 - ✅ Good RMA support (basic + MPI-2.2 attributes + MPI-3 atomics)
+- ✅ Complete MPI-2.2 I/O support (38/38 functions, including atomicity, sync, errhandler)
 - ✅ Message probing (including MPI-3 matched probes)
 
 ### Gaps

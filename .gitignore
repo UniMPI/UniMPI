@@ -1,7 +1,9 @@
 # Build directories
 build/
+build-*/
 cmake-build-*/
 out/
+Testing/
 
 # IDE
 .vscode/
@@ -20,3 +22,4 @@ Thumbs.db
 *.so
 *.dll
 *.exe
+*.gch

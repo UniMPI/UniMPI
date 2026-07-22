@@ -445,6 +445,12 @@
 #define MPI_Win_get_group unimpi.win_get_group
 #define MPI_Win_call_errhandler unimpi.win_call_errhandler
 #define MPI_File_create_errhandler unimpi.file_create_errhandler
+#define MPI_File_set_atomicity unimpi.file_set_atomicity
+#define MPI_File_get_atomicity unimpi.file_get_atomicity
+#define MPI_File_sync unimpi.file_sync
+#define MPI_File_call_errhandler unimpi.file_call_errhandler
+#define MPI_File_set_errhandler unimpi.file_set_errhandler
+#define MPI_File_get_errhandler unimpi.file_get_errhandler
 #define MPI_Add_error_class unimpi.add_error_class
 #define MPI_Add_error_code unimpi.add_error_code
 #define MPI_Add_error_string unimpi.add_error_string

@@ -837,6 +837,18 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_call_errhandler");
     unimpi.file_create_errhandler = (int (*)(void (*)(MPI_File*, int*, ...), MPI_Errhandler*))
         unimpi_platform_dlsym(handle, "MPI_File_create_errhandler");
+    unimpi.file_set_atomicity = (int (*)(MPI_File, int))
+        unimpi_platform_dlsym(handle, "MPI_File_set_atomicity");
+    unimpi.file_get_atomicity = (int (*)(MPI_File, int*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_atomicity");
+    unimpi.file_sync = (int (*)(MPI_File))
+        unimpi_platform_dlsym(handle, "MPI_File_sync");
+    unimpi.file_call_errhandler = (int (*)(MPI_File, int))
+        unimpi_platform_dlsym(handle, "MPI_File_call_errhandler");
+    unimpi.file_set_errhandler = (int (*)(MPI_File, MPI_Errhandler))
+        unimpi_platform_dlsym(handle, "MPI_File_set_errhandler");
+    unimpi.file_get_errhandler = (int (*)(MPI_File, MPI_Errhandler*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_errhandler");
     unimpi.add_error_class = (int (*)(int*))
         unimpi_platform_dlsym(handle, "MPI_Add_error_class");
     unimpi.add_error_code = (int (*)(int, int*))

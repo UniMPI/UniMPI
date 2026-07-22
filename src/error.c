@@ -72,14 +72,14 @@ int MPI_THREAD_FUNNELED = 1;
 int MPI_THREAD_SERIALIZED = 2;
 int MPI_THREAD_MULTIPLE = 3;
 
-/* File operation constants */
-int MPI_MODE_RDONLY = 1;
-int MPI_MODE_RDWR = 2;
+/* File operation constants (MPI standard values, same as POSIX) */
+int MPI_MODE_RDONLY = 2;
+int MPI_MODE_RDWR = 8;
 int MPI_MODE_WRONLY = 4;
-int MPI_MODE_CREATE = 8;
-int MPI_MODE_EXCL = 16;
-int MPI_MODE_DELETE_ON_CLOSE = 32;
-int MPI_MODE_UNIQUE_OPEN = 64;
+int MPI_MODE_CREATE = 1;
+int MPI_MODE_EXCL = 64;
+int MPI_MODE_DELETE_ON_CLOSE = 16;
+int MPI_MODE_UNIQUE_OPEN = 32;
 int MPI_MODE_APPEND = 128;
 int MPI_MODE_SEQUENTIAL = 256;
 

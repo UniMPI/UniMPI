@@ -537,6 +537,12 @@ typedef struct {
     int (*win_get_group)(MPI_Win win, MPI_Group *group);
     int (*win_call_errhandler)(MPI_Win win, int errorcode);
     int (*file_create_errhandler)(void (*handler_fn)(MPI_File *, int *, ...), MPI_Errhandler *errhandler);
+    int (*file_set_atomicity)(MPI_File fh, int flag);
+    int (*file_get_atomicity)(MPI_File fh, int *flag);
+    int (*file_sync)(MPI_File fh);
+    int (*file_call_errhandler)(MPI_File fh, int errorcode);
+    int (*file_set_errhandler)(MPI_File fh, MPI_Errhandler errhandler);
+    int (*file_get_errhandler)(MPI_File fh, MPI_Errhandler *errhandler);
     int (*add_error_class)(int *errorclass);
     int (*add_error_code)(int errorclass, int *errorcode);
     int (*add_error_string)(int errorcode, const char *string);
