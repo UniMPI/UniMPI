@@ -138,6 +138,8 @@ jobs:
         env:
           LD_LIBRARY_PATH: ${{ steps.mpi.outputs.library_dir }}:${{ env.LD_LIBRARY_PATH }}
           UNIMPI_LIBRARY: ${{ steps.mpi.outputs.library }}
+          UCX_TLS: ${{ matrix.backend == 'mpich' && 'tcp' || '' }}
+          UCX_NET_IB_DEVICES: ${{ matrix.backend == 'mpich' && 'none' || '' }}
         run: ctest --test-dir build --output-on-failure --timeout 180
 
   linux-intelmpi:
