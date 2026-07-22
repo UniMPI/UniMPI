@@ -25,6 +25,7 @@ option(UNIMPI_BUILD_EXAMPLES "Build example programs" ON)
 option(UNIMPI_BUILD_TESTS "Build tests" ON)
 option(UNIMPI_BUILD_MPI_TESTS "Register tests that require a real MPI runtime" OFF)
 option(UNIMPI_ENABLE_STD_MACROS "Enable standard MPI naming macros" OFF)
+option(UNIMPI_INSTALL_DOCS "Install documentation files" ON)
 
 # Platform detection
 if(WIN32)
@@ -135,6 +136,28 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/unimpiConfigVersion.cmake"
     DESTINATION ${UNIMPI_INSTALL_CMAKEDIR}
 )
+
+# Documentation installation
+if(UNIMPI_INSTALL_DOCS)
+    # Install main documentation files
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/README.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/BUILDING.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/API.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/BACKENDS.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/mpi-references.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/mpi-api-summary.md
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}/unimpi
+    )
+
+    # Install optional Windows guide if it exists
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/docs/WINDOWS.md)
+        install(FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/docs/WINDOWS.md
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}/unimpi
+        )
+    endif()
+endif()
 
 # Uninstall target
 configure_file(
