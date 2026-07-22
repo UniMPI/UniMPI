@@ -238,6 +238,18 @@
 #define MPI_Comm_get_info unimpi.comm_get_info
 #define MPI_Comm_set_info unimpi.comm_set_info
 
+/* Intercommunicator Operations (MPI-2.2) */
+#define MPI_Intercomm_create(local_comm, local_leader, peer_comm, remote_leader, tag, newintercomm) \
+    unimpi.intercomm_create(local_comm, local_leader, peer_comm, remote_leader, tag, newintercomm)
+#define MPI_Intercomm_merge(intercomm, high, newintracomm) \
+    unimpi.intercomm_merge(intercomm, high, newintracomm)
+#define MPI_Comm_remote_size(comm, size) \
+    unimpi.comm_remote_size(comm, size)
+#define MPI_Comm_remote_group(comm, group) \
+    unimpi.comm_remote_group(comm, group)
+#define MPI_Comm_test_inter(comm, flag) \
+    unimpi.comm_test_inter(comm, flag)
+
 /* Process Topologies - Cartesian */
 #define MPI_Cart_create(comm_old, ndims, dims, periods, reorder, comm_cart) \
     unimpi.cart_create(comm_old, ndims, dims, periods, reorder, comm_cart)

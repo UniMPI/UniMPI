@@ -332,6 +332,18 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     unimpi.comm_set_info = (int (*)(MPI_Comm, MPI_Info))
         unimpi_platform_dlsym(handle, "MPI_Comm_set_info");
 
+    /* Intercommunicator Operations (MPI-2.2) */
+    unimpi.intercomm_create = (int (*)(MPI_Comm, int, MPI_Comm, int, int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Intercomm_create");
+    unimpi.intercomm_merge = (int (*)(MPI_Comm, int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Intercomm_merge");
+    unimpi.comm_remote_size = (int (*)(MPI_Comm, int*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_remote_size");
+    unimpi.comm_remote_group = (int (*)(MPI_Comm, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_remote_group");
+    unimpi.comm_test_inter = (int (*)(MPI_Comm, int*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_test_inter");
+
     /* Process Topologies - Cartesian */
     unimpi.cart_create = (int (*)(MPI_Comm, int, const int*, const int*, int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Cart_create");

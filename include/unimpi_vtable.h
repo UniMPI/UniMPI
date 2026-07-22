@@ -339,6 +339,15 @@ typedef struct {
     int (*comm_get_info)(MPI_Comm comm, MPI_Info *info_used);
     int (*comm_set_info)(MPI_Comm comm, MPI_Info info);
 
+    /* Intercommunicator Operations (MPI-2.2) */
+    int (*intercomm_create)(MPI_Comm local_comm, int local_leader,
+                            MPI_Comm peer_comm, int remote_leader, int tag,
+                            MPI_Comm *newintercomm);
+    int (*intercomm_merge)(MPI_Comm intercomm, int high, MPI_Comm *newintracomm);
+    int (*comm_remote_size)(MPI_Comm comm, int *size);
+    int (*comm_remote_group)(MPI_Comm comm, MPI_Comm *group);
+    int (*comm_test_inter)(MPI_Comm comm, int *flag);
+
     /* Process Topologies - Cartesian */
     int (*cart_create)(MPI_Comm comm_old, int ndims, const int *dims,
                       const int *periods, int reorder, MPI_Comm *comm_cart);
