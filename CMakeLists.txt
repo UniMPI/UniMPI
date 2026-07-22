@@ -9,7 +9,15 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Werror=implicit-function-declaration)
+    # Strict mode: all warnings as errors
+    add_compile_options(-Wall -Wextra -Werror)
+    # Additional strict checks
+    add_compile_options(-Wstrict-prototypes)
+    add_compile_options(-Wshadow -Wcast-align)
+    add_compile_options(-Wunreachable-code -Wnull-dereference)
+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        add_compile_options(-Wlogical-op -Wjump-misses-init)
+    endif()
 endif()
 
 # Options
