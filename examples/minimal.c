@@ -1,37 +1,54 @@
-/* Minimal example using standard MPI style */
-#define UNIMPI_USE_STD_NAMES
+/* Minimal example using the unimpi function-pointer interface. */
 #include <stdio.h>
+
 #include "unimpi.h"
 
-int main(int argc, char **argv) {
-    int ret;
-    int rank, size;
+static int check_mpi_call(int code, const char *operation) {
+    if (code == 0) {
+        return 0;
+    }
+    fprintf(stderr, "%s failed with MPI error %d: %s\n",
+            operation, code, unimpi_mpi_error_string(code));
+    return -1;
+}
 
-    /* Initialize unimpi (auto-detects backend) - must call this first! */
+int main(int argc, char **argv) {
+    const char *backend_name;
+    int ret;
+    int rank;
+    int size;
+
     ret = unimpi_init(&argc, &argv);
     if (ret != UNIMPI_OK) {
         fprintf(stderr, "unimpi init failed: %s\n", unimpi_error_string(ret));
         return 1;
     }
 
-    /* Get backend name */
-    printf("Using backend: %s\n", unimpi_get_backend_name());
-
-    /* Get rank and size using standard MPI names */
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    printf("Hello from rank %d of %d\n", rank, size);
-
-    /* Barrier */
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    /* Finalize */
-    ret = unimpi_finalize();
-    if (ret != UNIMPI_OK) {
-        fprintf(stderr, "unimpi finalize failed: %s\n", unimpi_error_string(ret));
+    if (check_mpi_call(
+            unimpi.comm_rank(UNIMPI_COMM_WORLD, &rank),
+            "unimpi.comm_rank") != 0 ||
+        check_mpi_call(
+            unimpi.comm_size(UNIMPI_COMM_WORLD, &size),
+            "unimpi.comm_size") != 0) {
+        (void)unimpi.abort(UNIMPI_COMM_WORLD, 1);
         return 1;
     }
 
+    backend_name = unimpi_get_backend_name();
+    printf("Hello from rank %d of %d using %s (vtable style)\n",
+           rank, size, backend_name ? backend_name : "unknown");
+
+    if (check_mpi_call(unimpi.barrier(UNIMPI_COMM_WORLD),
+                       "unimpi.barrier") != 0) {
+        (void)unimpi.abort(UNIMPI_COMM_WORLD, 1);
+        return 1;
+    }
+
+    ret = unimpi_finalize();
+    if (ret != UNIMPI_OK) {
+        fprintf(stderr, "unimpi finalize failed: %s\n",
+                unimpi_error_string(ret));
+        return 1;
+    }
     return 0;
 }

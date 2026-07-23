@@ -128,6 +128,7 @@ jobs:
           -DCMAKE_C_EXTENSIONS=OFF
           -DUNIMPI_BUILD_TESTS=ON
           -DUNIMPI_BUILD_MPI_TESTS=ON
+          -DUNIMPI_BUILD_BENCHMARKS=ON
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
           -DMPIEXEC_PREFLAGS=${{ steps.mpi.outputs.preflags }}
 
@@ -207,6 +208,7 @@ jobs:
           -DCMAKE_C_EXTENSIONS=OFF \
           -DUNIMPI_BUILD_TESTS=ON \
           -DUNIMPI_BUILD_MPI_TESTS=ON \
+          -DUNIMPI_BUILD_BENCHMARKS=ON \
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }} \
           "-DMPIEXEC_PREFLAGS=-bootstrap;fork"
 
@@ -267,6 +269,7 @@ jobs:
             -DBUILD_SHARED_LIBS=OFF `
             -DUNIMPI_BUILD_TESTS=ON `
             -DUNIMPI_BUILD_MPI_TESTS=ON `
+            -DUNIMPI_BUILD_BENCHMARKS=ON `
             "-DMPIEXEC_EXECUTABLE=$launcher"
 
       - name: Build
@@ -336,6 +339,7 @@ jobs:
           -DCMAKE_C_EXTENSIONS=OFF
           -DUNIMPI_BUILD_TESTS=ON
           -DUNIMPI_BUILD_MPI_TESTS=ON
+          -DUNIMPI_BUILD_BENCHMARKS=ON
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
           -DMPIEXEC_PREFLAGS=${{ matrix.preflags }}
 
@@ -375,3 +379,10 @@ jobs:
 
       - name: Build
         run: cmake --build build-sanitized --parallel
+
+      - name: Run fixture-based unit tests under sanitizers
+        run: >-
+          ctest --test-dir build-sanitized
+          --output-on-failure
+          --timeout 120
+          -L unit

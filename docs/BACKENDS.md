@@ -1,379 +1,170 @@
-# Backend Selection Guide
+# Backend Selection
 
-`unimpi` supports four MPI implementations. This guide helps you choose and configure the right backend for your needs.
+UniMPI loads one native MPI implementation into a process. Backend selection
+does not convert one implementation's ABI into another, and the launcher must
+match the selected library.
 
----
+## Supported combinations
 
-## Quick Comparison
+| Backend | Linux | macOS | Windows | Native library |
+|---|---:|---:|---:|---|
+| Open MPI | Yes | Yes | No | `libmpi.so*` / `libmpi.dylib` |
+| MPICH | Yes | Yes | No | `libmpi.so*` / `libmpi.dylib` |
+| Intel MPI | Yes | No | No | `libmpi.so` |
+| MS-MPI | No | No | Yes | `msmpi.dll` |
 
-| Feature | OpenMPI | MPICH | Intel-MPI | MS-MPI |
-|---------|---------|-------|-----------|--------|
-| **Platform** | Linux, macOS | Linux, macOS | Linux | Windows |
-| **Performance** | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **Ease of Use** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Feature Set** | Full | Full | Full + Intel optim | Full |
-| **Typical Use** | Academic | Research | HPC/Enterprise | Windows |
+This table states the intended platform/backend combinations. API-category
+verification is tracked separately in [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).
 
----
+## Selection priority
 
-## Automatic Detection
+The loader evaluates:
 
-`unimpi` automatically detects available backends in this order:
+1. `UNIMPI_LIBRARY`;
+2. `UNIMPI_BACKEND`;
+3. the platform fallback name.
 
-1. **User-specified** (via `UNIMPI_BACKEND` or `UNIMPI_LIBRARY`)
-2. **OpenMPI** (`libmpi.so.40`)
-3. **Intel-MPI** (`libmpi.so`)
-4. **MPICH** (`libmpich.so`)
-5. **MS-MPI** (`msmpi.dll`) - Windows only
-
----
-
-## Manual Backend Selection
-
-### Using Environment Variables
+If both environment variables are set, `UNIMPI_LIBRARY` wins.
 
 ```bash
-# Select by name
-export UNIMPI_BACKEND=openmpi
+export UNIMPI_LIBRARY=/absolute/path/to/libmpi.so
 export UNIMPI_BACKEND=mpich
-export UNIMPI_BACKEND=intelmpi
-export UNIMPI_BACKEND=msmpi    # Windows
 
-# Or specify exact library path
-export UNIMPI_LIBRARY=/opt/openmpi/lib/libmpi.so.40
-export UNIMPI_LIBRARY=/opt/intel/oneapi/mpi/latest/lib/libmpi.so
-export UNIMPI_LIBRARY=/usr/lib/x86_64-linux-gnu/libmpich.so
+# The exact path above is used; UNIMPI_BACKEND is ignored.
+./my_program
 ```
 
-### Runtime Switching
+`UNIMPI_BACKEND` maps names to compiled-in basenames:
+
+| Value | Basename |
+|---|---|
+| `openmpi` | `libmpi.so.40` |
+| `mpich` | `libmpi.so` |
+| `intelmpi` | `libmpi.so` |
+| `msmpi` | `msmpi.dll` |
+
+Those names can be ambiguous or unavailable on a particular installation.
+Therefore, an exact `UNIMPI_LIBRARY` path is the recommended production and CI
+configuration.
+
+The automatic fallback is `msmpi.dll` on Windows and `libmpi.so.40` on POSIX.
+It is not a comprehensive search. On macOS, set an exact `.dylib` path.
+
+## Open MPI
+
+Linux:
 
 ```bash
-# Run with OpenMPI
-UNIMPI_BACKEND=openmpi ./my_app
+MPIEXEC=/absolute/openmpi/bin/mpirun
+export UNIMPI_LIBRARY="$(readlink -f /absolute/openmpi/lib/libmpi.so)"
 
-# Run with Intel MPI
-UNIMPI_LIBRARY=/opt/intel/oneapi/mpi/latest/lib/libmpi.so ./my_app
-
-# Run with MPICH
-UNIMPI_BACKEND=mpich mpirun -np 4 ./my_app
+"$MPIEXEC" --oversubscribe -np 4 ./my_program
 ```
 
----
+Homebrew macOS:
 
-## Backend Details
-
-### OpenMPI
-
-**Best for:** General purpose, academic use, Linux clusters
-
-**Installation:**
 ```bash
-# Ubuntu/Debian
-sudo apt-get install libopenmpi-dev
+MPI_PREFIX="$(brew --prefix open-mpi)"
+export UNIMPI_LIBRARY="$MPI_PREFIX/lib/libmpi.dylib"
 
-# CentOS/RHEL
-sudo yum install openmpi-devel
-
-# macOS (Homebrew)
-brew install openmpi
+"$MPI_PREFIX/bin/mpirun" --oversubscribe -np 4 ./my_program
 ```
 
-**Configuration:**
+Open MPI uses pointer-style predefined handles. UniMPI resolves those runtime
+objects in the Open MPI backend adapter; applications must not substitute
+numeric values from another implementation.
+
+## MPICH
+
+Linux:
+
 ```bash
-export UNIMPI_BACKEND=openmpi
+MPIEXEC=/absolute/mpich/bin/mpiexec
+export UNIMPI_LIBRARY="$(readlink -f /absolute/mpich/lib/libmpi.so)"
 
-# Or specify version
-export UNIMPI_LIBRARY=/usr/lib/x86_64-linux-gnu/libmpi.so.40
+"$MPIEXEC" -np 4 ./my_program
 ```
 
-**Special Notes:**
-- Uses pointers for MPI handles
-- Library name varies by version (`.so.40` for v4.x, `.so.20` for v3.x)
-- Good default choice on Linux
+Homebrew macOS:
 
-**Performance Characteristics:**
-- Excellent for InfiniBand networks
-- Good startup times
-- Scalable to thousands of processes
-
----
-
-### MPICH
-
-**Best for:** Research, portability, embedded systems
-
-**Installation:**
 ```bash
-# Ubuntu/Debian
-sudo apt-get install libmpich-dev
+MPI_PREFIX="$(brew --prefix mpich)"
+export UNIMPI_LIBRARY="$MPI_PREFIX/lib/libmpi.dylib"
 
-# CentOS/RHEL
-sudo yum install mpich-devel
-
-# macOS (Homebrew)
-brew install mpich
+"$MPI_PREFIX/bin/mpiexec" -np 4 ./my_program
 ```
 
-**Configuration:**
+Do not point `UNIMPI_LIBRARY` at `libmpich.so` merely because its filename
+contains "mpich". Select the library that provides the standard MPI C symbols
+used by the matching launcher, normally `libmpi`.
+
+## Intel MPI
+
+Intel MPI is supported on Linux. Source its environment so dependent oneAPI
+libraries are discoverable:
+
 ```bash
-export UNIMPI_BACKEND=mpich
-export UNIMPI_LIBRARY=/usr/lib/x86_64-linux-gnu/libmpich.so
+source /opt/intel/oneapi/mpi/latest/env/vars.sh
+
+MPI_PREFIX=/opt/intel/oneapi/mpi/latest
+export UNIMPI_LIBRARY="$MPI_PREFIX/lib/libmpi.so"
+
+"$MPI_PREFIX/bin/mpiexec" -bootstrap fork -np 4 ./my_program
 ```
 
-**Special Notes:**
-- Uses integers for MPI handles
-- More strict MPI compliance
-- Often used as base for other implementations
+Some releases place the runtime under `lib/release`. Resolve the existing file
+rather than assuming one layout:
 
-**Performance Characteristics:**
-- Excellent for TCP networks
-- Very portable
-- Good for development/debugging
-
----
-
-### Intel-MPI
-
-**Best for:** High-performance computing, Intel hardware
-
-**Installation:**
 ```bash
-# Download from Intel oneAPI
-# https://www.intel.com/content/www/us/en/developer/tools/oneapi/mpi-library.html
-
-# Or use package manager
-# Ubuntu/Debian (via Intel repository)
-sudo apt-get install intel-oneapi-mpi-devel
+find "$MPI_PREFIX/lib" -name libmpi.so -print
 ```
 
-**Configuration:**
-```bash
-# Source Intel environment
-source /opt/intel/oneapi/setvars.sh
+Intel MPI is MPICH-derived, but UniMPI identifies it separately and initializes
+the Intel backend adapter.
 
-# unimpi will auto-detect
-export UNIMPI_BACKEND=intelmpi
+## MS-MPI
 
-# Or explicitly
-export UNIMPI_LIBRARY=/opt/intel/oneapi/mpi/latest/lib/libmpi.so
-```
+MS-MPI is the supported Windows backend. The runtime executable and DLL are
+normally in different directories:
 
-**Special Notes:**
-- Based on MPICH (integer handles)
-- Includes Intel-specific optimizations
-- Best performance on Intel CPUs and fabrics
-- Requires `setvars.sh` or manual path configuration
-
-**Performance Characteristics:**
-- ⭐⭐⭐⭐⭐ Best overall performance
-- Optimized for Intel Omni-Path
-- Excellent for large-scale HPC
-
----
-
-### MS-MPI
-
-**Best for:** Windows development, .NET integration
-
-**Installation:**
 ```powershell
-# Download from Microsoft
-# https://www.microsoft.com/download/details.aspx?id=57467
+$MPIEXEC = "$env:ProgramFiles\Microsoft MPI\Bin\mpiexec.exe"
+$env:UNIMPI_LIBRARY = "$env:WINDIR\System32\msmpi.dll"
 
-# Install both:
-# 1. MS-MPI SDK (for development)
-# 2. MS-MPI Runtime (for execution)
+& $MPIEXEC -np 4 .\my_program.exe
 ```
 
-**Configuration:**
-```cmd
-set UNIMPI_BACKEND=msmpi
+The MS-MPI SDK is needed for CMake's real-MPI discovery and native MPI
+development. The runtime package provides `mpiexec.exe` and `msmpi.dll`.
+Executable and DLL architectures must match.
 
-:: Or specify path
-set UNIMPI_LIBRARY=C:\Program Files\Microsoft MPI\Bin\msmpi.dll
-```
+Linux and WSL processes cannot load a Windows DLL. Build and run a Windows
+executable when using MS-MPI.
 
-**Special Notes:**
-- Windows only
-- Based on MPICH
-- Integrates with Visual Studio
-- Handles use MS-MPI specific values (0x44000000)
+See [WINDOWS.md](WINDOWS.md) for detailed checks.
 
-**Build Requirements:**
-```cmd
-:: Set environment for CMake
-set MSMPI_INC=C:\Program Files (x86)\Microsoft SDKs\MPI\Include
-set MSMPI_LIB64=C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64
-```
+## Diagnosing a selection
 
-**Performance Characteristics:**
-- Good for Windows HPC
-- Compatible with Linux MPI codes
-- Scales to Azure cloud
-
----
-
-## Backend-Specific Features
-
-| Feature | OpenMPI | MPICH | Intel-MPI | MS-MPI |
-|---------|---------|-------|-----------|--------|
-| CUDA-aware | ✅ | ✅ | ✅ | ✅ |
-| InfiniBand | Native | ✅ (via libfabric) | Native | Via WARP |
-| Process affinities | Good | Good | Excellent | Good |
-| Debugging | Good | Excellent | Good | Good |
-| Fault tolerance | ✅ | ❌ | ✅ | ✅ |
-
----
-
-## Choosing a Backend
-
-### For Development
-
-**Recommendation:** MPICH or OpenMPI
-
-- Strict MPI compliance for portability
-- Good debugging support
-- Easy to install
+The `backend_info` example prints the selected backend and library path:
 
 ```bash
-export UNIMPI_BACKEND=mpich
+UNIMPI_LIBRARY=/absolute/mpi/lib/libmpi.so \
+  /absolute/mpi/bin/mpirun -np 1 ./build/examples/backend_info
 ```
 
-### For Production HPC
-
-**Recommendation:** Intel-MPI (Intel CPUs) or OpenMPI (other)
-
-- Maximum performance
-- Optimized for specific hardware
-- Production-grade reliability
+Also verify the tuple outside UniMPI:
 
 ```bash
-source /opt/intel/oneapi/setvars.sh
-export UNIMPI_BACKEND=intelmpi
+/absolute/mpi/bin/mpirun --version
+ls -l /absolute/mpi/lib/libmpi*
+ldd /absolute/mpi/lib/libmpi.so
 ```
 
-### For Windows
+Use `otool -L` on macOS and `dumpbin /DEPENDENTS` or PowerShell file/version
+inspection on Windows.
 
-**Recommendation:** MS-MPI
+## Standard MPI ABI libraries
 
-- Native Windows support
-- Visual Studio integration
-- Azure cloud ready
-
-```cmd
-set UNIMPI_BACKEND=msmpi
-```
-
-### For Teaching
-
-**Recommendation:** OpenMPI
-
-- Widely documented
-- Simple installation
-- Large community
-
-```bash
-export UNIMPI_BACKEND=openmpi
-```
-
----
-
-## Testing Different Backends
-
-```bash
-#!/bin/bash
-# test_backends.sh
-
-BACKENDS=("openmpi" "mpich" "intelmpi")
-
-for backend in "${BACKENDS[@]}"; do
-    echo "Testing with $backend..."
-    UNIMPI_BACKEND=$backend mpirun -np 4 ./my_app
-done
-```
-
----
-
-## Troubleshooting
-
-### Backend Not Found
-
-```bash
-# Check if library exists
-ldconfig -p | grep libmpi
-
-# Set explicit path
-export UNIMPI_LIBRARY=/usr/lib/x86_64-linux-gnu/libmpi.so.40
-```
-
-### Wrong Backend Detected
-
-```bash
-# Force specific backend
-export UNIMPI_BACKEND=intelmpi
-
-# Or disable auto-detection with explicit path
-unset UNIMPI_BACKEND
-export UNIMPI_LIBRARY=/opt/intel/oneapi/mpi/latest/lib/libmpi.so
-```
-
-### Intel MPI Not Detected
-
-```bash
-# Ensure Intel environment is loaded
-source /opt/intel/oneapi/setvars.sh
-
-# Verify library exists
-ls $I_MPI_ROOT/lib/libmpi.so
-
-# Set manually
-export UNIMPI_LIBRARY=$I_MPI_ROOT/lib/libmpi.so
-```
-
-### MS-MPI on Windows
-
-```cmd
-:: Verify installation
-dir "C:\Program Files\Microsoft MPI\Bin\msmpi.dll"
-
-:: Set in CMake
-set MSMPI_DIR=C:\Program Files\Microsoft MPI
-cmake -B build -DUNIMPI_BACKEND=msmpi
-```
-
----
-
-## Advanced Configuration
-
-### Multiple Versions
-
-```bash
-# Create scripts for each version
-# openmpi.sh
-export PATH=/opt/openmpi/bin:$PATH
-export LD_LIBRARY_PATH=/opt/openmpi/lib:$LD_LIBRARY_PATH
-export UNIMPI_BACKEND=openmpi
-
-# intelmpi.sh
-source /opt/intel/oneapi/setvars.sh
-export UNIMPI_BACKEND=intelmpi
-```
-
-### Container Deployment
-
-```dockerfile
-# Dockerfile example
-FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y openmpi-bin libopenmpi-dev
-COPY . /unimpi
-RUN cd /unimpi && cmake -B build . && cmake --build build
-ENV UNIMPI_BACKEND=openmpi
-```
-
----
-
-## See Also
-
-- [BUILDING.md](BUILDING.md) - Build instructions
-- [WINDOWS.md](WINDOWS.md) - Windows-specific guide
-- [API.md](API.md) - API reference
+Library names containing `mpi_abi` or `mpi-abi` are rejected. UniMPI currently
+loads native implementation ABIs because communicator, datatype, operation,
+status, and other predefined objects are initialized by backend-specific code.

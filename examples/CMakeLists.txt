@@ -21,3 +21,11 @@ target_compile_definitions(collective PRIVATE UNIMPI_USE_STD_NAMES)
 add_executable(rma rma.c)
 target_link_libraries(rma unimpi)
 target_compile_definitions(rma PRIVATE UNIMPI_USE_STD_NAMES)
+
+# Runtime backend information example
+add_executable(backend_info backend_info.c)
+target_link_libraries(backend_info unimpi)
+
+# Thread support negotiation example
+add_executable(thread_init thread_init.c)
+target_link_libraries(thread_init unimpi)

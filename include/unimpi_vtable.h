@@ -20,7 +20,7 @@ typedef intptr_t MPI_Win;
 typedef intptr_t MPI_File;
 typedef intptr_t MPI_Errhandler;
 typedef intptr_t MPI_Message;
-typedef long MPI_Aint;
+typedef intptr_t MPI_Aint;
 typedef long long MPI_Offset;
 
 /* MPI Window attribute callback function types */

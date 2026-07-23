@@ -1,73 +1,129 @@
-/* tests/unit/test_loader.c - Loader tests */
+/* Loader decision-table and failure-path tests. */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200809L
 #endif
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+
 #include "unimpi.h"
 #include "unimpi_loader.h"
 
 #ifdef _WIN32
-    #include <io.h>
-    #define setenv(name, value, overwrite) _putenv(name "=" value)
-    #define unsetenv(name) _putenv(name "=")
-    #define MISSING_LIBRARY "Z:\\unimpi-missing\\backend-does-not-exist.dll"
-    #define TEST_CLOSE _close
-    #define TEST_DUP _dup
-    #define TEST_DUP2 _dup2
-    #define TEST_FILENO _fileno
+#include <io.h>
+#define MISSING_LIBRARY "Z:\\unimpi-missing\\backend-does-not-exist.dll"
+#define TEST_CLOSE _close
+#define TEST_DUP _dup
+#define TEST_DUP2 _dup2
+#define TEST_FILENO _fileno
 #else
-    #include <unistd.h>
-    #define MISSING_LIBRARY "/unimpi-missing/backend-does-not-exist.so"
-    #define TEST_CLOSE close
-    #define TEST_DUP dup
-    #define TEST_DUP2 dup2
-    #define TEST_FILENO fileno
+#include <unistd.h>
+#define MISSING_LIBRARY "/unimpi-missing/backend-does-not-exist.so"
+#define TEST_CLOSE close
+#define TEST_DUP dup
+#define TEST_DUP2 dup2
+#define TEST_FILENO fileno
 #endif
 
-void test_backend_detection_env(void) {
-    /* Test with no environment variable */
-    unsetenv("UNIMPI_BACKEND");
-    const char *backend = unimpi_loader_get_env_backend();
-    assert(backend == NULL);
-
-    /* Test with environment variable set */
-    setenv("UNIMPI_BACKEND", "openmpi", 1);
-    backend = unimpi_loader_get_env_backend();
-    assert(backend != NULL);
-    assert(strcmp(backend, "openmpi") == 0);
-
-    /* Cleanup */
-    unsetenv("UNIMPI_BACKEND");
-
-    printf("  Backend detection tests passed\n");
+static void set_env_value(const char *name, const char *value) {
+#ifdef _WIN32
+    assert(_putenv_s(name, value) == 0);
+#else
+    assert(setenv(name, value, 1) == 0);
+#endif
 }
 
-void test_backend_info(void) {
-    /* Test backend info array */
+static void unset_env_value(const char *name) {
+#ifdef _WIN32
+    assert(_putenv_s(name, "") == 0);
+#else
+    assert(unsetenv(name) == 0);
+#endif
+}
+
+static void clear_loader_environment(void) {
+    unset_env_value("UNIMPI_BACKEND");
+    unset_env_value("UNIMPI_LIBRARY");
+}
+
+static const char* expected_auto_library(void) {
+#ifdef _WIN32
+    return "msmpi.dll";
+#else
+    return "libmpi.so.40";
+#endif
+}
+
+static int expected_platform_support(unimpi_backend_type_t backend) {
+#ifdef _WIN32
+    return backend == UNIMPI_BACKEND_MSMPI;
+#elif defined(__APPLE__)
+    return backend == UNIMPI_BACKEND_OPENMPI ||
+           backend == UNIMPI_BACKEND_MPICH;
+#elif defined(__linux__)
+    return backend == UNIMPI_BACKEND_OPENMPI ||
+           backend == UNIMPI_BACKEND_MPICH ||
+           backend == UNIMPI_BACKEND_INTELMPI;
+#else
+    (void)backend;
+    return 0;
+#endif
+}
+
+static void test_backend_detection_decision_table(void) {
+    const char *detected_path = NULL;
+
+    clear_loader_environment();
+    assert(unimpi_loader_get_env_backend() == NULL);
+    assert(unimpi_loader_detect_backend(&detected_path) == UNIMPI_OK);
+    assert(strcmp(detected_path, expected_auto_library()) == 0);
+
+    set_env_value("UNIMPI_BACKEND", "openmpi");
+    assert(strcmp(unimpi_loader_get_env_backend(), "openmpi") == 0);
+    assert(unimpi_loader_detect_backend(&detected_path) == UNIMPI_OK);
+    assert(strcmp(detected_path, unimpi_backends[0].lib_name) == 0);
+
+    set_env_value("UNIMPI_LIBRARY", "/explicit/fake/libmpi-for-test");
+    assert(unimpi_loader_detect_backend(&detected_path) == UNIMPI_OK);
+    assert(strcmp(detected_path, "/explicit/fake/libmpi-for-test") == 0);
+
+    unset_env_value("UNIMPI_LIBRARY");
+    set_env_value("UNIMPI_BACKEND", "custom-mpi-runtime");
+    assert(unimpi_loader_detect_backend(&detected_path) == UNIMPI_OK);
+    assert(strcmp(detected_path, "custom-mpi-runtime") == 0);
+
+    set_env_value("UNIMPI_BACKEND", "");
+    set_env_value("UNIMPI_LIBRARY", "");
+    assert(unimpi_loader_get_env_backend() == NULL);
+    assert(unimpi_loader_detect_backend(&detected_path) == UNIMPI_OK);
+    assert(strcmp(detected_path, expected_auto_library()) == 0);
+
+    clear_loader_environment();
+}
+
+static void test_backend_info(void) {
+    static const char *const expected_names[] = {
+        "openmpi", "mpich", "intelmpi", "msmpi"
+    };
+    static const unimpi_backend_type_t expected_types[] = {
+        UNIMPI_BACKEND_OPENMPI,
+        UNIMPI_BACKEND_MPICH,
+        UNIMPI_BACKEND_INTELMPI,
+        UNIMPI_BACKEND_MSMPI
+    };
+
     assert(UNIMPI_MAX_BACKENDS == 4);
-
-    /* OpenMPI should be first */
-    assert(unimpi_backends[0].type == UNIMPI_BACKEND_OPENMPI);
-    assert(strcmp(unimpi_backends[0].name, "openmpi") == 0);
-
-    /* MPICH should be present */
-    int found_mpich = 0;
     for (int i = 0; i < UNIMPI_MAX_BACKENDS; i++) {
-        if (unimpi_backends[i].type == UNIMPI_BACKEND_MPICH) {
-            found_mpich = 1;
-            break;
-        }
+        assert(unimpi_backends[i].type == expected_types[i]);
+        assert(strcmp(unimpi_backends[i].name, expected_names[i]) == 0);
+        assert(unimpi_backends[i].lib_name != NULL);
+        assert(unimpi_backends[i].lib_name[0] != '\0');
     }
-    assert(found_mpich);
-
-    printf("  Backend info tests passed\n");
 }
 
-void test_output_validation(void) {
+static void test_output_and_abi_validation(void) {
     int sentinel;
     unimpi_lib_handle_t handle = (unimpi_lib_handle_t)&sentinel;
 
@@ -77,10 +133,54 @@ void test_output_validation(void) {
     assert(unimpi_loader_load(NULL, &handle) == UNIMPI_ERR_NO_BACKEND);
     assert(handle == NULL);
 
-    printf("  Loader output validation passed\n");
+    handle = (unimpi_lib_handle_t)&sentinel;
+    assert(unimpi_loader_load("/tmp/libmpi_abi.so", &handle) ==
+           UNIMPI_ERR_ABI_MISMATCH);
+    assert(handle == NULL);
+    handle = (unimpi_lib_handle_t)&sentinel;
+    assert(unimpi_loader_load("/tmp/LIBMPI-ABI.DYLIB", &handle) ==
+           UNIMPI_ERR_ABI_MISMATCH);
+    assert(handle == NULL);
 }
 
-void test_load_failure_diagnostics(void) {
+static void test_platform_matrix(void) {
+    static const unimpi_backend_type_t known_backends[] = {
+        UNIMPI_BACKEND_OPENMPI,
+        UNIMPI_BACKEND_MPICH,
+        UNIMPI_BACKEND_INTELMPI,
+        UNIMPI_BACKEND_MSMPI
+    };
+
+    assert(unimpi_loader_check_platform_support(UNIMPI_BACKEND_UNKNOWN,
+                                                "native-mpi") ==
+           UNIMPI_ERR_BACKEND_NOT_SUPPORTED);
+    assert(unimpi_loader_check_platform_support((unimpi_backend_type_t)-1,
+                                                "native-mpi") ==
+           UNIMPI_ERR_BACKEND_NOT_SUPPORTED);
+    assert(unimpi_loader_check_platform_support((unimpi_backend_type_t)99,
+                                                "native-mpi") ==
+           UNIMPI_ERR_BACKEND_NOT_SUPPORTED);
+
+    for (size_t i = 0; i < sizeof(known_backends) / sizeof(known_backends[0]);
+         i++) {
+        unimpi_backend_type_t backend = known_backends[i];
+        int result = unimpi_loader_check_platform_support(backend, "native-mpi");
+
+        if (expected_platform_support(backend)) {
+            assert(result == UNIMPI_OK);
+            if (backend == UNIMPI_BACKEND_MPICH ||
+                backend == UNIMPI_BACKEND_INTELMPI) {
+                assert(unimpi_loader_check_platform_support(
+                           backend, "/opt/libmpi_abi.so") ==
+                       UNIMPI_ERR_ABI_MISMATCH);
+            }
+        } else {
+            assert(result == UNIMPI_ERR_BACKEND_NOT_SUPPORTED);
+        }
+    }
+}
+
+static void test_load_failure_diagnostics(void) {
     int sentinel;
     int load_result;
     int saved_stderr;
@@ -143,18 +243,15 @@ void test_load_failure_diagnostics(void) {
     assert(strstr(advice, "otool -L") == NULL);
     assert(strstr(advice, "PowerShell") == NULL);
 #endif
-
-    printf("  Loader failure diagnostics passed\n");
 }
 
 int main(void) {
-    printf("Running loader tests...\n");
-
-    test_backend_detection_env();
+    test_backend_detection_decision_table();
     test_backend_info();
-    test_output_validation();
+    test_output_and_abi_validation();
+    test_platform_matrix();
     test_load_failure_diagnostics();
 
-    printf("All loader tests passed!\n");
+    printf("Loader decision-table tests passed\n");
     return 0;
 }
