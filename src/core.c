@@ -370,3 +370,4 @@ const char* unimpi_get_library_path(void) {
 int unimpi_is_initialized(void) {
     return (g_state == UNIMPI_STATE_ACTIVE) ? 1 : 0;
 }
+

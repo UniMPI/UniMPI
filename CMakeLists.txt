@@ -170,3 +170,7 @@ add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P cmake_uninstall.cmake
     COMMENT "Removing installed files"
 )
+
+# Backend parity check: validates that all backends implement all public vtable functions
+set(UNIMPI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+include(tests/cmake/check_backend_parity.cmake)

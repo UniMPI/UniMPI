@@ -236,6 +236,21 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_io_extended test_io_extended 2)
 endif()
 
+# Dynamic Processes tests (MPI 2.2)
+add_executable(test_spawn_child mpi/test_spawn_child.c)
+target_link_libraries(test_spawn_child unimpi)
+
+add_executable(test_dynamic mpi/test_dynamic.c)
+target_link_libraries(test_dynamic unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    # Dynamic processes tests - run with 1 process (spawns its own children)
+    # Pass child executable path via environment
+    add_mpi_test(test_dynamic test_dynamic 1)
+    set_tests_properties(test_dynamic PROPERTIES
+        ENVIRONMENT "UNIMPI_SPAWN_CHILD_PATH=$<TARGET_FILE:test_spawn_child>"
+    )
+endif()
+
 # Memory safety tests
 add_executable(test_memory_safety internal/test_memory_safety.c)
 target_link_libraries(test_memory_safety unimpi)
@@ -249,6 +264,23 @@ add_test(NAME test_platform COMMAND test_platform)
 # ============================================
 # Benchmarks (not run by ctest by default)
 # ============================================
+
+# MS-MPI capabilities test
+add_executable(test_msmpi_capabilities mpi/test_msmpi_capabilities.c)
+target_link_libraries(test_msmpi_capabilities unimpi)
+
+# MS-MPI actual capability test (direct MS-MPI calls)
+add_executable(test_msmpi_actual mpi/test_msmpi_actual.c)
+target_link_libraries(test_msmpi_actual unimpi)
+
+# MS-MPI spawn test (test if Comm_spawn works with valid path)
+add_executable(test_spawn_test mpi/test_spawn_test.c)
+target_link_libraries(test_spawn_test unimpi)
+
+# Feature detection test
+add_executable(test_feature_detection mpi/test_feature_detection.c)
+target_link_libraries(test_feature_detection unimpi)
+
 add_executable(test_benchmarks mpi/test_benchmarks.c)
 target_link_libraries(test_benchmarks unimpi)
 

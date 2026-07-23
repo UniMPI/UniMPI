@@ -7,9 +7,9 @@ int main(int argc, char **argv) {
     int rank, size;
 
     /* Initialize using standard MPI naming */
-    ret = unimpi_init(&argc, &argv);
-    if (ret != UNIMPI_OK) {
-        fprintf(stderr, "unimpi init failed: %s\n", unimpi_error_string(ret));
+    ret = MPI_Init(&argc, &argv);
+    if (ret != MPI_SUCCESS) {
+        fprintf(stderr, "MPI_Init failed: %s\n", unimpi_error_string(ret));
         return 1;
     }
 
@@ -23,9 +23,9 @@ int main(int argc, char **argv) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     /* Finalize using standard MPI naming */
-    ret = unimpi_finalize();
-    if (ret != UNIMPI_OK) {
-        fprintf(stderr, "unimpi finalize failed: %s\n", unimpi_error_string(ret));
+    ret = MPI_Finalize();
+    if (ret != MPI_SUCCESS) {
+        fprintf(stderr, "MPI_Finalize failed: %s\n", unimpi_error_string(ret));
         return 1;
     }
 

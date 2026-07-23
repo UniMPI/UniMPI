@@ -52,12 +52,20 @@ static int path_names_standard_abi(const char *path) {
            strstr(lowered, "mpi-abi") != NULL;
 }
 
+static const char* get_nonempty_env(const char *name) {
+    const char *value = getenv(name);
+    if (value && value[0] == '\0') {
+        return NULL;
+    }
+    return value;
+}
+
 const char* unimpi_loader_get_env_backend(void) {
-    return getenv("UNIMPI_BACKEND");
+    return get_nonempty_env("UNIMPI_BACKEND");
 }
 
 const char* unimpi_loader_get_env_libpath(void) {
-    return getenv("UNIMPI_LIBRARY");
+    return get_nonempty_env("UNIMPI_LIBRARY");
 }
 
 int unimpi_loader_detect_backend(const char **out_lib_path) {

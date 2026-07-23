@@ -3,6 +3,7 @@
 #include "unimpi_platform.h"
 #include "unimpi.h"
 #include "request_array_wrappers.h"
+#include <stdlib.h>
 
 /* Intel MPI is based on MPICH and uses MPICH-compatible error codes */
 static void init_intelmpi_error_codes(void) {
@@ -85,6 +86,11 @@ static int get_intelmpi_comm_world(unimpi_lib_handle_t handle, MPI_Comm *comm) {
 }
 
 int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
+    /* Enable Intel MPI dynamic process support (spawn, open_port, etc.).
+     * Intel MPI disables spawn by default in the OFI netmod; this env var
+     * must be set before MPI_Init to avoid segfaults in MPI_Open_port. */
+    setenv("I_MPI_SPAWN", "on", 0);
+
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
         unimpi_platform_dlsym(handle, "MPI_Init");
@@ -605,6 +611,8 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_disconnect");
     unimpi.comm_join = (int (*)(int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_join");
+    unimpi.comm_get_parent = (int (*)(MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_get_parent");
 
     /* Port and Name Service */
     unimpi.open_port = (int (*)(MPI_Info, char*))

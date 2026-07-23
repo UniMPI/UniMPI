@@ -392,6 +392,9 @@
 /* MPI-3 Comm join */
 #define MPI_Comm_join unimpi.comm_join
 
+/* MPI_Comm_get_parent for spawned processes */
+#define MPI_Comm_get_parent unimpi.comm_get_parent
+
 /* Port and Name Service */
 #define MPI_Open_port unimpi.open_port
 #define MPI_Close_port unimpi.close_port

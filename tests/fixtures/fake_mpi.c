@@ -73,7 +73,9 @@ int FAKE_MPI_CALL MPI_Init_thread(int *argc, char ***argv, int required,
 
     (void)argc;
     (void)argv;
-    *provided = required;
+    if (provided) {
+        *provided = required;
+    }
     result = configured_result("UNIMPI_FAKE_INIT_THREAD_RESULT");
     if (result == 0) {
         fake_initialized = 1;

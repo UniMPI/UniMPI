@@ -617,6 +617,8 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* MPI-3 Comm join */
     unimpi.comm_join = (int (*)(int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_join");
+    unimpi.comm_get_parent = (int (*)(MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_get_parent");
 
     /* Port and Name Service */
     unimpi.open_port = (int (*)(MPI_Info, char*))

@@ -20,7 +20,7 @@ typedef intptr_t MPI_Win;
 typedef intptr_t MPI_File;
 typedef intptr_t MPI_Errhandler;
 typedef intptr_t MPI_Message;
-typedef long MPI_Aint;
+typedef intptr_t MPI_Aint;
 typedef long long MPI_Offset;
 
 /* MPI Window attribute callback function types */
@@ -484,6 +484,7 @@ typedef struct {
     int (*comm_connect)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
     int (*comm_disconnect)(MPI_Comm *comm);
     int (*comm_join)(int fd, MPI_Comm *intercomm);
+    int (*comm_get_parent)(MPI_Comm *parent);
 
     /* Dynamic Process - Port and Name Service */
     int (*open_port)(MPI_Info info, char *port_name);

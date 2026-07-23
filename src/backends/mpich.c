@@ -111,6 +111,8 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get_processor_name");
     unimpi.get_version = (int (*)(int*, int*))
         unimpi_platform_dlsym(handle, "MPI_Get_version");
+    unimpi.get_library_version = (int (*)(char*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Get_library_version");
     unimpi.barrier = (int (*)(MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Barrier");
     unimpi.wtime = (double (*)(void))
@@ -638,6 +640,8 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
     /* MPI-3 Comm join */
     unimpi.comm_join = (int (*)(int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_join");
+    unimpi.comm_get_parent = (int (*)(MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_get_parent");
 
     /* Port and Name Service */
     unimpi.open_port = (int (*)(MPI_Info, char*))
