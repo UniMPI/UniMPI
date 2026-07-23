@@ -55,7 +55,7 @@ static void test_testall(int rank, int size) {
         MPI_REQUEST_NULL, MPI_REQUEST_NULL
     };
     MPI_Status statuses[REQUEST_COUNT];
-    int values[REQUEST_COUNT] = {-1, -1};
+    int values[3] = {-1, -1, -1};
     int flag = 0;
 
     if (size >= 2 && rank == 0) {
@@ -63,7 +63,7 @@ static void test_testall(int rank, int size) {
             &values[0], 1, MPI_INT, 1, TAG_BASE, MPI_COMM_WORLD,
             &requests[0]));
         TEST_CHECK_SUCCESS(MPI_Irecv(
-            &values[1], 1, MPI_INT, 1, TAG_BASE + 1, MPI_COMM_WORLD,
+            &values[1], 2, MPI_INT, 1, TAG_BASE + 1, MPI_COMM_WORLD,
             &requests[1]));
         while (!flag) {
             TEST_CHECK_SUCCESS(
@@ -71,16 +71,28 @@ static void test_testall(int rank, int size) {
         }
         assert(values[0] == 10);
         assert(values[1] == 11);
+        assert(values[2] == 12);
+        {
+            int first_count = 0;
+            int second_count = 0;
+
+            TEST_CHECK_SUCCESS(
+                MPI_Get_count(&statuses[0], MPI_INT, &first_count));
+            TEST_CHECK_SUCCESS(
+                MPI_Get_count(&statuses[1], MPI_INT, &second_count));
+            assert(first_count == 1);
+            assert(second_count == 2);
+        }
         assert(requests[0] == MPI_REQUEST_NULL);
         assert(requests[1] == MPI_REQUEST_NULL);
     } else if (size >= 2 && rank == 1) {
-        int sends[REQUEST_COUNT] = {10, 11};
+        int sends[3] = {10, 11, 12};
 
         TEST_CHECK_SUCCESS(MPI_Isend(
             &sends[0], 1, MPI_INT, 0, TAG_BASE, MPI_COMM_WORLD,
             &requests[0]));
         TEST_CHECK_SUCCESS(MPI_Isend(
-            &sends[1], 1, MPI_INT, 0, TAG_BASE + 1, MPI_COMM_WORLD,
+            &sends[1], 2, MPI_INT, 0, TAG_BASE + 1, MPI_COMM_WORLD,
             &requests[1]));
         TEST_CHECK_SUCCESS(
             MPI_Waitall(REQUEST_COUNT, requests, statuses));

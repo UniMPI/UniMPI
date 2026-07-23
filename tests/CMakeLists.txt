@@ -216,6 +216,16 @@ set_tests_properties(test_backend_parity PROPERTIES
     TIMEOUT 30
 )
 
+add_executable(test_abi_adapters internal/test_abi_adapters.c)
+target_include_directories(test_abi_adapters PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/backends)
+target_link_libraries(test_abi_adapters unimpi)
+add_test(NAME test_abi_adapters COMMAND test_abi_adapters)
+set_tests_properties(test_abi_adapters PROPERTIES
+    LABELS "unit;internal;adapter"
+    TIMEOUT 30
+)
+
 # ============================================
 # MPI layer tests (standard MPI API)
 # ============================================

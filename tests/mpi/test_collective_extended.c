@@ -34,6 +34,44 @@ void test_alltoall(void) {
     if (rank == 0) printf("  Alltoall test passed\n");
 }
 
+void test_alltoallw(void) {
+    int rank, size;
+    int *send_buf;
+    int *recv_buf;
+    int *counts;
+    int *displacements;
+    MPI_Datatype *types;
+
+    TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
+    send_buf = (int*)malloc((size_t)size * sizeof(*send_buf));
+    recv_buf = (int*)malloc((size_t)size * sizeof(*recv_buf));
+    counts = (int*)malloc((size_t)size * sizeof(*counts));
+    displacements = (int*)malloc((size_t)size * sizeof(*displacements));
+    types = (MPI_Datatype*)malloc((size_t)size * sizeof(*types));
+    assert(send_buf && recv_buf && counts && displacements && types);
+
+    for (int i = 0; i < size; i++) {
+        send_buf[i] = rank * 100 + i;
+        counts[i] = 1;
+        displacements[i] = i * (int)sizeof(int);
+        types[i] = MPI_INT;
+    }
+    TEST_CHECK_SUCCESS(MPI_Alltoallw(
+        send_buf, counts, displacements, types,
+        recv_buf, counts, displacements, types, MPI_COMM_WORLD));
+    for (int i = 0; i < size; i++) {
+        assert(recv_buf[i] == i * 100 + rank);
+    }
+
+    free(types);
+    free(displacements);
+    free(counts);
+    free(recv_buf);
+    free(send_buf);
+    if (rank == 0) printf("  Alltoallw test passed\n");
+}
+
 void test_scan(void) {
     int rank, size;
     int send_val, recv_val;
@@ -147,6 +185,7 @@ int main(int argc, char **argv) {
     printf("Using backend: %s\n", backend_name);
 
     test_alltoall();
+    test_alltoallw();
     test_scan();
     test_reduce_scatter();
     test_gatherv();

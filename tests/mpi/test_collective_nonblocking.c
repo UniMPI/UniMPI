@@ -162,8 +162,7 @@ static void test_allgather_family(int rank, int size, int require_optional) {
     free(displacements);
 }
 
-static void test_alltoall_family(int rank, int size, int require_optional,
-                                 int datatype_arrays_compatible) {
+static void test_alltoall_family(int rank, int size, int require_optional) {
     MPI_Request request = MPI_REQUEST_NULL;
     int *send = (int *)calloc((size_t)size, sizeof(*send));
     int *receive = (int *)calloc((size_t)size, sizeof(*receive));
@@ -214,14 +213,8 @@ static void test_alltoall_family(int rank, int size, int require_optional,
         }
     }
 
-    if (!datatype_arrays_compatible) {
-        if (rank == 0) {
-            printf("SKIP: MPI_Ialltoallw requires a typed datatype-array "
-                   "adapter for this backend ABI\n");
-        }
-    } else if (use_optional(
-                   "MPI_Ialltoallw", unimpi.ialltoallw != NULL,
-                   require_optional, rank)) {
+    if (use_optional("MPI_Ialltoallw", unimpi.ialltoallw != NULL,
+                     require_optional, rank)) {
         TEST_CHECK_SUCCESS(MPI_Ialltoallw(
             send, counts, byte_displacements, types, receive, counts,
             byte_displacements, types, MPI_COMM_WORLD, &request));
@@ -325,7 +318,6 @@ static void test_reduce_family(int rank, int size, int require_optional) {
 
 int main(int argc, char **argv) {
     unimpi_backend_type_t backend;
-    int datatype_arrays_compatible;
     int rank;
     int size;
     int require_optional;
@@ -335,7 +327,6 @@ int main(int argc, char **argv) {
     TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
     backend = unimpi_get_backend_type();
     require_optional = backend != UNIMPI_BACKEND_MSMPI;
-    datatype_arrays_compatible = backend == UNIMPI_BACKEND_OPENMPI;
 
     use_optional("MPI_Ibarrier", unimpi.ibarrier != NULL, 1, rank);
     use_optional("MPI_Ibcast", unimpi.ibcast != NULL, 1, rank);
@@ -351,8 +342,7 @@ int main(int argc, char **argv) {
     test_bcast(rank);
     test_gather_family(rank, size);
     test_allgather_family(rank, size, require_optional);
-    test_alltoall_family(
-        rank, size, require_optional, datatype_arrays_compatible);
+    test_alltoall_family(rank, size, require_optional);
     test_reduce_family(rank, size, require_optional);
 
     if (rank == 0) {
