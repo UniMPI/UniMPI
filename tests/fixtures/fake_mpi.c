@@ -1,13 +1,19 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef _WIN32
 #define FAKE_MPI_CALL __stdcall
-typedef int fake_comm_t;
 #else
 #define FAKE_MPI_CALL
-typedef void *fake_comm_t;
 #endif
+
+/*
+ * The fixture is invoked through UniMPI's backend-neutral vtable, whose
+ * opaque handles use intptr_t.  Match that exact function-pointer ABI so
+ * strict C99 UBSan function checks do not flag calls through the vtable.
+ */
+typedef intptr_t fake_comm_t;
 
 int ompi_mpi_comm_null;
 int ompi_mpi_comm_world;
@@ -55,6 +61,7 @@ static int configured_result(const char *name) {
     return value ? atoi(value) : 0;
 }
 
+#ifndef UNIMPI_FAKE_OMIT_INIT
 int FAKE_MPI_CALL MPI_Init(int *argc, char ***argv) {
     int result;
 
@@ -66,15 +73,20 @@ int FAKE_MPI_CALL MPI_Init(int *argc, char ***argv) {
     }
     return result;
 }
+#endif
 
+#ifndef UNIMPI_FAKE_OMIT_INIT_THREAD
 int FAKE_MPI_CALL MPI_Init_thread(int *argc, char ***argv, int required,
                                   int *provided) {
     int result;
+    const char *configured_provided;
 
     (void)argc;
     (void)argv;
+    configured_provided = getenv("UNIMPI_FAKE_PROVIDED_LEVEL");
     if (provided) {
-        *provided = required;
+        *provided = configured_provided ? atoi(configured_provided) : required;
+    }
     }
     result = configured_result("UNIMPI_FAKE_INIT_THREAD_RESULT");
     if (result == 0) {
@@ -82,7 +94,9 @@ int FAKE_MPI_CALL MPI_Init_thread(int *argc, char ***argv, int required,
     }
     return result;
 }
+#endif
 
+#ifndef UNIMPI_FAKE_OMIT_FINALIZE
 int FAKE_MPI_CALL MPI_Finalize(void) {
     int result = configured_result("UNIMPI_FAKE_FINALIZE_RESULT");
 
@@ -91,18 +105,23 @@ int FAKE_MPI_CALL MPI_Finalize(void) {
     }
     return result;
 }
+#endif
 
+#ifndef UNIMPI_FAKE_OMIT_COMM_SIZE
 int FAKE_MPI_CALL MPI_Comm_size(fake_comm_t comm, int *size) {
     (void)comm;
     *size = 1;
     return 0;
 }
+#endif
 
+#ifndef UNIMPI_FAKE_OMIT_COMM_RANK
 int FAKE_MPI_CALL MPI_Comm_rank(fake_comm_t comm, int *rank) {
     (void)comm;
     *rank = 0;
     return 0;
 }
+#endif
 
 int FAKE_MPI_CALL MPI_Get_processor_name(char *name, int *resultlen) {
     static const char value[] = "fake-host";

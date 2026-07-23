@@ -1,272 +1,221 @@
-# MPI API Quick Reference
+# Standard-Name API Quick Reference
 
-A concise reference for the most commonly used MPI functions (MPI-3.1). For complete API documentation, see [MPI References](mpi-references.md).
+This is a UniMPI usage reference, not a complete MPI standard reference. The
+current standard-name header provides 246 direct `MPI_*` aliases plus separate
+control wrappers, function-like macros, and constants. Availability at compile
+time does not prove that every backend exports or semantically verifies an
+operation.
 
-## Legend
+For the tested boundary, see [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md). For the MPI
+standard, use [mpi-references.md](mpi-references.md).
 
-- **Comm**: Communicator (e.g., `MPI_COMM_WORLD`)
-- **Rank**: Process rank (integer)
-- **Tag**: Message tag (integer)
-- **Datatype**: MPI_Datatype (e.g., `MPI_INT`, `MPI_DOUBLE`)
-- **Op**: Reduction operation (e.g., `MPI_SUM`, `MPI_MAX`)
-- **Request**: MPI_Request handle for non-blocking operations
-- **Status**: MPI_Status structure for receive information
+## Enable standard names
 
----
+Per translation unit:
 
-## Environment Management
+```c
+#define UNIMPI_USE_STD_NAMES
+#include "unimpi.h"
+```
 
-Initialize and finalize the MPI environment.
+Or enable the target-wide definition when configuring UniMPI:
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Init` | `int MPI_Init(int *argc, char ***argv)` | Initialize MPI |
-| `MPI_Init_thread` | `int MPI_Init_thread(int *argc, char ***argv, int required, int *provided)` | Initialize with threading support |
-| `MPI_Finalize` | `int MPI_Finalize(void)` | Terminate MPI |
-| `MPI_Initialized` | `int MPI_Initialized(int *flag)` | Check if MPI is initialized |
-| `MPI_Finalized` | `int MPI_Finalized(int *flag)` | Check if MPI is finalized |
-| `MPI_Abort` | `int MPI_Abort(MPI_Comm comm, int errorcode)` | Abort MPI execution |
-| `MPI_Wtime` | `double MPI_Wtime(void)` | Wall-clock time |
-| `MPI_Wtick` | `double MPI_Wtick(void)` | Clock resolution |
+```bash
+cmake -S . -B build -DUNIMPI_ENABLE_STD_MACROS=ON
+```
 
----
+The macros dispatch through the same runtime vtable as direct `unimpi.*` calls.
 
-## Communicator Information
+## Lifecycle
 
-Query process ranks and communicator sizes.
+```c
+int MPI_Init(int *argc, char ***argv);
+int MPI_Init_thread(int *argc, char ***argv, int required, int *provided);
+int MPI_Finalize(void);
+int MPI_Initialized(int *flag);
+int MPI_Finalized(int *flag);
+```
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Comm_rank` | `int MPI_Comm_rank(MPI_Comm comm, int *rank)` | Get process rank |
-| `MPI_Comm_size` | `int MPI_Comm_size(MPI_Comm comm, int *size)` | Get number of processes |
-| `MPI_Comm_compare` | `int MPI_Comm_compare(MPI_Comm comm1, MPI_Comm comm2, int *result)` | Compare communicators |
-| `MPI_Comm_dup` | `int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm)` | Duplicate communicator |
-| `MPI_Comm_free` | `int MPI_Comm_free(MPI_Comm *comm)` | Free communicator |
-| `MPI_Comm_split` | `int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)` | Split communicator |
+Use `&argc` with `&argv`, or pass both as `NULL`. Check every return value.
 
----
+## Basic communicator queries
 
-## Point-to-Point Communication (Blocking)
+```c
+int MPI_Comm_rank(MPI_Comm comm, int *rank);
+int MPI_Comm_size(MPI_Comm comm, int *size);
+int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
+int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
+int MPI_Comm_free(MPI_Comm *comm);
+```
 
-Standard blocking send and receive operations.
+Predefined communicators are populated by the selected backend:
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Send` | `int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)` | Standard send |
-| `MPI_Recv` | `int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)` | Standard receive |
-| `MPI_Ssend` | `int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)` | Synchronous send |
-| `MPI_Bsend` | `int MPI_Bsend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)` | Buffered send |
-| `MPI_Rsend` | `int MPI_Rsend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)` | Ready send |
-| `MPI_Sendrecv` | `int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf, int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Status *status)` | Combined send-receive |
-| `MPI_Sendrecv_replace` | `int MPI_Sendrecv_replace(void *buf, int count, MPI_Datatype datatype, int dest, int sendtag, int source, int recvtag, MPI_Comm comm, MPI_Status *status)` | In-place send-receive |
-| `MPI_Get_count` | `int MPI_Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count)` | Get received count |
+```c
+MPI_COMM_WORLD
+MPI_COMM_SELF
+```
 
----
+## Point-to-point
 
-## Point-to-Point Communication (Non-blocking)
+```c
+int MPI_Send(const void *buf, int count, MPI_Datatype datatype,
+             int dest, int tag, MPI_Comm comm);
+int MPI_Recv(void *buf, int count, MPI_Datatype datatype,
+             int source, int tag, MPI_Comm comm, MPI_Status *status);
+int MPI_Isend(const void *buf, int count, MPI_Datatype datatype,
+              int dest, int tag, MPI_Comm comm, MPI_Request *request);
+int MPI_Irecv(void *buf, int count, MPI_Datatype datatype,
+              int source, int tag, MPI_Comm comm, MPI_Request *request);
+int MPI_Wait(MPI_Request *request, MPI_Status *status);
+int MPI_Test(MPI_Request *request, int *flag, MPI_Status *status);
+int MPI_Waitall(int count, MPI_Request *requests, MPI_Status *statuses);
+int MPI_Sendrecv(...);
+```
 
-Non-blocking operations return immediately with a request handle.
+Focused tests cover representative blocking/nonblocking paths, request-array
+completion, zero-count request arrays, and a `Send_init`/`Recv_init` +
+`Startall` path. They do not cover matched probes, cancellation semantics,
+every send mode, wildcard behavior, or the full persistent-request lifecycle.
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Isend` | `int MPI_Isend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)` | Non-blocking send |
-| `MPI_Irecv` | `int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)` | Non-blocking receive |
-| `MPI_Issend` | `int MPI_Issend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)` | Non-blocking sync send |
-| `MPI_Ibsend` | `int MPI_Ibsend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)` | Non-blocking buffered send |
-| `MPI_Irsend` | `int MPI_Irsend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)` | Non-blocking ready send |
-| `MPI_Wait` | `int MPI_Wait(MPI_Request *request, MPI_Status *status)` | Wait for completion |
-| `MPI_Test` | `int MPI_Test(MPI_Request *request, int *flag, MPI_Status *status)` | Test for completion |
-| `MPI_Waitany` | `int MPI_Waitany(int count, MPI_Request array_of_requests[], int *index, MPI_Status *status)` | Wait for any |
-| `MPI_Testany` | `int MPI_Testany(int count, MPI_Request array_of_requests[], int *index, int *flag, MPI_Status *status)` | Test for any |
-| `MPI_Waitall` | `int MPI_Waitall(int count, MPI_Request array_of_requests[], MPI_Status array_of_statuses[])` | Wait for all |
-| `MPI_Testall` | `int MPI_Testall(int count, MPI_Request array_of_requests[], int *flag, MPI_Status array_of_statuses[])` | Test for all |
-| `MPI_Waitsome` | `int MPI_Waitsome(int incount, MPI_Request array_of_requests[], int *outcount, int array_of_indices[], MPI_Status array_of_statuses[])` | Wait for some |
-| `MPI_Testsome` | `int MPI_Testsome(int incount, MPI_Request array_of_requests[], int *outcount, int array_of_indices[], MPI_Status array_of_statuses[])` | Test for some |
-| `MPI_Request_free` | `int MPI_Request_free(MPI_Request *request)` | Free request |
-| `MPI_Cancel` | `int MPI_Cancel(MPI_Request *request)` | Cancel request |
+## Collectives
 
----
+Common aliases include:
 
-## Collective Communication (One-to-All)
+```c
+MPI_Barrier
+MPI_Bcast
+MPI_Reduce
+MPI_Allreduce
+MPI_Gather
+MPI_Gatherv
+MPI_Allgather
+MPI_Scatter
+MPI_Alltoall
+MPI_Reduce_scatter
+MPI_Scan
+MPI_Ibarrier
+```
 
-Broadcast and scatter operations.
+Focused tests exercise the blocking calls above plus the `Ibarrier`, fixed and
+variable-count gather/scatter/all-to-all families, and nonblocking reduction
+families. This is still a representative subset rather than exhaustive
+collective conformance or corner-case coverage.
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Bcast` | `int MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)` | Broadcast |
-| `MPI_Scatter` | `int MPI_Scatter(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)` | Scatter |
-| `MPI_Scatterv` | `int MPI_Scatterv(const void *sendbuf, const int sendcounts[], const int displs[], MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)` | Variable scatter |
+## Datatypes
 
----
+Common predefined datatypes:
 
-## Collective Communication (All-to-One)
+```c
+MPI_CHAR
+MPI_BYTE
+MPI_SHORT
+MPI_INT
+MPI_LONG
+MPI_LONG_LONG
+MPI_FLOAT
+MPI_DOUBLE
+MPI_LONG_DOUBLE
+```
 
-Gather and reduce operations.
+Representative constructors and queries:
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Gather` | `int MPI_Gather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)` | Gather |
-| `MPI_Gatherv` | `int MPI_Gatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, const int recvcounts[], const int displs[], MPI_Datatype recvtype, int root, MPI_Comm comm)` | Variable gather |
-| `MPI_Reduce` | `int MPI_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)` | Reduction |
-| `MPI_Reduce_scatter` | `int MPI_Reduce_scatter(const void *sendbuf, void *recvbuf, const int recvcounts[], MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)` | Reduce-scatter |
-| `MPI_Reduce_scatter_block` | `int MPI_Reduce_scatter_block(const void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)` | Block reduce-scatter |
+```c
+MPI_Type_contiguous
+MPI_Type_vector
+MPI_Type_indexed
+MPI_Type_dup
+MPI_Type_create_resized
+MPI_Type_commit
+MPI_Type_free
+MPI_Type_size
+MPI_Type_get_extent
+MPI_Type_get_envelope
+MPI_Type_get_contents
+MPI_Pack
+MPI_Unpack
+```
 
----
+Do not copy numeric datatype values from a vendor header. UniMPI initializes
+the exported predefined objects for the selected backend.
 
-## Collective Communication (All-to-All)
+## Communicators, groups, and topology
 
-All-to-all and scan operations.
+Focused tests exercise representative calls from:
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Allgather` | `int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)` | All-gather |
-| `MPI_Allgatherv` | `int MPI_Allgatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, const int recvcounts[], const int displs[], MPI_Datatype recvtype, MPI_Comm comm)` | Variable all-gather |
-| `MPI_Alltoall` | `int MPI_Alltoall(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)` | All-to-all |
-| `MPI_Alltoallv` | `int MPI_Alltoallv(const void *sendbuf, const int sendcounts[], const int sdispls[], MPI_Datatype sendtype, void *recvbuf, const int recvcounts[], const int rdispls[], MPI_Datatype recvtype, MPI_Comm comm)` | Variable all-to-all |
-| `MPI_Allreduce` | `int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)` | All-reduce |
-| `MPI_Scan` | `int MPI_Scan(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)` | Prefix scan |
-| `MPI_Exscan` | `int MPI_Exscan(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)` | Exclusive scan |
-| `MPI_Barrier` | `int MPI_Barrier(MPI_Comm comm)` | Barrier synchronization |
+```c
+MPI_Comm_compare
+MPI_Comm_group
+MPI_Group_size
+MPI_Group_rank
+MPI_Group_incl
+MPI_Group_excl
+MPI_Group_compare
+MPI_Intercomm_create
+MPI_Intercomm_merge
+MPI_Dims_create
+MPI_Cart_create
+MPI_Cart_get
+MPI_Cart_shift
+MPI_Graph_create
+MPI_Graphdims_get
+MPI_Topo_test
+```
 
----
+See the support matrix for untested topology and dynamic-process operations.
 
-## Derived Datatypes
+## RMA and MPI I/O
 
-Create custom datatypes for complex data structures.
+The interface includes a broad set of window and file fields. Current focused
+tests cover fence-based `Put`, `Get`, and `Accumulate`; window
+lifecycle/attributes; and positioned independent, collective, and nonblocking
+file round trips plus selected metadata. They do not cover the full RMA epoch,
+atomic-operation, file-view, shared-pointer, or split-collective matrix.
 
-| Function | C Signature | Description |
-|----------|-------------|-------------|
-| `MPI_Type_contiguous` | `int MPI_Type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)` | Contiguous |
-| `MPI_Type_vector` | `int MPI_Type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype)` | Vector |
-| `MPI_Type_create_hvector` | `int MPI_Type_create_hvector(int count, int blocklength, MPI_Aint stride, MPI_Datatype oldtype, MPI_Datatype *newtype)` | Heterogeneous vector |
-| `MPI_Type_indexed` | `int MPI_Type_indexed(int count, const int array_of_blocklengths[], const int array_of_displacements[], MPI_Datatype oldtype, MPI_Datatype *newtype)` | Indexed |
-| `MPI_Type_create_hindexed` | `int MPI_Type_create_hindexed(int count, const int array_of_blocklengths[], const MPI_Aint array_of_displacements[], MPI_Datatype oldtype, MPI_Datatype *newtype)` | Heterogeneous indexed |
-| `MPI_Type_create_struct` | `int MPI_Type_create_struct(int count, const int array_of_blocklengths[], const MPI_Aint array_of_displacements[], const MPI_Datatype array_of_types[], MPI_Datatype *newtype)` | Struct |
-| `MPI_Type_commit` | `int MPI_Type_commit(MPI_Datatype *datatype)` | Commit type |
-| `MPI_Type_free` | `int MPI_Type_free(MPI_Datatype *datatype)` | Free type |
-| `MPI_Type_size` | `int MPI_Type_size(MPI_Datatype datatype, int *size)` | Type size |
-| `MPI_Type_extent` | `int MPI_Type_extent(MPI_Datatype datatype, MPI_Aint *extent)` | Type extent |
-| `MPI_Get_address` | `int MPI_Get_address(const void *location, MPI_Aint *address)` | Get address |
-| `MPI_Pack` | `int MPI_Pack(const void *inbuf, int incount, MPI_Datatype datatype, void *outbuf, int outsize, int *position, MPI_Comm comm)` | Pack data |
-| `MPI_Unpack` | `int MPI_Unpack(const void *inbuf, int insize, int *position, void *outbuf, int outcount, MPI_Datatype datatype, MPI_Comm comm)` | Unpack data |
-| `MPI_Pack_size` | `int MPI_Pack_size(int incount, MPI_Datatype datatype, MPI_Comm comm, int *size)` | Pack size |
+Representative aliases:
 
----
+```c
+MPI_Win_create
+MPI_Win_allocate
+MPI_Win_fence
+MPI_Put
+MPI_Get
+MPI_Accumulate
+MPI_Win_free
+MPI_Win_create_keyval
+MPI_Win_set_attr
+MPI_Win_get_attr
 
-## Common Constants
+MPI_File_open
+MPI_File_close
+MPI_File_write_at
+MPI_File_read_at
+MPI_File_write_at_all
+MPI_File_read_at_all
+MPI_File_iwrite_at
+MPI_File_iread_at
+MPI_File_set_atomicity
+MPI_File_get_atomicity
+MPI_File_sync
+```
 
-### Communicators
+## Thread levels
 
-| Constant | Value | Description |
-|----------|-------|-------------|
-| `MPI_COMM_WORLD` | (impl-defined) | All processes |
-| `MPI_COMM_SELF` | (impl-defined) | Current process only |
-| `MPI_COMM_NULL` | 0x04000000 | Null communicator |
+```c
+MPI_THREAD_SINGLE
+MPI_THREAD_FUNNELED
+MPI_THREAD_SERIALIZED
+MPI_THREAD_MULTIPLE
+```
 
-### Error Codes
+`MPI_Init_thread` reports backend MPI thread support. It does not certify
+thread-safe concurrent UniMPI initialization or finalization.
 
-| Constant | Value | Description |
-|----------|-------|-------------|
-| `MPI_SUCCESS` | 0 | Success |
-| `MPI_ERR_BUFFER` | 1 | Invalid buffer pointer |
-| `MPI_ERR_COUNT` | 2 | Invalid count |
-| `MPI_ERR_TYPE` | 3 | Invalid datatype |
-| `MPI_ERR_TAG` | 4 | Invalid tag |
-| `MPI_ERR_COMM` | 5 | Invalid communicator |
-| `MPI_ERR_RANK` | 6 | Invalid rank |
-| `MPI_ERR_REQUEST` | 7 | Invalid request |
-| `MPI_ERR_ROOT` | 7 | Invalid root |
-| `MPI_ERR_GROUP` | 8 | Invalid group |
-| `MPI_ERR_OP` | 9 | Invalid operation |
-| `MPI_ERR_TOPOLOGY` | 10 | Invalid topology |
-| `MPI_ERR_DIMS` | 11 | Invalid dimensions |
-| `MPI_ERR_ARG` | 12 | Invalid argument |
-| `MPI_ERR_UNKNOWN` | 13 | Unknown error |
-| `MPI_ERR_TRUNCATE` | 14 | Message truncated |
-| `MPI_ERR_OTHER` | 15 | Other error |
-| `MPI_ERR_INTERN` | 16 | Internal error |
-| `MPI_ERR_PENDING` | 18 | Pending request |
-| `MPI_ERR_IN_STATUS` | 19 | Error in status |
+## Runtime selection reminder
 
-### Predefined Datatypes
+Standard-name macros do not select a backend. Runtime priority remains:
 
-| C Type | MPI Datatype |
-|--------|--------------|
-| `char` | `MPI_CHAR` |
-| `signed char` | `MPI_SIGNED_CHAR` |
-| `unsigned char` | `MPI_UNSIGNED_CHAR` |
-| `short` | `MPI_SHORT` |
-| `unsigned short` | `MPI_UNSIGNED_SHORT` |
-| `int` | `MPI_INT` |
-| `unsigned int` | `MPI_UNSIGNED` |
-| `long` | `MPI_LONG` |
-| `unsigned long` | `MPI_UNSIGNED_LONG` |
-| `long long` | `MPI_LONG_LONG` |
-| `float` | `MPI_FLOAT` |
-| `double` | `MPI_DOUBLE` |
-| `long double` | `MPI_LONG_DOUBLE` |
-| `uint8_t` | `MPI_UINT8_T` |
-| `uint16_t` | `MPI_UINT16_T` |
-| `uint32_t` | `MPI_UINT32_T` |
-| `uint64_t` | `MPI_UINT64_T` |
-| `int8_t` | `MPI_INT8_T` |
-| `int16_t` | `MPI_INT16_T` |
-| `int32_t` | `MPI_INT32_T` |
-| `int64_t` | `MPI_INT64_T` |
-| `bool` | `MPI_C_BOOL` |
-| `float complex` | `MPI_C_COMPLEX` |
-| `double complex` | `MPI_C_DOUBLE_COMPLEX` |
-| `void*` (for `MPI_Send`) | `MPI_BYTE` |
+```text
+UNIMPI_LIBRARY > UNIMPI_BACKEND > platform fallback
+```
 
-### Reduction Operations
-
-| Operation | Description |
-|-----------|-------------|
-| `MPI_MAX` | Maximum |
-| `MPI_MIN` | Minimum |
-| `MPI_SUM` | Sum |
-| `MPI_PROD` | Product |
-| `MPI_LAND` | Logical AND |
-| `MPI_BAND` | Bitwise AND |
-| `MPI_LOR` | Logical OR |
-| `MPI_BOR` | Bitwise OR |
-| `MPI_LXOR` | Logical XOR |
-| `MPI_BXOR` | Bitwise XOR |
-| `MPI_MAXLOC` | Maximum value and location |
-| `MPI_MINLOC` | Minimum value and location |
-| `MPI_REPLACE` | Replace (for RMA) |
-| `MPI_NO_OP` | No operation |
-
-### Special Constants
-
-| Constant | Description |
-|----------|-------------|
-| `MPI_ANY_SOURCE` | Receive from any sender |
-| `MPI_ANY_TAG` | Receive with any tag |
-| `MPI_STATUS_IGNORE` | Ignore status |
-| `MPI_STATUSES_IGNORE` | Ignore statuses array |
-| `MPI_REQUEST_NULL` | Null request |
-| `MPI_PROC_NULL` | Null process (for send) |
-| `MPI_UNDEFINED` | Undefined value |
-| `MPI_BOTTOM` | Base address |
-
-### Thread Levels
-
-| Level | Value | Description |
-|-------|-------|-------------|
-| `MPI_THREAD_SINGLE` | 0 | Only main thread |
-| `MPI_THREAD_FUNNELED` | 1 | Only main makes MPI calls |
-| `MPI_THREAD_SERIALIZED` | 2 | Only one thread at a time |
-| `MPI_THREAD_MULTIPLE` | 3 | Multiple threads concurrent |
-
----
-
-## See Also
-
-- [MPI References](mpi-references.md) - Official documentation links
-- [API.md](API.md) - UNIMPI-specific API documentation
-- [BACKENDS.md](BACKENDS.md) - Backend-specific information
-
-## Version
-
-This reference covers MPI-3.1 standard functions.
+Use [BACKENDS.md](BACKENDS.md) to choose a matching launcher/library pair.

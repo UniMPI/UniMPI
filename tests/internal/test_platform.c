@@ -47,12 +47,20 @@ void test_error_strings(void) {
     printf("  Error strings test passed\n");
 }
 
+void test_mpi_abi_types(void) {
+    assert(sizeof(MPI_Aint) == sizeof(intptr_t));
+    assert(sizeof(MPI_Aint) == sizeof(void *));
+
+    printf("  MPI_Aint ABI width test passed\n");
+}
+
 int main(void) {
     printf("Running platform tests...\n");
 
     test_dlopen_invalid();
     test_dlsym_null_handle();
     test_error_strings();
+    test_mpi_abi_types();
 
     printf("All platform tests passed!\n");
     return 0;

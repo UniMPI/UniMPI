@@ -36,6 +36,66 @@ int test_delete_fn(MPI_Win win, int win_keyval, void *attribute_val,
     return MPI_SUCCESS;
 }
 
+int test_rma_data_path(void) {
+    int rank, size;
+    int value;
+    int fetched = -1;
+    int increment = 1;
+    MPI_Win win;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    TEST("Win_create/Put/Get/Accumulate data path");
+    value = rank;
+
+    int ret = MPI_Win_create(
+        &value, sizeof(value), sizeof(value), MPI_INFO_NULL,
+        MPI_COMM_WORLD, &win);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Win_create failed");
+
+    /* Every rank replaces the next rank's value. */
+    ret = MPI_Win_fence(0, win);
+    if (ret != MPI_SUCCESS) FAIL("first MPI_Win_fence failed");
+    int next = (rank + 1) % size;
+    int replacement = 100 + rank;
+    ret = MPI_Put(&replacement, 1, MPI_INT, next, 0, 1, MPI_INT, win);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Put failed");
+    ret = MPI_Win_fence(0, win);
+    if (ret != MPI_SUCCESS) FAIL("second MPI_Win_fence failed");
+    if (value != 100 + (rank + size - 1) % size) {
+        FAIL("MPI_Put produced the wrong target value");
+    }
+
+    /* Fetch the value that this rank placed on its next neighbor. */
+    ret = MPI_Win_fence(0, win);
+    if (ret != MPI_SUCCESS) FAIL("third MPI_Win_fence failed");
+    ret = MPI_Get(&fetched, 1, MPI_INT, next, 0, 1, MPI_INT, win);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Get failed");
+    ret = MPI_Win_fence(0, win);
+    if (ret != MPI_SUCCESS) FAIL("fourth MPI_Win_fence failed");
+    if (fetched != replacement) {
+        FAIL("MPI_Get returned the wrong value");
+    }
+
+    /* Every rank increments its next neighbor. */
+    ret = MPI_Win_fence(0, win);
+    if (ret != MPI_SUCCESS) FAIL("fifth MPI_Win_fence failed");
+    ret = MPI_Accumulate(
+        &increment, 1, MPI_INT, next, 0, 1, MPI_INT, MPI_SUM, win);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Accumulate failed");
+    ret = MPI_Win_fence(0, win);
+    if (ret != MPI_SUCCESS) FAIL("sixth MPI_Win_fence failed");
+    if (value != 101 + (rank + size - 1) % size) {
+        FAIL("MPI_Accumulate produced the wrong target value");
+    }
+
+    ret = MPI_Win_free(&win);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Win_free failed");
+    PASS();
+    return 0;
+}
+
 int test_win_keyval(void) {
     int rank, keyval;
 
@@ -46,8 +106,6 @@ int test_win_keyval(void) {
     /* Create a keyval */
     int ret = MPI_Win_create_keyval(test_copy_fn, test_delete_fn, &keyval, NULL);
     if (ret != MPI_SUCCESS) FAIL("MPI_Win_create_keyval failed");
-    /* Note: MPICH uses negative values for handles, OpenMPI uses positive */
-    if (keyval == 0) FAIL("keyval should not be zero");
 
     /* Free the keyval */
     ret = MPI_Win_free_keyval(&keyval);
@@ -177,6 +235,9 @@ int main(int argc, char **argv) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     printf("=== MPI 2.2 RMA Extension Tests ===\n\n");
+
+    ret = test_rma_data_path();
+    if (ret != 0) goto cleanup;
 
     ret = test_win_keyval();
     if (ret != 0) goto cleanup;

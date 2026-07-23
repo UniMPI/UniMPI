@@ -1,195 +1,218 @@
-# Building unimpi
+# Building UniMPI
 
-This guide covers building `unimpi` from source on various platforms.
+UniMPI is a C99 project built with CMake 3.10 or newer. The library resolves
+MPI at runtime, so an MPI SDK is not required for a library-only build. A real
+MPI installation is required for integration tests, examples, and benchmarks.
 
----
+The commands below use `cmake --build ... --parallel` (CMake 3.12+),
+`cmake -S ... -B ...` (CMake 3.13+), and `cmake --install` (CMake 3.15+).
+With CMake 3.10 or 3.11, omit `--parallel`. With CMake 3.10 through 3.12,
+create and enter the build directory, then run `cmake /path/to/unimpi`.
+With CMake 3.10 through 3.14, configure
+`-DCMAKE_INSTALL_PREFIX=/desired/prefix` and install with
+`cmake --build . --target install` from that build directory.
 
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Quick Build](#quick-build)
-- [Linux / macOS](#linux--macos)
-- [Windows](#windows)
-- [CMake Options](#cmake-options)
-- [Installation](#installation)
-- [Consuming with CMake](#consuming-with-cmake)
-- [Real MPI Tests](#real-mpi-tests)
-- [Troubleshooting](#troubleshooting)
-
----
-
-## Prerequisites
-
-### Required
-
-- CMake >= 3.10
-- C99 compatible compiler (gcc, clang, MSVC)
-
-> **Note:** Building `unimpi` itself **does NOT require MPI**. It is a runtime-loading wrapper that works with any MPI implementation.
-> MPI is only needed when:
-> - Running real MPI tests (`-DUNIMPI_BUILD_MPI_TESTS=ON`)
-> - Running applications that call MPI functions
-
-### Optional (for testing)
-
-- OpenMPI, MPICH, or Intel-MPI (Linux/macOS)
-- MS-MPI (Windows)
-
-### Supported Compilers
-
-| Compiler | Version | Platform |
-|----------|---------|----------|
-| GCC | >= 7.0 | Linux, macOS |
-| Clang | >= 6.0 | Linux, macOS |
-| MSVC | >= 2017 | Windows |
-| MinGW-w64 | >= 8.0 | Windows |
-
----
-
-## Quick Build
+## Quick build
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/unimpi.git
-cd unimpi
+git clone https://github.com/UniMPI/UniMPI.git
+cd UniMPI
 
-# Configure and build
-cmake -B build .
-cmake --build build
-
-# Run tests
-cd build && ctest --output-on-failure
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
 ```
 
-On Windows with Visual Studio:
-```cmd
-cmake -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release
-ctest -C Release --output-on-failure
+Visual Studio is a multi-configuration generator:
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release --parallel
 ```
 
----
+## CMake options
 
-## Linux / macOS
+| Option | Default | Purpose |
+|---|---:|---|
+| `UNIMPI_BUILD_EXAMPLES` | `ON` | Build programs under `examples/` |
+| `UNIMPI_BUILD_TESTS` | `ON` | Build and register the test suite |
+| `UNIMPI_BUILD_MPI_TESTS` | `OFF` | Register tests that launch a real MPI runtime |
+| `UNIMPI_BUILD_BENCHMARKS` | `OFF` | Build benchmark executables and smoke registrations |
+| `UNIMPI_ENABLE_STD_MACROS` | `OFF` | Export standard-name macros to consumers of the target |
+| `UNIMPI_INSTALL_DOCS` | `ON` | Install the maintained Markdown documentation |
+| `BUILD_SHARED_LIBS` | `OFF` | Build `unimpi` shared instead of static |
+| `CMAKE_INSTALL_PREFIX` | Platform default | Installation prefix |
 
-### Standard Build
+Library-only build:
 
 ```bash
-cmake -B build .
-cmake --build build
+cmake -S . -B build-min -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUNIMPI_BUILD_EXAMPLES=OFF \
+  -DUNIMPI_BUILD_TESTS=OFF \
+  -DUNIMPI_BUILD_BENCHMARKS=OFF \
+  -DUNIMPI_INSTALL_DOCS=OFF
+cmake --build build-min --parallel
 ```
 
-### With Specific MPI
+Full developer build with real MPI and smoke benchmarks:
 
 ```bash
-# With OpenMPI
-cmake -B build . -DCMAKE_C_COMPILER=mpicc
-
-# With Intel MPI (after sourcing setvars.sh)
-source /opt/intel/oneapi/setvars.sh
-cmake -B build . -DCMAKE_C_COMPILER=mpiicc
-
-# With MPICH
-cmake -B build . \
-    -DCMAKE_C_COMPILER=/usr/local/mpich/bin/mpicc
+cmake -S . -B build-dev -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_C_EXTENSIONS=OFF \
+  -DUNIMPI_BUILD_TESTS=ON \
+  -DUNIMPI_BUILD_MPI_TESTS=ON \
+  -DUNIMPI_BUILD_BENCHMARKS=ON \
+  -DMPIEXEC_EXECUTABLE=/path/to/matching/mpirun
+cmake --build build-dev --parallel
 ```
 
-### Static vs Shared Library
+## Platform setup
+
+### Linux: Open MPI or MPICH
+
+Ubuntu/Debian:
 
 ```bash
-# Static library (default)
-cmake -B build . -DBUILD_SHARED_LIBS=OFF
-
-# Shared library
-cmake -B build . -DBUILD_SHARED_LIBS=ON
+sudo apt-get update
+sudo apt-get install --no-install-recommends -y \
+  cmake ninja-build build-essential openmpi-bin libopenmpi-dev
 ```
 
----
-
-## Windows
-
-### Using Visual Studio
-
-1. Install MS-MPI SDK from https://www.microsoft.com/download/details.aspx?id=57467
-2. Build:
-
-```cmd
-cmake -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release
-```
-
-### Using MinGW-w64
+Use `mpich libmpich-dev` instead of the Open MPI packages for MPICH. If both
+are installed, resolve the launcher and library from the intended package and
+set `UNIMPI_LIBRARY` explicitly.
 
 ```bash
-# Ensure MinGW is in PATH
-cmake -B build -G "MinGW Makefiles" \
-    -DCMAKE_C_COMPILER=gcc
-cmake --build build
+export UNIMPI_LIBRARY="$(readlink -f /path/to/mpi/lib/libmpi.so)"
+/path/to/the/same/mpi/bin/mpirun -np 2 ./my_program
 ```
 
----
-
-## CMake Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `UNIMPI_BUILD_EXAMPLES` | ON | Build example programs |
-| `UNIMPI_BUILD_TESTS` | ON | Build test suite |
-| `UNIMPI_BUILD_MPI_TESTS` | OFF | Register tests requiring MPI runtime |
-| `UNIMPI_ENABLE_STD_MACROS` | OFF | Enable standard MPI naming macros |
-| `BUILD_SHARED_LIBS` | OFF | Build shared instead of static library |
-| `CMAKE_INSTALL_PREFIX` | /usr/local | Installation prefix |
-
-### Examples
+### macOS: Homebrew Open MPI or MPICH
 
 ```bash
-# Minimal build (library only)
-cmake -B build . \
-    -DUNIMPI_BUILD_EXAMPLES=OFF \
-    -DUNIMPI_BUILD_TESTS=OFF \
-    -DCMAKE_BUILD_TYPE=Release
+brew install cmake ninja open-mpi
 
-# Debug build with all tests
-cmake -B build . \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DUNIMPI_BUILD_TESTS=ON \
-    -DUNIMPI_BUILD_MPI_TESTS=ON
+MPI_PREFIX="$(brew --prefix open-mpi)"
+export UNIMPI_LIBRARY="$MPI_PREFIX/lib/libmpi.dylib"
 ```
 
----
+For MPICH, install `mpich` and use `$(brew --prefix mpich)`. Homebrew formulas
+can conflict at the unversioned `mpirun`/`mpiexec` links, so prefer the
+launcher under the selected prefix.
 
-## Installation
+The POSIX fallback `libmpi.so.40` is not a macOS library name. Always set
+`UNIMPI_LIBRARY` for predictable macOS runs.
 
-### System-wide Installation
+### Linux: Intel MPI
+
+Install the oneAPI MPI development package, source its environment, and use
+the runtime tuple from the same prefix:
 
 ```bash
-cmake --build build
-sudo cmake --install build
+source /opt/intel/oneapi/mpi/latest/env/vars.sh
+
+export UNIMPI_LIBRARY=/opt/intel/oneapi/mpi/latest/lib/libmpi.so
+MPIEXEC=/opt/intel/oneapi/mpi/latest/bin/mpiexec
+
+cmake -S . -B build-intel -G Ninja \
+  -DUNIMPI_BUILD_TESTS=ON \
+  -DUNIMPI_BUILD_MPI_TESTS=ON \
+  -DMPIEXEC_EXECUTABLE="$MPIEXEC" \
+  "-DMPIEXEC_PREFLAGS=-bootstrap;fork"
 ```
 
-### Local Installation
+Some installations place `libmpi.so` under `lib/release`; use the file that is
+actually present. Intel MPI is supported by this project on Linux, not macOS or
+Windows.
+
+### Windows: MS-MPI
+
+Install the MS-MPI runtime and SDK. The launcher and DLL normally live in
+different directories:
+
+```powershell
+$launcher = "$env:ProgramFiles\Microsoft MPI\Bin\mpiexec.exe"
+$env:UNIMPI_LIBRARY = "$env:WINDIR\System32\msmpi.dll"
+
+cmake -S . -B build-msmpi -G "Visual Studio 17 2022" -A x64 `
+  -DBUILD_SHARED_LIBS=OFF `
+  -DUNIMPI_BUILD_TESTS=ON `
+  -DUNIMPI_BUILD_MPI_TESTS=ON `
+  "-DMPIEXEC_EXECUTABLE=$launcher"
+cmake --build build-msmpi --config Release --parallel
+```
+
+See [WINDOWS.md](WINDOWS.md) for installation checks and troubleshooting.
+
+## Unit tests
+
+The default test configuration uses generated fake libraries and does not
+require a real MPI installation:
 
 ```bash
-cmake -B build . -DCMAKE_INSTALL_PREFIX=$HOME/.local
-cmake --build build
-cmake --install build
-
-# Update PATH
-export PATH=$HOME/.local/bin:$PATH
-export LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH
+cmake -S . -B build-unit -G Ninja \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DUNIMPI_BUILD_TESTS=ON \
+  -DUNIMPI_BUILD_MPI_TESTS=OFF \
+  -DUNIMPI_BUILD_BENCHMARKS=OFF
+cmake --build build-unit --parallel
+ctest --test-dir build-unit -L unit --output-on-failure
 ```
 
-### Uninstall
+## Real MPI tests
+
+Set `MPIEXEC_EXECUTABLE` during configuration and `UNIMPI_LIBRARY` while
+running. The two must identify the same implementation:
 
 ```bash
-sudo cmake --build build --target uninstall
+cmake -S . -B build-mpi -G Ninja \
+  -DUNIMPI_BUILD_TESTS=ON \
+  -DUNIMPI_BUILD_MPI_TESTS=ON \
+  -DMPIEXEC_EXECUTABLE=/absolute/mpi/bin/mpirun \
+  -DMPIEXEC_PREFLAGS=--oversubscribe
+cmake --build build-mpi --parallel
+
+UNIMPI_LIBRARY=/absolute/mpi/lib/libmpi.so \
+  ctest --test-dir build-mpi -L integration \
+  --output-on-failure --timeout 180
 ```
 
----
+Do not pass `-DCMAKE_C_COMPILER=mpicc` merely to select the runtime. UniMPI
+loads MPI dynamically; the launcher/library pair selects the backend.
 
-## Consuming with CMake
+See [TESTING.md](TESTING.md) for labels, process counts, sanitizers, and direct
+test commands.
 
-After installation, downstream projects can use:
+## Benchmarks
+
+Benchmarks are not part of a default build:
+
+```bash
+cmake -S . -B build-bench -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUNIMPI_BUILD_TESTS=ON \
+  -DUNIMPI_BUILD_MPI_TESTS=ON \
+  -DUNIMPI_BUILD_BENCHMARKS=ON \
+  -DMPIEXEC_EXECUTABLE=/absolute/mpi/bin/mpirun
+cmake --build build-bench --parallel
+
+UNIMPI_LIBRARY=/absolute/mpi/lib/libmpi.so \
+  /absolute/mpi/bin/mpirun -np 2 \
+  ./build-bench/benchmarks/bench_latency --smoke --format text
+```
+
+See [BENCHMARKS.md](BENCHMARKS.md) before interpreting results.
+
+## Install and consume
+
+Install into a user-controlled prefix:
+
+```bash
+cmake --install build --prefix "$PWD/install"
+```
+
+Downstream CMake:
 
 ```cmake
 cmake_minimum_required(VERSION 3.10)
@@ -200,192 +223,45 @@ add_executable(myapp myapp.c)
 target_link_libraries(myapp PRIVATE unimpi::unimpi)
 ```
 
-Configure with the install prefix:
+Configure the consumer:
 
 ```bash
-cmake -B build . -DCMAKE_PREFIX_PATH=$HOME/.local
-cmake --build build
+cmake -S consumer -B consumer-build \
+  -DCMAKE_PREFIX_PATH="$PWD/install"
+cmake --build consumer-build --parallel
 ```
-
----
-
-## Real MPI Tests
-
-By default, only fixture-based unit tests run. To enable real MPI tests:
-
-```bash
-cmake -B build . \
-    -DUNIMPI_BUILD_MPI_TESTS=ON \
-    -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun
-
-cmake --build build
-ctest --output-on-failure
-```
-
-For specific backends:
-
-```bash
-# OpenMPI with oversubscribe
-cmake -B build . \
-    -DUNIMPI_BUILD_MPI_TESTS=ON \
-    -DMPIEXEC_EXECUTABLE=/usr/bin/mpirun \
-    -DMPIEXEC_PREFLAGS=--oversubscribe
-
-# Intel MPI
-cmake -B build . \
-    -DUNIMPI_BUILD_MPI_TESTS=ON \
-    -DMPIEXEC_EXECUTABLE=/opt/intel/oneapi/mpi/latest/bin/mpiexec
-
-# Windows MS-MPI
-cmake -B build . \
-    -DUNIMPI_BUILD_MPI_TESTS=ON \
-    -DMPIEXEC_EXECUTABLE="C:/Program Files/Microsoft MPI/Bin/mpiexec.exe"
-```
-
----
-
-## Testing
-
-### Run All Tests
-
-```bash
-cd build && ctest --output-on-failure
-```
-
-### Run Specific Tests
-
-```bash
-# Internal tests (no MPI runtime needed)
-./build/tests/test_error
-./build/tests/test_loader
-./build/tests/test_platform
-./build/tests/test_memory_safety
-
-# MPI tests (requires mpirun/mpiexec)
-mpirun -np 2 ./build/tests/test_p2p
-mpirun -np 4 ./build/tests/test_collective
-mpirun -np 2 ./build/tests/test_datatype
-mpirun -np 4 ./build/tests/test_communicator
-mpirun -np 4 ./build/tests/test_group
-mpirun -np 2 ./build/tests/test_p2p_extended
-mpirun -np 2 ./build/tests/test_datatype_extended
-mpirun -np 4 ./build/tests/test_collective_extended
-```
-
-### Generate Coverage Report
-
-```bash
-# Install dependencies
-sudo apt-get install lcov
-
-# Generate report
-./scripts/coverage_report.sh
-
-# View HTML report
-firefox build-coverage/coverage_html/index.html
-```
-
-### Test Coverage Summary
-
-| Category | Tests | Description |
-|----------|-------|-------------|
-| **Basic** | test_error, test_loader, test_platform, test_vtable_validation | Core functionality |
-| **Lifecycle** | test_lifecycle, test_lifecycle_macros, test_memory_safety | Init/finalize |
-| **P2P** | test_p2p, test_p2p_extended | Point-to-point communication |
-| **Collective** | test_collective, test_collective_extended | Broadcast, reduce, gather |
-| **Datatype** | test_datatype, test_datatype_extended | Type construction |
-| **Communicator** | test_communicator, test_group | Comm/Group operations |
-| **Backend** | test_backend_identification | Auto-detection |
-
-**Total: 17 test suites**
-
----
 
 ## Troubleshooting
 
-### CMake cannot find MPI
+### Backend library does not load
+
+- Verify the file exists.
+- Inspect dependencies with `ldd`, `otool -L`, or
+  `dumpbin /DEPENDENTS`, as appropriate.
+- Set `UNIMPI_LIBRARY` to the exact file.
+- Confirm its architecture matches the executable.
+
+### Launcher and library disagree
+
+Compare the launcher version with the selected prefix:
 
 ```bash
-# Specify MPI compiler explicitly
-cmake -B build . -DCMAKE_C_COMPILER=/usr/bin/mpicc
-
-# Or specify paths
-cmake -B build . \
-    -DMPI_C_INCLUDE_DIRS=/usr/include/openmpi \
-    -DMPI_C_LIBRARIES=/usr/lib/x86_64-linux-gnu/libmpi.so
+/absolute/mpi/bin/mpirun --version
+ls -l /absolute/mpi/lib/libmpi*
 ```
 
-### Linker errors on Linux (dlopen)
+Mixing installations may fail during initialization or produce ABI corruption.
 
-Should be automatic, but if needed:
-```bash
-cmake -B build . -DCMAKE_C_FLAGS="-ldl"
-```
+### CMake does not find MPI for integration tests
 
-### Windows: Cannot find msmpi.dll
-
-Download and install MS-MPI from:
-https://www.microsoft.com/download/details.aspx?id=57467
-
-### Tests fail to find MPI library
+Point CMake at the intended prefix or launcher:
 
 ```bash
-# Set library path for tests
-export LD_LIBRARY_PATH=/path/to/mpi/lib:$LD_LIBRARY_PATH
-cd build && ctest
+cmake -S . -B build \
+  -DUNIMPI_BUILD_MPI_TESTS=ON \
+  -DMPI_HOME=/absolute/mpi/prefix \
+  -DMPIEXEC_EXECUTABLE=/absolute/mpi/bin/mpirun
 ```
 
-### Windows: "The system cannot find the file specified"
-
-Ensure MS-MPI Bin directory is in PATH:
-```cmd
-set PATH=C:\Program Files\Microsoft MPI\Bin;%PATH%
-```
-
----
-
-## Platform-Specific Notes
-
-### Ubuntu/Debian
-
-```bash
-sudo apt-get install cmake build-essential
-sudo apt-get install libopenmpi-dev    # or libmpich-dev
-```
-
-### CentOS/RHEL/Fedora
-
-```bash
-sudo yum install cmake gcc
-sudo yum install openmpi-devel         # or mpich-devel
-```
-
-### macOS (Homebrew)
-
-```bash
-brew install cmake
-brew install openmpi                   # or mpich
-```
-
----
-
-## Cross-Compilation
-
-### Building for Windows from Linux (MinGW)
-
-```bash
-# Install cross-compiler
-sudo apt-get install mingw-w64
-
-# Create toolchain file
-cat > mingw-w64.cmake << 'EOF'
-set(CMAKE_SYSTEM_NAME Windows)
-set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
-set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
-EOF
-
-# Configure and build
-cmake -B build . -DCMAKE_TOOLCHAIN_FILE=mingw-w64.cmake
-```
-
-See [WINDOWS.md](WINDOWS.md) for more Windows-specific build instructions.
+The library-only build remains available by setting
+`UNIMPI_BUILD_MPI_TESTS=OFF`.

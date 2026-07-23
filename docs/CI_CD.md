@@ -1,195 +1,109 @@
-# GitLab CI/CD Configuration
+# Continuous Integration
 
-This document describes the GitLab CI/CD setup for `unimpi`.
+The primary maintained CI definition is the
+[GitHub Actions workflow](https://github.com/UniMPI/UniMPI/blob/dev/.github/workflows/ci.yml).
+The [GitLab configuration](https://github.com/UniMPI/UniMPI/blob/dev/.gitlab-ci.yml)
+mirrors Linux Open MPI/MPICH and benchmark flows, but it is not the
+cross-platform release matrix described below.
 
----
+## Matrix
 
-## Overview
+| Job configuration | Runner | Runtime | Main purpose |
+|---|---|---|---|
+| Linux Open MPI Debug | Ubuntu 24.04 | Distribution Open MPI | Debug build and real MPI tests |
+| Linux MPICH Release | Ubuntu 22.04 | Distribution MPICH | Release and MPICH ABI tests |
+| Linux Intel MPI Release | Ubuntu 24.04 | oneAPI MPI | Intel backend tests |
+| macOS Open MPI Debug | macOS 14 | Homebrew Open MPI | AppleClang/Open MPI tests |
+| macOS MPICH Release | macOS 14 | Homebrew MPICH | AppleClang/MPICH tests |
+| Windows MS-MPI Release | Windows Server 2022 | Official MS-MPI runtime | MSVC x64 and Windows loader tests |
+| Strict C99 sanitizers | Ubuntu 24.04 | Generated fake backends | Clang, ASan, UBSan, no C extensions |
 
-The CI/CD pipeline automatically:
-- Builds the project with multiple MPI backends (OpenMPI, MPICH)
-- Runs the full test suite on each backend
-- Executes performance benchmarks
-- Performs code quality checks
+`fail-fast` is disabled for backend matrices so one implementation does not
+hide results from another.
 
----
+The Linux MPICH job intentionally remains on the supported Ubuntu 22.04 runner.
+Ubuntu 24.04's distribution MPICH/Hydra PMI-PMIx packaging can launch the
+requested processes as independent size-one MPI worlds, which would make
+multi-rank coverage invalid. Open MPI and Intel MPI continue to use Ubuntu
+24.04. See [Ubuntu bug 2072338](https://bugs.launchpad.net/bugs/2072338) for
+the distribution packaging issue.
 
-## Pipeline Stages
+## Runtime tuple
 
-```
-build → test → quality
-```
+Each real-MPI job resolves:
 
-### Build Stage
-- **build:openmpi** - Build with OpenMPI
-- **build:mpich** - Build with MPICH
+- the launcher executable;
+- the native runtime library;
+- the runtime library directory where needed;
+- launcher preflags such as Open MPI oversubscription or Intel bootstrap.
 
-### Test Stage
-- **test:openmpi** - Run tests with OpenMPI backend
-- **test:mpich** - Run tests with MPICH backend
-- **benchmark:openmpi** - Run performance benchmarks (optional)
+It then configures `MPIEXEC_EXECUTABLE`, exports the exact
+`UNIMPI_LIBRARY`, and runs CTest. A successful configuration with a mismatched
+launcher/library pair is not accepted.
 
-### Quality Stage
-- **code_style** - Check code formatting with clang-format
-- **static_analysis** - Run cppcheck static analysis
-- **release** - Create release artifacts (tags only)
+Important platform facts:
 
----
+- Linux uses the resolved `libmpi.so` and propagates its directory through
+  `LD_LIBRARY_PATH` when required.
+- macOS uses the exact Homebrew `libmpi.dylib`; the POSIX fallback
+  `libmpi.so.40` is not used.
+- Intel MPI sources the oneAPI environment and uses the runtime from the same
+  prefix.
+- Windows launches with
+  `C:\Program Files\Microsoft MPI\Bin\mpiexec.exe` and loads
+  `C:\Windows\System32\msmpi.dll`.
 
-## Configuration
+## Test stages
 
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BUILD_DIR` | `build` | CMake build directory |
-| `MPI_PROCS` | `4` | Number of MPI processes for tests |
-| `UNIMPI_BACKEND` | auto | Backend to use for testing |
-
-### Runners
-
-Jobs require GitLab runners with:
-- Linux OS
-- Docker executor
-- Access to Ubuntu 22.04 images
-
-### Caching
-
-Build artifacts are cached between jobs on the same branch to speed up builds.
-
----
-
-## Usage
-
-### View Pipeline Status
-
-1. Go to **Project** → **CI/CD** → **Pipelines**
-2. View current and past pipeline runs
-3. Click on a pipeline to see job details
-
-### Manual Jobs
-
-Some jobs are manual:
-- **benchmark:openmpi** - Run after successful tests
-- **release** - Only runs on git tags
-
-### Trigger Pipeline
-
-Pipelines run automatically on:
-- Every push to any branch
-- Merge requests
-- Git tags
-
-Manual trigger:
-1. Go to **CI/CD** → **Pipelines**
-2. Click **Run pipeline**
-3. Select branch and variables
-4. Click **Run pipeline**
-
----
-
-## Local Testing with GitLab Runner
-
-Install GitLab runner locally to test CI configuration:
+Real backend jobs enable examples and benchmarks, then run the complete CTest
+registry so unit/fake checks and all real-MPI, example, and benchmark smoke
+invocations execute:
 
 ```bash
-# Install GitLab runner
-sudo curl -L --output /usr/local/bin/gitlab-runner \
-    https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
-sudo chmod +x /usr/local/bin/gitlab-runner
-
-# Register runner (optional for local testing)
-gitlab-runner register
-
-# Test locally
-gitlab-runner exec docker build:openmpi
+ctest --test-dir build --output-on-failure --timeout 180
 ```
 
----
+The `integration`, `example`, and `benchmark` labels remain available for
+focused local reruns. Benchmark smoke tests verify execution only; CI does not
+compare timing against a hard threshold.
 
-## Extending CI/CD
+The strict job runs generated fake libraries under ASan/UBSan:
 
-### Adding a New Backend
-
-1. Add build job:
-```yaml
-build:intelmpi:
-  <<: *linux_mpi
-  stage: build
-  image: intel/oneapi-basekit:latest
-  script:
-    - source /opt/intel/oneapi/setvars.sh
-    - cmake -B ${BUILD_DIR} .
-    - cmake --build ${BUILD_DIR}
-```
-
-2. Add test job:
-```yaml
-test:intelmpi:
-  <<: *linux_mpi
-  stage: test
-  image: intel/oneapi-basekit:latest
-  needs:
-    - build:intelmpi
-  variables:
-    UNIMPI_BACKEND: intelmpi
-  script:
-    - source /opt/intel/oneapi/setvars.sh
-    - cd ${BUILD_DIR}
-    - ctest --output-on-failure
-```
-
-### Adding Tests
-
-New tests are automatically picked up by `ctest` if added to `tests/CMakeLists.txt`.
-
-### Custom Variables
-
-Create `.gitlab-ci-local.yml` for local overrides:
-
-```yaml
-variables:
-  MPI_PROCS: 2  # Use fewer processes locally
-```
-
----
-
-## Troubleshooting
-
-### Job Fails with "mpirun not found"
-
-Ensure MPI runtime is installed:
-```yaml
-before_script:
-  - apt-get update && apt-get install -y libopenmpi-dev
-```
-
-### Permission Denied for mpirun
-
-OpenMPI requires special flags in Docker:
 ```bash
-mpirun --allow-run-as-root -np 4 ./test
+ctest --test-dir build-sanitized -L unit \
+  --output-on-failure --timeout 120
 ```
 
-### Cache Not Working
+Fake backend DSOs with overlapping implementation globals must be loaded and
+unloaded sequentially. Sanitizer checks should not be disabled to hide an ODR
+violation.
 
-Clear cache from **Project** → **CI/CD** → **Pipelines** → **Clear runner caches**.
+## Adding a test
 
----
+1. Register it in `tests/CMakeLists.txt`.
+2. Assign `unit`/`fake` or `integration`/`mpi` labels.
+3. Choose a process count that executes its assertions.
+4. Add an odd process count if communicator partitioning is involved.
+5. Set an explicit timeout and isolate temporary files.
+6. Ensure the test runs in every applicable backend job.
+7. Update [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) only after focused behavior is
+   exercised.
 
-## Badges
+See [TESTING.md](TESTING.md) for the process-count and sanitizer policy.
 
-Add these badges to your README:
+## Dependency and action hygiene
 
-```markdown
-[![pipeline status](https://gitlab.com/YOUR_USERNAME/unimpi/badges/main/pipeline.svg)](https://gitlab.com/YOUR_USERNAME/unimpi/-/commits/main)
-[![coverage report](https://gitlab.com/YOUR_USERNAME/unimpi/badges/main/coverage.svg)](https://gitlab.com/YOUR_USERNAME/unimpi/-/commits/main)
-```
+- Pin third-party actions to immutable commit SHAs.
+- Use official package repositories and verify downloaded installers.
+- Keep workflow permissions at `contents: read` unless a job demonstrably needs
+  more.
+- Avoid weakening warnings, sanitizers, or backend coverage to make one runner
+  pass.
+- Preserve Debug and Release coverage because assertion and optimization
+  behavior differ.
 
----
+## What CI does not prove
 
-## See Also
-
-- [.gitlab-ci.yml](../.gitlab-ci.yml) - Pipeline configuration
-- [BUILDING.md](BUILDING.md) - Manual build instructions
-- [BACKENDS.md](BACKENDS.md) - Backend information
+A green matrix does not establish complete MPI conformance, fault tolerance,
+GPU awareness, production-scale performance, or every entry in the 275-field
+vtable. Explicit gaps are listed in [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).

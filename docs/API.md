@@ -1,38 +1,47 @@
 # API Reference
 
-Complete API reference for `unimpi`.
+Reference for UniMPI's public control API and commonly used runtime-dispatch
+fields. The vtable currently contains 275 MPI function-pointer fields and the
+standard-name header contains 246 direct aliases. This document is not a claim
+of complete MPI-standard coverage; consult
+[SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) before depending on a category.
 
 ---
 
-## ⭐ Recommended: Standard MPI Style
+## Standard MPI style
 
-For most users, we recommend using **Standard MPI Style** with macros:
+For MPI-shaped application code, enable standard names before including the
+header:
 
 ```c
 #define UNIMPI_USE_STD_NAMES
 #include "unimpi.h"
 
 int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
+    if (MPI_Init(&argc, &argv) != MPI_SUCCESS) {
+        return 1;
+    }
     
     int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (MPI_Comm_rank(MPI_COMM_WORLD, &rank) != MPI_SUCCESS) {
+        MPI_Finalize();
+        return 1;
+    }
     
     printf("Hello from rank %d\n", rank);
     
-    MPI_Finalize();
-    return 0;
+    return MPI_Finalize() == MPI_SUCCESS ? 0 : 1;
 }
 ```
 
 This provides:
-- **Drop-in replacement**: Existing MPI code works without changes
-- **Familiar syntax**: Standard MPI function names
-- **Portability**: Easy to migrate to/from other MPI implementations
-- **IDE support**: Autocomplete and documentation for standard MPI
+- familiar MPI function names for the aliases UniMPI exposes;
+- the same runtime dispatch used by direct `unimpi.*` calls;
+- source-level convenience when porting code within the supported subset.
 
 The API reference below documents the underlying function pointer interface.
-Use this only if you need explicit backend control.
+Standard-name compatibility is not complete enough to treat arbitrary MPI
+programs as drop-in compatible.
 
 ---
 
@@ -75,21 +84,41 @@ unimpi_init(&argc, &argv);
 
 ---
 
+### unimpi_init_thread
+
+```c
+int unimpi_init_thread(int *argc, char ***argv,
+                       int required, int *provided);
+```
+
+Initialize UniMPI and negotiate one of `UNIMPI_THREAD_SINGLE`,
+`UNIMPI_THREAD_FUNNELED`, `UNIMPI_THREAD_SERIALIZED`, or
+`UNIMPI_THREAD_MULTIPLE`. The backend may provide a lower level; applications
+must obey the returned level.
+
+---
+
 ### unimpi_init_with
 
 ```c
 int unimpi_init_with(const char *backend_name);
 ```
 
-Initialize with a specific backend.
+Initialize with a backend name or loader path. This entry point passes
+`NULL, NULL` to the backend `MPI_Init`; use `unimpi_init` when the backend
+should receive application arguments.
 
 **Parameters:**
-- `backend_name` - "openmpi", "mpich", "intelmpi", or "msmpi"
+- `backend_name` - `"openmpi"`, `"mpich"`, `"intelmpi"`, `"msmpi"`, or a
+  loader path/name
 
 **Example:**
 ```c
-unimpi_init_with("intelmpi");
+unimpi_init_with("/opt/intel/oneapi/mpi/latest/lib/libmpi.so");
 ```
+
+An exact path is safer than a backend name, especially on macOS or a host with
+multiple MPI installations.
 
 ---
 
@@ -102,6 +131,9 @@ int unimpi_finalize(void);
 Finalize the library.
 
 **Returns:** `UNIMPI_OK` on success.
+
+After successful finalization, UniMPI follows MPI lifecycle rules and cannot
+be initialized again in the same process.
 
 ---
 
@@ -134,6 +166,20 @@ const char *unimpi_get_backend_name(void);
 Get name of currently loaded backend.
 
 **Returns:** String like "openmpi", "mpich", etc.
+
+---
+
+### Runtime state and identity
+
+```c
+int unimpi_is_initialized(void);
+int unimpi_mpi_initialized(int *flag);
+int unimpi_mpi_finalized(int *flag);
+const char *unimpi_get_library_path(void);
+```
+
+`unimpi_get_backend_name` and `unimpi_get_library_path` return pointers owned
+by UniMPI. Treat them as read-only and do not retain them after finalization.
 
 ---
 
@@ -203,7 +249,7 @@ Standard blocking send.
 **Example:**
 ```c
 int data = 42;
-unimpi.send(&data, 1, MPI_INT, 1, 0, UNIMPI_COMM_WORLD);
+unimpi.send(&data, 1, UNIMPI_INT, 1, 0, UNIMPI_COMM_WORLD);
 ```
 
 ---
@@ -221,7 +267,7 @@ Standard blocking receive.
 ```c
 int data;
 UNIMPI_Status status;
-unimpi.recv(&data, 1, MPI_INT, 0, 0, UNIMPI_COMM_WORLD, &status);
+unimpi.recv(&data, 1, UNIMPI_INT, 0, 0, UNIMPI_COMM_WORLD, &status);
 ```
 
 ---
@@ -240,10 +286,11 @@ Non-blocking send/receive.
 **Example:**
 ```c
 MPI_Request req;
+MPI_Status status;
 int data = 42;
-unimpi.isend(&data, 1, MPI_INT, 1, 0, UNIMPI_COMM_WORLD, &req);
+unimpi.isend(&data, 1, UNIMPI_INT, 1, 0, UNIMPI_COMM_WORLD, &req);
 // ... do other work ...
-unimpi.wait(&req, MPI_STATUS_IGNORE);
+unimpi.wait(&req, &status);
 ```
 
 ---
@@ -272,7 +319,7 @@ Broadcast from root to all.
 **Example:**
 ```c
 int data = 100;
-unimpi.bcast(&data, 1, MPI_INT, 0, UNIMPI_COMM_WORLD);
+unimpi.bcast(&data, 1, UNIMPI_INT, 0, UNIMPI_COMM_WORLD);
 ```
 
 ---
@@ -290,7 +337,8 @@ Reduce operation.
 ```c
 int send = rank;
 int recv;
-unimpi.reduce(&send, &recv, 1, MPI_INT, MPI_SUM, 0, UNIMPI_COMM_WORLD);
+unimpi.reduce(&send, &recv, 1, UNIMPI_INT, UNIMPI_SUM, 0,
+              UNIMPI_COMM_WORLD);
 ```
 
 ---
@@ -325,14 +373,14 @@ unimpi.barrier(UNIMPI_COMM_WORLD);
 
 ### Predefined Types
 
-| Type | Description |
-|------|-------------|
-| `MPI_CHAR` | Character |
-| `MPI_INT` | Integer |
-| `MPI_FLOAT` | Float |
-| `MPI_DOUBLE` | Double |
-| `MPI_LONG` | Long integer |
-| `MPI_BYTE` | Byte |
+| Direct style | Standard-name style | Description |
+|---|---|---|
+| `UNIMPI_CHAR` | `MPI_CHAR` | Character |
+| `UNIMPI_INT` | `MPI_INT` | Integer |
+| `UNIMPI_FLOAT` | `MPI_FLOAT` | Float |
+| `UNIMPI_DOUBLE` | `MPI_DOUBLE` | Double |
+| `UNIMPI_LONG` | `MPI_LONG` | Long integer |
+| `UNIMPI_BYTE` | `MPI_BYTE` | Byte |
 
 ---
 
@@ -415,6 +463,10 @@ int (*win_create)(void *base, MPI_Aint size, int disp_unit,
 
 Create RMA window.
 
+Focused tests cover fence-based `Put`, `Get`, and `Accumulate`. Other RMA
+fields may exist without focused cross-backend semantic coverage; see the
+support matrix.
+
 ---
 
 ### unimpi.put
@@ -462,6 +514,10 @@ int (*file_open)(MPI_Comm comm, const char *filename, int amode,
 
 Open file for parallel I/O.
 
+Focused tests cover selected positioned independent, collective, and
+nonblocking operations. File views, shared/ordered pointers, and other fields
+remain outside the verified boundary.
+
 ---
 
 ### unimpi.file_read
@@ -498,6 +554,9 @@ int (*comm_spawn)(const char *command, char *argv[], int maxprocs,
 
 Spawn new processes.
 
+Dynamic process management is present in the dispatch inventory but has no
+focused cross-backend test. Treat it as unverified.
+
 ---
 
 ## Error Codes
@@ -507,9 +566,16 @@ Spawn new processes.
 | `UNIMPI_OK` | 0 | Success |
 | `UNIMPI_ERR_NO_BACKEND` | -1 | No MPI backend found |
 | `UNIMPI_ERR_BACKEND_LOAD` | -2 | Failed to load backend |
+| `UNIMPI_ERR_ABI_MISMATCH` | -3 | Unsupported MPI ABI/library family |
 | `UNIMPI_ERR_NOT_INITIALIZED` | -4 | Not initialized |
 | `UNIMPI_ERR_ALREADY_INITIALIZED` | -5 | Already initialized |
 | `UNIMPI_ERR_SYMBOL_NOT_FOUND` | -6 | Symbol not found |
+| `UNIMPI_ERR_OUT_OF_MEMORY` | -7 | Allocation failed |
+| `UNIMPI_ERR_INVALID_ARGUMENT` | -8 | Invalid argument |
+| `UNIMPI_ERR_BACKEND_NOT_SUPPORTED` | -9 | Backend is unsupported on this platform |
+| `UNIMPI_ERR_BACKEND_INIT_FAILED` | -10 | Backend initialization failed |
+| `UNIMPI_ERR_FINALIZED` | -11 | Process has already finalized MPI |
+| `UNIMPI_ERR_INVALID_STATE` | -12 | Lifecycle transition is invalid |
 
 ---
 

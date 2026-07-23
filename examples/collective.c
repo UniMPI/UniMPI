@@ -3,6 +3,30 @@
 #include <stdlib.h>
 #include "unimpi.h"
 
+static int mpi_failure(const char *operation, int code) {
+    fprintf(stderr, "%s failed with MPI error %d\n", operation, code);
+    if (unimpi.abort != NULL) {
+        (void)unimpi.abort(MPI_COMM_WORLD, code);
+    }
+    return 1;
+}
+
+static int validation_failure(const char *message) {
+    fprintf(stderr, "validation failed: %s\n", message);
+    if (unimpi.abort != NULL) {
+        (void)unimpi.abort(MPI_COMM_WORLD, 1);
+    }
+    return 1;
+}
+
+#define CHECK_MPI(call)                                                     \
+    do {                                                                    \
+        int check_result = (call);                                          \
+        if (check_result != MPI_SUCCESS) {                                  \
+            return mpi_failure(#call, check_result);                        \
+        }                                                                   \
+    } while (0)
+
 int main(int argc, char **argv) {
     int ret;
     int rank, size;
@@ -19,19 +43,22 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    CHECK_MPI(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+    CHECK_MPI(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
     if (size < 2) {
         printf("This example requires at least 2 processes\n");
-        unimpi_finalize();
+        ret = unimpi_finalize();
+        if (ret != UNIMPI_OK) {
+            fprintf(stderr, "unimpi finalize failed: %s\n",
+                    unimpi_error_string(ret));
+        }
         return 1;
     }
 
     if ((size_t)size > (size_t)-1 / (size_t)size / sizeof(*recvbuf_all)) {
         fprintf(stderr, "Collective buffer size is too large\n");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-        return 1;
+        return validation_failure("collective buffer size overflow");
     }
     gathered_count = (size_t)size * (size_t)size;
 
@@ -45,26 +72,38 @@ int main(int argc, char **argv) {
         sendbuf = 0;  /* Other ranks will receive the value */
     }
 
-    MPI_Bcast(&sendbuf, 1, MPI_INT, root, MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Bcast(
+        &sendbuf, 1, MPI_INT, root, MPI_COMM_WORLD));
+    if (sendbuf != 100) {
+        return validation_failure("MPI_Bcast produced the wrong value");
+    }
     printf("Rank %d: After Bcast, value = %d\n", rank, sendbuf);
 
     /* Barrier to synchronize */
-    MPI_Barrier(MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
     /* ==================== Reduce ==================== */
     sendbuf = rank + 1;  /* Each rank contributes its rank+1 */
     printf("Rank %d: Contributing %d to reduction\n", rank, sendbuf);
 
-    MPI_Reduce(&sendbuf, &recvbuf, 1, MPI_INT, MPI_SUM, root, MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Reduce(
+        &sendbuf, &recvbuf, 1, MPI_INT, MPI_SUM, root, MPI_COMM_WORLD));
 
     if (rank == root) {
         int expected = size * (size + 1) / 2;  /* Sum of 1 to size */
+        if (recvbuf != expected) {
+            return validation_failure("MPI_Reduce produced the wrong sum");
+        }
         printf("Rank %d: Reduce result (SUM) = %d (expected: %d)\n", rank, recvbuf, expected);
     }
 
     /* ==================== AllReduce ==================== */
     sendbuf = rank + 1;
-    MPI_Allreduce(&sendbuf, &recvbuf, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Allreduce(
+        &sendbuf, &recvbuf, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD));
+    if (recvbuf != size) {
+        return validation_failure("MPI_Allreduce produced the wrong maximum");
+    }
     printf("Rank %d: AllReduce result (MAX) = %d (expected: %d)\n", rank, recvbuf, size);
 
     /* ==================== Gather ==================== */
@@ -74,8 +113,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Failed to allocate collective buffers\n");
         free(sendbuf_all);
         free(recvbuf_all);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-        return 1;
+        return validation_failure("collective buffer allocation failed");
     }
 
     for (int i = 0; i < size; i++) {
@@ -88,11 +126,22 @@ int main(int argc, char **argv) {
     }
     printf("\n");
 
-    MPI_Gather(sendbuf_all, size, MPI_INT,
-               rank == root ? recvbuf_all : NULL, size, MPI_INT,
-               root, MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Gather(
+        sendbuf_all, size, MPI_INT,
+        rank == root ? recvbuf_all : NULL, size, MPI_INT,
+        root, MPI_COMM_WORLD));
 
     if (rank == root) {
+        for (int source = 0; source < size; source++) {
+            for (int item = 0; item < size; item++) {
+                size_t index =
+                    (size_t)source * (size_t)size + (size_t)item;
+                if (recvbuf_all[index] != source * 10 + item) {
+                    return validation_failure(
+                        "MPI_Gather produced the wrong payload");
+                }
+            }
+        }
         printf("Rank %d: Gather received: ", rank);
         for (size_t i = 0; i < gathered_count; i++) {
             printf("%d ", recvbuf_all[i]);
@@ -101,9 +150,20 @@ int main(int argc, char **argv) {
     }
 
     /* ==================== AllGather ==================== */
-    MPI_Allgather(sendbuf_all, size, MPI_INT,
-                  recvbuf_all, size, MPI_INT,
-                  MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Allgather(
+        sendbuf_all, size, MPI_INT,
+        recvbuf_all, size, MPI_INT,
+        MPI_COMM_WORLD));
+    for (int source = 0; source < size; source++) {
+        for (int item = 0; item < size; item++) {
+            size_t index =
+                (size_t)source * (size_t)size + (size_t)item;
+            if (recvbuf_all[index] != source * 10 + item) {
+                return validation_failure(
+                    "MPI_Allgather produced the wrong payload");
+            }
+        }
+    }
 
     printf("Rank %d: AllGather received: ", rank);
     for (size_t i = 0; i < gathered_count; i++) {
@@ -124,15 +184,23 @@ int main(int argc, char **argv) {
         printf("\n");
     }
 
-    MPI_Scatter(sendbuf_all, 1, MPI_INT,
-                &recvbuf, 1, MPI_INT,
-                root, MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Scatter(
+        sendbuf_all, 1, MPI_INT,
+        &recvbuf, 1, MPI_INT,
+        root, MPI_COMM_WORLD));
+    if (recvbuf != (rank + 1) * 100) {
+        return validation_failure("MPI_Scatter produced the wrong value");
+    }
 
     printf("Rank %d: Received scattered value = %d\n", rank, recvbuf);
 
     /* ==================== Scan (Prefix Sum) ==================== */
     sendbuf = rank + 1;
-    MPI_Scan(&sendbuf, &recvbuf, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    CHECK_MPI(MPI_Scan(
+        &sendbuf, &recvbuf, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD));
+    if (recvbuf != (rank + 1) * (rank + 2) / 2) {
+        return validation_failure("MPI_Scan produced the wrong prefix sum");
+    }
     printf("Rank %d: Scan (prefix sum) result = %d\n", rank, recvbuf);
 
     /* Cleanup */

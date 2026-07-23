@@ -1,264 +1,165 @@
-# unimpi Wrapper 设计文档
+# UniMPI Design
 
-**日期**: 2025-04-03  
-**主题**: MPI 运行时包装层  
-**目标**: 零开销、完整 MPI-3 API、多后端运行时加载
+## Scope
 
----
+UniMPI is a runtime dispatch layer for native MPI implementations. It provides
+one C99-facing library and selects a backend when the process initializes.
 
-## 1. 架构概述
+The current dispatch structure has 275 MPI function-pointer fields, and the
+standard-name header has 246 direct `MPI_*` aliases. These inventory counts do
+not imply complete MPI-3/MPI-4 conformance; see
+[SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    用户代码层                                │
-│  ┌─────────────┐    ┌─────────────────────────────────────┐ │
-│  │ 函数指针风格 │    │ 标准 MPI 风格（可选宏封装）          │ │
-│  │ unimpi.xxx│    │ MPI_Send, MPI_Init...               │ │
-│  └──────┬──────┘    └──────────────────┬──────────────────┘ │
-└─────────┼──────────────────────────────┼────────────────────┘
-          │                              │
-          └──────────────┬───────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────────┐
-│              unimpi 运行时核心层                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │ 后端检测    │  │ 动态加载器  │  │ 函数指针表 (vtable)  │  │
-│  │  auto-detect│  │  dlopen/dlsym│  │  400+ MPI-3 函数    │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-         ┌───────────────┼───────────────┐
-         │               │               │
-    ┌────▼────┐    ┌────▼────┐    ┌────▼────┐
-    │OpenMPI  │    │Intel-MPI│    │  MPICH  │
-    │libmpi.so│    │libmpi.so│    │libmpi.so│
-    └─────────┘    └─────────┘    └─────────┘
+## Components
+
+```text
+application
+    |
+    | unimpi_init / MPI_Init
+    v
+lifecycle state machine
+    |
+    +--> loader selection
+    |      UNIMPI_LIBRARY > UNIMPI_BACKEND > platform fallback
+    |
+    +--> platform loader
+    |      dlopen/dlsym or LoadLibrary/GetProcAddress
+    |
+    +--> backend identification
+    |      Open MPI / MPICH / Intel MPI / MS-MPI
+    |
+    +--> backend adapter
+           vtable functions + predefined handles/constants
 ```
 
----
+Primary source responsibilities:
 
-## 2. 核心组件
+| Component | Files | Responsibility |
+|---|---|---|
+| Lifecycle | `src/core.c` | Initialization/finalization state and backend identity |
+| Selection | `src/loader.c` | Environment priority, loading, identification, diagnostics |
+| Platform | `src/platform_posix.c`, `src/platform_windows.c` | Dynamic-loader abstraction |
+| Dispatch | `src/vtable.c`, `include/unimpi_vtable.h` | Global runtime function table |
+| Adapters | `src/backends/*.c` | Backend-specific symbols, handles, constants, and ABI details |
+| Standard names | `include/unimpi_std_macros.h` | Optional `MPI_*` aliases |
 
-### 2.1 后端检测与加载
+## Backend selection
 
-**支持的 MPI 实现：**
+Selection order is:
 
-| 优先级 | 后端 | 库名 (Linux) | 库名 (Windows) |
-|--------|------|--------------|----------------|
-| 1 | 用户指定 | `UNIMPI_BACKEND` 环境变量 | 同上 |
-| 2 | OpenMPI | `libmpi.so.40`, `libmpi.so.20` | 不支持 |
-| 3 | Intel-MPI | `libmpi.so` | 不支持 |
-| 4 | MPICH | `libmpich.so` | `msmpi.dll` |
-| 5 | MS-MPI | N/A | `msmpi.dll` |
+1. `UNIMPI_LIBRARY`;
+2. `UNIMPI_BACKEND`;
+3. `msmpi.dll` on Windows or `libmpi.so.40` on POSIX.
 
-**加载流程：**
+The fallback is only a loader basename. It does not inspect every installed MPI
+and is unsuitable for deterministic selection on macOS or multi-MPI Linux
+hosts. Exact paths are documented in [BACKENDS.md](BACKENDS.md).
 
-1. 读取 `UNIMPI_BACKEND` 环境变量
-2. 尝试加载指定后端
-3. 失败后进入自动检测（按优先级）
-4. 解析核心符号（MPI_Init, MPI_Finalize）
-5. 验证 ABI 兼容性
-6. 填充完整 vtable
+## Lifecycle
 
-### 2.2 函数指针表 (Vtable)
+The process-wide state machine distinguishes:
 
-包含 400+ MPI-3 标准函数，按功能分组：
+- never initialized;
+- initializing;
+- active;
+- initialization failed;
+- finalizing;
+- finalized;
+- finalization failed.
 
-- **环境管理**: Init, Finalize, Abort, Initialized...
-- **点对点通信**: Send, Recv, Isend, Irecv, Sendrecv...
-- **集合通信**: Bcast, Reduce, Scatter, Gather, Allreduce...
-- **非阻塞集合**: Ibarrier, Ireduce, Ibcast...
-- **数据类型**: Type_create, Type_commit, Type_free...
-- **通信域**: Comm_create, Comm_split, Comm_dup...
-- **进程组**: Group_incl, Group_range_incl...
-- **RMA/One-Sided**: Put, Get, Accumulate, Win_create...
-- **动态进程**: Comm_spawn, Open_port, Publish_name...
-- **并行 I/O**: File_open, File_read, File_write...
+An initialization failure can be retried after cleanup. MPI re-initialization
+after successful finalization is rejected. Backend handle, identity strings,
+predefined values, and vtable state must be cleaned consistently on every
+failure path.
 
----
+Lifecycle state and the global vtable are process-wide. The implementation does
+not claim that concurrent initialization/finalization from multiple application
+threads is safe. `unimpi_init_thread` negotiates backend MPI thread support; it
+does not by itself make UniMPI lifecycle mutation thread-safe.
 
-## 3. API 设计
+## Vtable initialization
 
-### 3.1 公共 API
+Initialization performs:
+
+1. load the chosen shared library;
+2. verify core symbols;
+3. identify the backend;
+4. reject unsupported platform/backend combinations;
+5. populate backend-specific predefined handles and constants;
+6. resolve vtable entries;
+7. invoke `MPI_Init` or `MPI_Init_thread`;
+8. publish active backend identity.
+
+Some MPI operations can be absent in a vendor/version even when a corresponding
+vtable field exists at compile time. Tests therefore validate a required
+profile and exercise focused categories rather than assuming every `dlsym`
+succeeded.
+
+## ABI representation
+
+MPI handles are represented with `intptr_t` so the facade can hold both
+pointer-style Open MPI objects and integer-style MPICH-derived handles.
+
+`MPI_Status` uses a union with backend-oriented layouts and a 128-byte raw
+buffer. This is an internal compatibility strategy, not a portable serialization
+format. Applications must not persist or exchange its raw bytes.
+
+Predefined communicator, datatype, operation, request, and info values are
+initialized by backend adapters. Code must use the exported values instead of
+hard-coded vendor constants.
+
+## API styles
+
+Direct dispatch:
 
 ```c
-// 初始化与关闭
-int unimpi_init(int *argc, char ***argv);        // 自动检测后端
-int unimpi_init_with(const char *backend_name);  // 指定后端
-int unimpi_finalize(void);
-
-// 查询
-const char *unimpi_get_backend_name(void);
-int unimpi_is_initialized(void);
-
-// 错误处理
-const char *unimpi_error_string(int error_code);
+unimpi.send(buffer, count, UNIMPI_INT, destination, tag, UNIMPI_COMM_WORLD);
 ```
 
-### 3.2 函数指针表访问
-
-```c
-// 直接访问 vtable（零开销）
-extern unimpi_vtable_t unimpi;
-
-// 使用示例
-unimpi.init(&argc, &argv);
-unimpi.send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
-```
-
-### 3.3 可选宏封装
-
-定义 `UNIMPI_USE_STD_NAMES` 后，标准 MPI 命名可用：
-
-```c
-#define MPI_Init unimpi.init
-#define MPI_Send unimpi.send
-// ... 所有 MPI 函数
-```
-
----
-
-## 4. 错误处理
-
-| 错误码 | 含义 | 处理方式 |
-|--------|------|----------|
-| `UNIMPI_OK` | 成功 | 正常继续 |
-| `UNIMPI_ERR_NO_BACKEND` | 未找到 MPI 后端 | 返回错误，提示安装 MPI |
-| `UNIMPI_ERR_BACKEND_LOAD` | 加载库失败 | 返回错误，检查库路径 |
-| `UNIMPI_ERR_ABI_MISMATCH` | ABI 不兼容 | 返回错误，提示版本不匹配 |
-
-运行时错误直接透传底层 MPI 错误码。
-
----
-
-## 5. 后端特性
-
-### 5.1 OpenMPI
-- Linux 库名: `libmpi.so.40` (v4.x), `libmpi.so.20` (v3.x)
-- Windows: 不支持
-- ABI: 版本间不兼容，需运行时检测
-- 特殊: 需处理 `ompi_mpi_comm_world` 等全局符号
-
-### 5.2 Intel-MPI
-- Linux 库名: `libmpi.so`
-- 兼容 OpenMPI ABI
-- 需处理 I_MPI 环境变量
-
-### 5.3 MPICH
-- Linux 库名: `libmpich.so`
-- Windows: `msmpi.dll` (MPICH 派生)
-- ABI: 使用全局变量 `MPI_COMM_WORLD`
-
-### 5.4 MS-MPI
-- Windows 专用: `msmpi.dll`
-
----
-
-## 6. 构建系统
-
-CMake 配置选项：
-
-| 选项 | 默认值 | 说明 |
-|------|--------|------|
-| `UNIMPI_BUILD_EXAMPLES` | ON | 构建示例程序 |
-| `UNIMPI_BUILD_TESTS` | ON | 构建测试 |
-| `UNIMPI_ENABLE_STD_MACROS` | OFF | 默认启用标准 MPI 宏 |
-
----
-
-## 7. 测试策略
-
-```
-tests/
-├── unit/
-│   ├── test_loader.c       # 测试后端加载逻辑
-│   └── test_vtable.c       # 测试 vtable 填充完整性
-├── integration/
-│   ├── test_init.c         # 测试初始化/关闭
-│   ├── test_p2p.c          # 测试点对点通信
-│   └── test_collective.c   # 测试集合通信
-└── backend/
-    ├── test_openmpi.sh     # OpenMPI 后端验证
-    ├── test_mpich.sh       # MPICH 后端验证
-    └── test_intelmpi.sh    # Intel-MPI 后端验证
-```
-
----
-
-## 8. 设计决策总结
-
-| 决策 | 选择 | 理由 |
-|------|------|------|
-| 调用机制 | 函数指针表 | 单次间接跳转，接近零开销 |
-| 初始化 | 单线程，显式 | 简单可靠，无锁开销 |
-| API 风格 | 双模式 | 函数指针 + 可选宏 |
-| 后端检测 | 自动 + 手动 | 灵活性优先 |
-| 错误处理 | 透传 | 保持 MPI 语义透明 |
-| MPI 标准 | MPI-3.x | 现代标准，完整功能 |
-
----
-
-## 9. 项目结构
-
-```
-unimpi/
-├── include/
-│   └── unimpi.h
-├── src/
-│   ├── core.c          # 初始化和核心逻辑
-│   ├── loader.c        # 动态库加载
-│   ├── vtable.c        # vtable 定义和填充
-│   └── backends/
-│       ├── openmpi.c
-│       ├── mpich.c
-│       └── msmpi.c
-├── tests/
-├── examples/
-│   ├── minimal.c       # 函数指针风格示例
-│   └── std_style.c     # 宏封装风格示例
-└── CMakeLists.txt
-```
-
----
-
-## 10. 使用示例
-
-### 函数指针风格
-
-```c
-#include "unimpi.h"
-
-int main(int argc, char **argv) {
-    // 初始化（自动检测后端）
-    unimpi_init(&argc, &argv);
-    
-    int rank, size;
-    unimpi.comm_rank(MPI_COMM_WORLD, &rank);
-    unimpi.comm_size(MPI_COMM_WORLD, &size);
-    
-    printf("Hello from rank %d of %d\n", rank, size);
-    
-    unimpi_finalize();
-    return 0;
-}
-```
-
-### 标准 MPI 风格
+Standard-name aliases:
 
 ```c
 #define UNIMPI_USE_STD_NAMES
 #include "unimpi.h"
 
-int main(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-    
-    int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    
-    printf("Hello from rank %d of %d\n", rank, size);
-    
-    MPI_Finalize();
-    return 0;
-}
+MPI_Send(buffer, count, MPI_INT, destination, tag, MPI_COMM_WORLD);
 ```
+
+Both forms use the same runtime-populated table. Neither may be called before
+successful initialization unless the specific control API documents pre-init
+behavior.
+
+## Error model
+
+UniMPI control functions return `UNIMPI_*` errors for loader, argument, state,
+and initialization failures. Runtime MPI calls return the backend's MPI result
+through the vtable.
+
+Backend initialization failure must not leave a partially active identity or
+call an MPI error-class function before MPI is ready. Fake libraries provide
+deterministic failure injection for these paths.
+
+## Verification strategy
+
+- Fake shared libraries test loader priority, identity, incomplete symbols,
+  lifecycle transitions, cleanup, and required vtable fields.
+- Real MPI tests verify communication and ABI-sensitive behavior on each
+  supported backend/platform combination.
+- Sanitizers execute fake/unit tests under strict C99.
+- Examples and benchmarks use CTest smoke workloads; benchmark timing is not a
+  conformance or hard-threshold check.
+
+Details are in [TESTING.md](TESTING.md) and
+[SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).
+
+## Non-goals
+
+UniMPI currently does not promise:
+
+- the full API of any MPI standard revision;
+- cross-vendor communication within one MPI job;
+- conversion of one vendor's ABI into another;
+- thread-safe concurrent lifecycle mutation;
+- zero or fixed dispatch overhead;
+- fault tolerance, GPU awareness, or vendor extensions;
+- semantic coverage for every vtable field.

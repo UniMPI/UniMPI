@@ -24,6 +24,7 @@ endif()
 option(UNIMPI_BUILD_EXAMPLES "Build example programs" ON)
 option(UNIMPI_BUILD_TESTS "Build tests" ON)
 option(UNIMPI_BUILD_MPI_TESTS "Register tests that require a real MPI runtime" OFF)
+option(UNIMPI_BUILD_BENCHMARKS "Build MPI benchmark programs" OFF)
 option(UNIMPI_ENABLE_STD_MACROS "Enable standard MPI naming macros" OFF)
 option(UNIMPI_INSTALL_DOCS "Install documentation files" ON)
 
@@ -89,6 +90,11 @@ if(UNIMPI_BUILD_EXAMPLES)
     endif()
 endif()
 
+# Benchmarks are opt-in and can be built independently of the test suite.
+if(UNIMPI_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
+
 # Tests
 if(UNIMPI_BUILD_TESTS)
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt)
@@ -139,22 +145,38 @@ install(FILES
 
 # Documentation installation
 if(UNIMPI_INSTALL_DOCS)
-    # Install main documentation files
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/README.md
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}
+    )
+
+    # Keep the source documentation hierarchy so relative links remain valid.
     install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/docs/README.md
         ${CMAKE_CURRENT_SOURCE_DIR}/docs/BUILDING.md
         ${CMAKE_CURRENT_SOURCE_DIR}/docs/API.md
         ${CMAKE_CURRENT_SOURCE_DIR}/docs/BACKENDS.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/TESTING.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/BENCHMARKS.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/SUPPORT_MATRIX.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/CI_CD.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/CONTRIBUTING.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/MPI_SUPPORT_ANALYSIS.md
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/design.md
         ${CMAKE_CURRENT_SOURCE_DIR}/docs/mpi-references.md
         ${CMAKE_CURRENT_SOURCE_DIR}/docs/mpi-api-summary.md
-        DESTINATION ${CMAKE_INSTALL_DOCDIR}/unimpi
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}/docs
+    )
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/README.md
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}/examples
     )
 
     # Install optional Windows guide if it exists
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/docs/WINDOWS.md)
         install(FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/docs/WINDOWS.md
-            DESTINATION ${CMAKE_INSTALL_DOCDIR}/unimpi
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}/docs
         )
     endif()
 endif()

@@ -10,7 +10,8 @@
 
 int test_intercomm(void) {
     int rank, size, flag, remote_size;
-    MPI_Comm intercomm, merged, color_comm, remote_group;
+    MPI_Comm intercomm, merged, color_comm;
+    MPI_Group remote_group;
     int ret;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -29,6 +30,7 @@ int test_intercomm(void) {
     /* Split into two groups to create an intercommunicator */
     int half = size / 2;
     int color = rank < half ? 0 : 1;
+    int expected_remote_size = color == 0 ? size - half : half;
     MPI_Comm_split(MPI_COMM_WORLD, color, rank, &color_comm);
 
     /*
@@ -53,8 +55,9 @@ int test_intercomm(void) {
     TEST("Comm_remote_size");
     ret = MPI_Comm_remote_size(intercomm, &remote_size);
     if (ret != MPI_SUCCESS) FAIL("MPI_Comm_remote_size failed");
-    if (remote_size != half) {
-        fprintf(stderr, "  FAIL: remote_size=%d (expected %d)\n", remote_size, half);
+    if (remote_size != expected_remote_size) {
+        fprintf(stderr, "  FAIL: remote_size=%d (expected %d)\n",
+                remote_size, expected_remote_size);
         return 1;
     }
     PASS();
@@ -65,8 +68,10 @@ int test_intercomm(void) {
     {
         int remote_grp_size;
         MPI_Group_size(remote_group, &remote_grp_size);
-        if (remote_grp_size != half) {
-            fprintf(stderr, "  FAIL: remote group size=%d (expected %d)\n", remote_grp_size, half);
+        if (remote_grp_size != expected_remote_size) {
+            fprintf(stderr,
+                    "  FAIL: remote group size=%d (expected %d)\n",
+                    remote_grp_size, expected_remote_size);
             return 1;
         }
     }
@@ -74,7 +79,7 @@ int test_intercomm(void) {
     PASS();
 
     TEST("Intercomm_merge");
-    ret = MPI_Intercomm_merge(intercomm, 0, &merged);
+    ret = MPI_Intercomm_merge(intercomm, color, &merged);
     if (ret != MPI_SUCCESS) FAIL("MPI_Intercomm_merge failed");
     {
         int merged_size;

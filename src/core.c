@@ -144,9 +144,6 @@ static int initialize_backend(int *argc, char ***argv,
     /* Call MPI_Init or MPI_Init_thread through vtable */
     if (thread_mode && unimpi.init_thread) {
         ret = unimpi.init_thread(argc, argv, required_level, provided_level);
-        if (provided_level) {
-            *provided_level = required_level; /* Assume we get what we ask for */
-        }
     } else {
         ret = unimpi.init(argc, argv);
         if (thread_mode && provided_level) {
@@ -166,7 +163,7 @@ static int initialize_backend(int *argc, char ***argv,
     /* Set active state */
     g_state = UNIMPI_STATE_ACTIVE;
     if (thread_mode) {
-        g_thread_level = required_level;
+        g_thread_level = provided_level ? *provided_level : UNIMPI_THREAD_SINGLE;
     }
 
     return UNIMPI_OK;

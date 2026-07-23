@@ -1,52 +1,36 @@
-# UNIMPI Documentation
+# UniMPI Documentation
 
-Welcome to the UNIMPI documentation. This directory contains comprehensive documentation for the Universal MPI wrapper library.
+UniMPI exposes a runtime-populated MPI dispatch table across four backend
+families. Documentation distinguishes API inventory from behavior verified by
+tests; a symbol or vtable field is not automatically a support guarantee.
 
-## Quick Start
+## Start here
 
-New to UNIMPI? Start here:
+- [BUILDING.md](BUILDING.md) — configure, build, install, and consume UniMPI.
+- [BACKENDS.md](BACKENDS.md) — select a matching launcher and runtime library.
+- [TESTING.md](TESTING.md) — unit/fake and real-MPI test layers.
+- [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) — current backend/API verification
+  boundary.
+- [../examples/README.md](../examples/README.md) — runnable examples and rank
+  requirements.
 
-- [BUILDING.md](BUILDING.md) - How to build and install UNIMPI
-- [API.md](API.md) - UNIMPI API documentation
-- [WINDOWS.md](WINDOWS.md) - Windows-specific instructions
+## API and architecture
 
-## MPI Reference Documentation
+- [API.md](API.md) — public lifecycle, diagnostics, and dispatch APIs.
+- [mpi-api-summary.md](mpi-api-summary.md) — concise standard-name reference
+  with a support disclaimer.
+- [MPI_SUPPORT_ANALYSIS.md](MPI_SUPPORT_ANALYSIS.md) — implementation inventory
+  and known gaps.
+- [design.md](design.md) — loader, lifecycle, vtable, and platform design.
+- [mpi-references.md](mpi-references.md) — official MPI and vendor references.
 
-We provide two levels of MPI documentation:
+## Operations and development
 
-### 1. Quick Reference (Offline)
-- [mpi-api-summary.md](mpi-api-summary.md) - Concise reference for 50+ most common MPI functions
-  - Environment management
-  - Point-to-point communication
-  - Collective operations
-  - Datatypes and constants
+- [BENCHMARKS.md](BENCHMARKS.md) — benchmark CLI and measurement methodology.
+- [CI_CD.md](CI_CD.md) — GitHub Actions backend matrix.
+- [WINDOWS.md](WINDOWS.md) — Windows/MS-MPI setup.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution and test requirements.
 
-### 2. Official Links (Online)
-- [mpi-references.md](mpi-references.md) - Comprehensive links to:
-  - MPI standard documents (PDF/HTML)
-  - Implementation documentation (OpenMPI, MPICH, Intel MPI, MS-MPI)
-  - Tutorials and learning resources
-  - Quick reference cards
-
-## Developer Documentation
-
-- [design.md](design.md) - Architecture and design decisions
-- [BACKENDS.md](BACKENDS.md) - Backend implementation details
-- [CI_CD.md](CI_CD.md) - Continuous integration setup
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
-
-## Documentation Structure
-
-```
-docs/
-├── README.md              # This file
-├── BUILDING.md            # Build instructions
-├── API.md                 # UNIMPI API docs
-├── BACKENDS.md            # Backend docs
-├── WINDOWS.md             # Windows guide
-├── design.md              # Architecture
-├── CI_CD.md               # CI/CD docs
-├── CONTRIBUTING.md        # Contributing guide
-├── mpi-references.md      # MPI official links
-└── mpi-api-summary.md     # MPI API quick reference
-```
+The documents under `docs/superpowers/plans/` are historical implementation
+plans. They explain earlier design intent and must not be treated as the
+current support contract.

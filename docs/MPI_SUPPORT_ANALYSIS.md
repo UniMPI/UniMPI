@@ -1,180 +1,116 @@
-# UNIMPI MPI Standard Support Analysis
+# MPI API Inventory and Gaps
 
-> Analysis based on MPI-2.2, MPI-3.0, MPI-3.1, and MPI-4.0 standards
-> Generated: $(date)
+This document describes the current implementation inventory. It deliberately
+does not calculate a percentage against "all MPI functions": function counts
+vary by standard revision and language binding, and an exported pointer is not
+proof of correct behavior.
 
-## Overview
+The maintained verification contract is
+[SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).
 
-UNIMPI currently implements **236 MPI functions** across multiple categories.
+## Inventory
 
-| Standard | Functions | UNIMPI Support | Coverage |
-|----------|-----------|----------------|----------|
-| MPI-2.2 | ~300 | ~193 | ~64% |
-| MPI-3.0 | ~430 | ~233 | ~54% |
-| MPI-3.1 | ~440 | ~243 | ~55% |
-| MPI-4.0 | ~500 | ~249 | ~50% |
+- 275 MPI function-pointer fields in `unimpi_vtable_t`.
+- 246 direct standard-name aliases in `unimpi_std_macros.h`.
+- Separate control wrappers for initialization, finalization, state queries,
+  backend identity, diagnostics, and UniMPI errors.
+- Four backend adapters: Open MPI, MPICH, Intel MPI, and MS-MPI.
 
-## Support by Category
+Backend adapters attempt to resolve a broad MPI-2.2/MPI-3-era surface. A symbol
+may be absent in a particular vendor/version, so required-field validation and
+focused integration tests determine the supported runtime subset.
 
-### ✅ Environment Management (9/9 - 100%)
+## Focused real-backend coverage
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Init | ✅ | Full support |
-| MPI_Finalize | ✅ | Full support |
-| MPI_Initialized | ✅ | Full support |
-| MPI_Finalized | ✅ | Full support |
-| MPI_Abort | ✅ | Full support |
-| MPI_Get_processor_name | ✅ | Full support |
-| MPI_Get_version | ✅ | Full support |
-| MPI_Get_library_version | ✅ | Full support |
-| MPI_Wtime/Wtick | ✅ | Full support |
+The current test suite has focused cases for:
 
-### ✅ Point-to-Point Communication (25/30 - 83%)
+- initialization, finalization, state, thread-init negotiation, and backend
+  identity;
+- basic blocking/nonblocking point-to-point operations;
+- request-handle wait/test arrays, zero-count request arrays, sendrecv, and a
+  representative persistent `Startall` path;
+- basic, variable-count, reduction, and representative MPI-3 nonblocking
+  collectives;
+- communicators, groups, intercommunicators, and selected topologies;
+- representative derived datatypes and pack/unpack;
+- MPI-2.2 resized/envelope/contents datatype operations;
+- environment/thread queries, Info CRUD, object names, memory allocation,
+  custom operations, and status helpers;
+- fence-based RMA `Put`, `Get`, and `Accumulate` plus window lifecycle,
+  attributes, and group plumbing;
+- positioned MPI I/O round trips in independent, collective, and nonblocking
+  forms plus atomicity, sync, metadata, and error-handler plumbing.
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Send/Recv | ✅ | Standard blocking |
-| MPI_Isend/Irecv | ✅ | Non-blocking |
-| MPI_Ssend/Bsend/Rsend | ✅ | Synchronous/Buffered/Ready |
-| MPI_Sendrecv/Sendrecv_replace | ✅ | Combined operations |
-| MPI_Wait/Test | ✅ | Completion |
-| MPI_Waitany/Testany | ✅ | Any completion |
-| MPI_Waitall/Testall | ✅ | All completion |
-| MPI_Waitsome/Testsome | ✅ | Some completion |
-| MPI_Probe/Iprobe | ✅ | Message probing |
-| MPI_Mprobe/Improbe | ✅ | MPI-3 matched probe |
-| MPI_Mrecv/Imrecv | ✅ | MPI-3 matched receive |
-| MPI_Cancel | ✅ | Cancel request |
-| MPI_Request_free | ✅ | Free request |
+These cases run across the platform/backend matrix described in
+[TESTING.md](TESTING.md).
 
-**Missing:**
-- MPI_Parrived (MPI-4 partitioned communication)
-- MPI_Pready/MPI_Pready_list (MPI-4)
+## Important uncovered or partial categories
 
-### ✅ Collective Communication (20/25 - 80%)
+### Point-to-point and requests
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Bcast | ✅ | Broadcast |
-| MPI_Gather/Gatherv | ✅ | Gather |
-| MPI_Scatter/Scatterv | ✅ | Scatter |
-| MPI_Allgather/Allgatherv | ✅ | All-gather |
-| MPI_Alltoall/Alltoallv/Alltoallw | ✅ | All-to-all |
-| MPI_Reduce | ✅ | Reduction |
-| MPI_Allreduce | ✅ | All-reduce |
-| MPI_Reduce_scatter | ✅ | Reduce-scatter |
-| MPI_Reduce_scatter_block | ✅ | Block reduce-scatter |
-| MPI_Scan/Exscan | ✅ | Prefix scan |
-| MPI_Barrier | ✅ | Synchronization |
+- broader persistent request lifecycle and error cases;
+- cancellation and cancelled-status semantics;
+- matched probe/receive semantics;
+- mixed completion errors and larger request-array stress;
+- per-element status results from multi-request completion arrays, pending a
+  native/facade status-array stride adapter;
+- portable direct access to source/tag/error fields across native status
+  layouts;
+- large counts, truncation, wildcard, and `MPI_PROC_NULL` corner cases.
 
-**Missing:**
-- MPI_Neighbor_allgather (MPI-3 neighborhood collectives)
-- MPI_Neighbor_alltoall (MPI-3)
-- MPI_Iallgather/Iallreduce (MPI-3 non-blocking collectives)
+### Collectives
 
-### ✅ Communicator Management (15/20 - 75%)
+- remaining collective variants and full in-place/aliasing rules;
+- `Alltoallw` datatype arrays on integer-handle backends, pending a typed
+  array adapter;
+- noncommutative reductions and user-defined operations;
+- in-place and zero-count corner cases;
+- broad non-power-of-two and large-process testing.
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Comm_rank/size | ✅ | Basic queries |
-| MPI_Comm_dup/Dup_with_info | ✅ | Duplication |
-| MPI_Comm_split/Split_type | ✅ | Splitting |
-| MPI_Comm_create/Create_group | ✅ | Creation |
-| MPI_Comm_free | ✅ | Destruction |
-| MPI_Comm_compare | ✅ | Comparison |
-| MPI_Comm_set_name/Get_name | ✅ | Naming |
-| MPI_Comm_get_info/Set_info | ✅ | MPI-3 info |
-| MPI_Comm_group | ✅ | Group access |
+### Datatypes
 
-**Missing:**
-- MPI_Comm_create_from_group (MPI-4)
-- MPI_Comm_idup (MPI-3 non-blocking dup)
+- every hindexed/subarray/darray constructor;
+- exact lower-bound/true-extent corner cases;
+- external32 packing;
+- nested datatype stress and invalid-constructor arguments.
 
-### ✅ Datatypes (25/30 - 83%)
+### Communicators and topology
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Type_contiguous | ✅ | Contiguous |
-| MPI_Type_vector | ✅ | Vector |
-| MPI_Type_indexed | ✅ | Indexed |
-| MPI_Type_create_hindexed | ✅ | Heterogeneous indexed |
-| MPI_Type_create_struct | ✅ | Structure |
-| MPI_Type_commit/Free | ✅ | Lifecycle |
-| MPI_Pack/Unpack | ✅ | Packing |
-| MPI_Pack_size | ✅ | Pack size |
-| MPI_Type_size/Get_extent | ✅ | Size queries |
-| MPI_Type_dup | ✅ | Duplicate |
-| MPI_Get_address | ✅ | Address |
+- dynamic process management, ports, and name publishing;
+- custom communicator error-handler matrix;
+- exhaustive Cartesian/graph mapping and invalid topology arguments;
+- distributed graph topology.
 
-**Missing:**
-- MPI_Type_create_resized (Advanced)
-- MPI_Type_create_f90_{real,complex,integer}
+### RMA
 
-### ✅ Groups (10/12 - 83%)
+- atomics and request-based RMA data correctness;
+- lock/unlock, flush, PSCW, and mixed epoch rules;
+- shared and dynamic windows;
+- memory-model and displacement corner cases.
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Group_incl/Excl | ✅ | Include/Exclude |
-| MPI_Group_range_incl/Excl | ✅ | Range operations |
-| MPI_Group_union/Intersection/Difference | ✅ | Set operations |
-| MPI_Group_compare | ✅ | Comparison |
-| MPI_Group_free | ✅ | Destruction |
-| MPI_Group_size/Rank | ✅ | Queries |
-| MPI_Group_translate_ranks | ✅ | Rank translation |
+### MPI I/O
 
-**Missing:**
-- MPI_Group_from_session (MPI-4)
+- shared/ordered file-pointer operations and split collectives;
+- views, seek/position, preallocation, and broader deletion/error cases;
+- custom data representations and broad filesystem behavior.
 
-### ✅ Process Topologies (16/16 - 100%)
+### Threading and resilience
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Cart_create | ✅ | Cartesian grid creation |
-| MPI_Cartdim_get | ✅ | Get dimensions |
-| MPI_Cart_get | ✅ | Get cartesian info |
-| MPI_Cart_rank | ✅ | Coords to rank |
-| MPI_Cart_coords | ✅ | Rank to coords |
-| MPI_Cart_shift | ✅ | Shift coordinates |
-| MPI_Cart_sub | ✅ | Sub-communicator |
-| MPI_Cart_map | ✅ | Rank mapping |
-| MPI_Dims_create | ✅ | Dimension calculation |
-| MPI_Graph_create | ✅ | Graph creation |
-| MPI_Graphdims_get | ✅ | Graph info |
-| MPI_Graph_get | ✅ | Graph data |
-| MPI_Graph_neighbors_count | ✅ | Neighbor count |
-| MPI_Graph_neighbors | ✅ | Get neighbors |
-| MPI_Graph_map | ✅ | Graph mapping |
-| MPI_Topo_test | ✅ | Topology type |
+- concurrent UniMPI lifecycle mutation;
+- multi-threaded MPI call stress under `MPI_THREAD_MULTIPLE`;
+- process failure, recovery, fault tolerance, GPU awareness, and vendor
+  extensions.
 
-### ⚠️ One-Sided Communication (RMA) (22/25 - 88%)
+## How to update this analysis
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Put/Get | ✅ | Basic RMA |
-| MPI_Accumulate | ✅ | Atomic operations |
-| MPI_Win_create/Allocate | ✅ | Window creation |
-| MPI_Win_free | ✅ | Window destruction |
-| MPI_Win_fence | ✅ | Fence synchronization |
-| MPI_Win_lock/Unlock | ✅ | Lock synchronization |
-| MPI_Win_start/Complete | ✅ | PSCW synchronization |
-| MPI_Win_post/Wait | ✅ | PSCW |
-| MPI_Get_accumulate | ✅ | MPI-3 atomic |
-| MPI_Fetch_and_op | ✅ | MPI-3 atomic |
-| MPI_Compare_and_swap | ✅ | MPI-3 atomic |
-| MPI_Win_create_keyval | ✅ | MPI 2.2 - Create window attribute key |
-| MPI_Win_free_keyval | ✅ | MPI 2.2 - Free window attribute key |
-| MPI_Win_set_attr | ✅ | MPI 2.2 - Set window attribute |
-| MPI_Win_get_attr | ✅ | MPI 2.2 - Get window attribute |
-| MPI_Win_delete_attr | ✅ | MPI 2.2 - Delete window attribute |
-| MPI_Win_get_group | ✅ | MPI 2.2 - Get window group |
-| MPI_Win_call_errhandler | ✅ | MPI 2.2 - Call window error handler |
+When adding an API:
 
-**Missing:**
-- MPI_Rput/Rget (MPI-3 request-based RMA)
-- MPI_Win_allocate_shared (MPI-3 shared memory)
-- MPI_Win_attach/Detach (MPI-3 dynamic)
-- MPI_Win_sync (MPI-3 memory sync)
+1. add the typed vtable field and standard alias where appropriate;
+2. resolve it in every applicable backend adapter;
+3. decide whether it is required or optional for the supported profile;
+4. add fake failure/cleanup coverage if loading or state changes;
+5. add focused real-backend semantics with the necessary process counts;
+6. update `SUPPORT_MATRIX.md` only after those tests pass.
 
 ### ⚠️ I/O (38/38 - 100%)
 
@@ -285,3 +221,7 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 
 - [MPI References](mpi-references.md) - Official documentation links
 - [MPI API Summary](mpi-api-summary.md) - Quick reference
+
+Historical plans under `docs/superpowers/plans/` may mention 400+ functions or
+100% MPI-3 coverage. Those are planning artifacts, not current capability
+claims.

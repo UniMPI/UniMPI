@@ -32,6 +32,20 @@ static int backend_supported_on_platform(unimpi_backend_type_t type) {
 #endif
 }
 
+static const char* backend_name_from_type(unimpi_backend_type_t type) {
+    for (int i = 0; i < UNIMPI_MAX_BACKENDS; i++) {
+        if (unimpi_backends[i].type == type) {
+            return unimpi_backends[i].name;
+        }
+    }
+    return "unknown";
+}
+
+static const char* get_nonempty_env(const char *name) {
+    const char *value = getenv(name);
+    return value && value[0] != '\0' ? value : NULL;
+}
+
 /* Check if the library path indicates a standard MPI ABI library */
 static int path_names_standard_abi(const char *path) {
     if (!path) return 0;
@@ -197,7 +211,7 @@ int unimpi_loader_check_platform_support(unimpi_backend_type_t backend, const ch
     /* Check if the backend is supported on this platform */
     if (!backend_supported_on_platform(backend)) {
         fprintf(stderr, "[unimpi:ERROR] Backend '%s' is not supported on this platform\n",
-                unimpi_backends[backend].name);
+                backend_name_from_type(backend));
 #ifdef _WIN32
         fprintf(stderr, "  Only MS-MPI is supported on Windows\n");
 #elif defined(__APPLE__)

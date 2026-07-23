@@ -17,16 +17,19 @@ concurrency:
 jobs:
   linux-mpi:
     name: Linux ${{ matrix.backend }} ${{ matrix.build_type }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
           - backend: openmpi
+            os: ubuntu-24.04
             build_type: Debug
             packages: openmpi-bin libopenmpi-dev
+          # Noble's MPICH/Hydra PMI-PMIx packaging starts each rank as a singleton.
           - backend: mpich
+            os: ubuntu-22.04
             build_type: Release
             packages: mpich libmpich-dev
 
@@ -128,6 +131,7 @@ jobs:
           -DCMAKE_C_EXTENSIONS=OFF
           -DUNIMPI_BUILD_TESTS=ON
           -DUNIMPI_BUILD_MPI_TESTS=ON
+          -DUNIMPI_BUILD_BENCHMARKS=ON
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
           -DMPIEXEC_PREFLAGS=${{ steps.mpi.outputs.preflags }}
 
@@ -207,6 +211,7 @@ jobs:
           -DCMAKE_C_EXTENSIONS=OFF \
           -DUNIMPI_BUILD_TESTS=ON \
           -DUNIMPI_BUILD_MPI_TESTS=ON \
+          -DUNIMPI_BUILD_BENCHMARKS=ON \
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }} \
           "-DMPIEXEC_PREFLAGS=-bootstrap;fork"
 
@@ -267,6 +272,7 @@ jobs:
             -DBUILD_SHARED_LIBS=OFF `
             -DUNIMPI_BUILD_TESTS=ON `
             -DUNIMPI_BUILD_MPI_TESTS=ON `
+            -DUNIMPI_BUILD_BENCHMARKS=ON `
             "-DMPIEXEC_EXECUTABLE=$launcher"
 
       - name: Build
@@ -336,6 +342,7 @@ jobs:
           -DCMAKE_C_EXTENSIONS=OFF
           -DUNIMPI_BUILD_TESTS=ON
           -DUNIMPI_BUILD_MPI_TESTS=ON
+          -DUNIMPI_BUILD_BENCHMARKS=ON
           -DMPIEXEC_EXECUTABLE=${{ steps.mpi.outputs.launcher }}
           -DMPIEXEC_PREFLAGS=${{ matrix.preflags }}
 
@@ -375,3 +382,10 @@ jobs:
 
       - name: Build
         run: cmake --build build-sanitized --parallel
+
+      - name: Run fixture-based unit tests under sanitizers
+        run: >-
+          ctest --test-dir build-sanitized
+          --output-on-failure
+          --timeout 120
+          -L unit

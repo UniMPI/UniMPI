@@ -39,9 +39,9 @@ build:openmpi:
     CC: mpicc
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq cmake build-essential libopenmpi-dev
+    - apt-get install -y -qq cmake build-essential openmpi-bin libopenmpi-dev
   script:
-    - cmake -B ${BUILD_DIR} .
+    - cmake -B ${BUILD_DIR} . -DUNIMPI_BUILD_TESTS=ON -DUNIMPI_BUILD_MPI_TESTS=ON -DUNIMPI_BUILD_BENCHMARKS=ON "-DMPIEXEC_PREFLAGS=--allow-run-as-root;--oversubscribe"
     - cmake --build ${BUILD_DIR} --parallel $(nproc)
   artifacts:
     paths:
@@ -56,9 +56,9 @@ build:mpich:
     CC: mpicc
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq cmake build-essential libmpich-dev
+    - apt-get install -y -qq cmake build-essential mpich libmpich-dev
   script:
-    - cmake -B ${BUILD_DIR} .
+    - cmake -B ${BUILD_DIR} . -DUNIMPI_BUILD_TESTS=ON -DUNIMPI_BUILD_MPI_TESTS=ON -DUNIMPI_BUILD_BENCHMARKS=ON
     - cmake --build ${BUILD_DIR} --parallel $(nproc)
   artifacts:
     paths:
@@ -79,7 +79,7 @@ test:openmpi:
     UNIMPI_BACKEND: openmpi
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq libopenmpi-dev
+    - apt-get install -y -qq cmake openmpi-bin libopenmpi-dev
   script:
     - cd ${BUILD_DIR}
     - ctest --output-on-failure --parallel 4
@@ -95,7 +95,7 @@ test:mpich:
     UNIMPI_BACKEND: mpich
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq libmpich-dev
+    - apt-get install -y -qq cmake mpich libmpich-dev
   script:
     - cd ${BUILD_DIR}
     - ctest --output-on-failure --parallel 4
@@ -106,19 +106,22 @@ benchmark:openmpi:
   stage: test
   image: ubuntu:22.04
   needs:
-    - test:openmpi
+    - job: build:openmpi
+      artifacts: true
+    - job: test:openmpi
+      artifacts: false
   variables:
     UNIMPI_BACKEND: openmpi
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq libopenmpi-dev
+    - apt-get install -y -qq openmpi-bin libopenmpi-dev
   script:
     - cd ${BUILD_DIR}
     - echo "=== Running benchmarks ==="
-    - mpirun --allow-run-as-root -np 2 ./tests/bench_latency || echo "Benchmark latency completed"
-    - mpirun --allow-run-as-root -np 4 ./tests/bench_collective || echo "Benchmark collective completed"
+    - mpirun --allow-run-as-root --oversubscribe -np 2 ./benchmarks/bench_latency --smoke --format csv
+    - mpirun --allow-run-as-root --oversubscribe -np 4 ./benchmarks/bench_collective --smoke --format csv
+    - mpirun --allow-run-as-root --oversubscribe -np 1 ./benchmarks/bench_overhead --smoke --format csv
   when: on_success
-  allow_failure: true  # Benchmarks may vary by environment
 
 # ============================================================================
 # QUALITY STAGE
