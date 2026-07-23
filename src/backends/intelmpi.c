@@ -1,4 +1,8 @@
 /* src/backends/intelmpi.c */
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "unimpi_vtable.h"
 #include "unimpi_platform.h"
 #include "unimpi.h"
@@ -90,7 +94,9 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     /* Enable Intel MPI dynamic process support (spawn, open_port, etc.).
      * Intel MPI disables spawn by default in the OFI netmod; this env var
      * must be set before MPI_Init to avoid segfaults in MPI_Open_port. */
-    setenv("I_MPI_SPAWN", "on", 0);
+#ifdef UNIMPI_POSIX
+    (void)setenv("I_MPI_SPAWN", "on", 0);
+#endif
 
     unimpi_datatype_array_adapter_init(
         (unimpi_native_comm_query_fn)
