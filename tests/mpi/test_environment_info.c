@@ -37,6 +37,30 @@ static int use_mpi31_optional(const char *operation, int available,
     return 0;
 }
 
+static char *allocate_limit_buffer(const char *limit_name, int limit) {
+    size_t capacity;
+    char *buffer;
+
+    if (limit < 0) {
+        fprintf(stderr, "%s has invalid negative value %d\n",
+                limit_name, limit);
+        abort();
+    }
+    capacity = (size_t)limit + 1u;
+    if (capacity <= (size_t)limit) {
+        fprintf(stderr, "%s is too large to allocate safely\n", limit_name);
+        abort();
+    }
+
+    buffer = (char *)malloc(capacity);
+    if (!buffer) {
+        fprintf(stderr, "failed to allocate %lu bytes for %s\n",
+                (unsigned long)capacity, limit_name);
+        abort();
+    }
+    return buffer;
+}
+
 static void test_environment(int provided) {
     char library_version[UNIMPI_MAX_LIBRARY_VERSION_STRING];
     char processor_name[UNIMPI_MAX_PROCESSOR_NAME];
@@ -74,9 +98,12 @@ static void test_environment(int provided) {
 }
 
 static void test_info_and_communicators(int rank, int require_optional) {
-    char key[MPI_MAX_INFO_KEY + 1];
-    char name[MPI_MAX_OBJECT_NAME + 1];
-    char value[MPI_MAX_INFO_VAL + 1];
+    char *key = allocate_limit_buffer(
+        "MPI_MAX_INFO_KEY", MPI_MAX_INFO_KEY);
+    char *name = allocate_limit_buffer(
+        "MPI_MAX_OBJECT_NAME", MPI_MAX_OBJECT_NAME);
+    char *value = allocate_limit_buffer(
+        "MPI_MAX_INFO_VAL", MPI_MAX_INFO_VAL);
     MPI_Comm duplicate;
     MPI_Comm shared;
     MPI_Info info;
@@ -140,6 +167,10 @@ static void test_info_and_communicators(int rank, int require_optional) {
                      value, &flag));
     assert(flag == 0);
     TEST_CHECK_SUCCESS(MPI_Info_free(&info));
+
+    free(value);
+    free(name);
+    free(key);
 }
 
 static void test_memory_operation_and_status(void) {
@@ -185,10 +216,23 @@ int main(int argc, char **argv) {
     int provided = MPI_THREAD_SINGLE;
     int rank = 0;
     int require_optional;
+    int world_size = 0;
 
     TEST_CHECK_SUCCESS(MPI_Init_thread(
         &argc, &argv, MPI_THREAD_FUNNELED, &provided));
     TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &world_size));
+    if (world_size != 2) {
+        if (rank == 0) {
+            fprintf(stderr,
+                    "test_environment_info requires exactly 2 MPI ranks, "
+                    "but was launched with %d\n",
+                    world_size);
+        }
+        TEST_CHECK_SUCCESS(MPI_Finalize());
+        return 1;
+    }
+    assert(world_size == 2);
     require_optional =
         unimpi_get_backend_type() != UNIMPI_BACKEND_MSMPI;
 

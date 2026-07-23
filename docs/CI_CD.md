@@ -11,7 +11,7 @@ cross-platform release matrix described below.
 | Job configuration | Runner | Runtime | Main purpose |
 |---|---|---|---|
 | Linux Open MPI Debug | Ubuntu 24.04 | Distribution Open MPI | Debug build and real MPI tests |
-| Linux MPICH Release | Ubuntu 24.04 | Distribution MPICH | Release and MPICH ABI tests |
+| Linux MPICH Release | Ubuntu 22.04 | Distribution MPICH | Release and MPICH ABI tests |
 | Linux Intel MPI Release | Ubuntu 24.04 | oneAPI MPI | Intel backend tests |
 | macOS Open MPI Debug | macOS 14 | Homebrew Open MPI | AppleClang/Open MPI tests |
 | macOS MPICH Release | macOS 14 | Homebrew MPICH | AppleClang/MPICH tests |
@@ -20,6 +20,13 @@ cross-platform release matrix described below.
 
 `fail-fast` is disabled for backend matrices so one implementation does not
 hide results from another.
+
+The Linux MPICH job intentionally remains on the supported Ubuntu 22.04 runner.
+Ubuntu 24.04's distribution MPICH/Hydra PMI-PMIx packaging can launch the
+requested processes as independent size-one MPI worlds, which would make
+multi-rank coverage invalid. Open MPI and Intel MPI continue to use Ubuntu
+24.04. See [Ubuntu bug 2072338](https://bugs.launchpad.net/bugs/2072338) for
+the distribution packaging issue.
 
 ## Runtime tuple
 

@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+
 if(NOT DEFINED UNIMPI_SOURCE_DIR)
     message(FATAL_ERROR "UNIMPI_SOURCE_DIR is required")
 endif()
@@ -55,13 +57,14 @@ foreach(backend IN LISTS backends)
 
     set(missing_fields)
     foreach(field IN LISTS public_fields)
-        if(NOT field IN_LIST assigned_fields)
+        list(FIND assigned_fields "${field}" assigned_index)
+        if(assigned_index EQUAL -1)
             list(APPEND missing_fields "${field}")
         endif()
     endforeach()
 
     if(missing_fields)
-        list(JOIN missing_fields ", " missing_text)
+        string(REPLACE ";" ", " missing_text "${missing_fields}")
         message(FATAL_ERROR
             "${backend} does not assign public vtable fields: ${missing_text}"
         )

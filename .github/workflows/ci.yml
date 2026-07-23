@@ -17,16 +17,19 @@ concurrency:
 jobs:
   linux-mpi:
     name: Linux ${{ matrix.backend }} ${{ matrix.build_type }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
           - backend: openmpi
+            os: ubuntu-24.04
             build_type: Debug
             packages: openmpi-bin libopenmpi-dev
+          # Noble's MPICH/Hydra PMI-PMIx packaging starts each rank as a singleton.
           - backend: mpich
+            os: ubuntu-22.04
             build_type: Release
             packages: mpich libmpich-dev
 

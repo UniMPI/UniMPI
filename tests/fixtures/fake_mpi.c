@@ -1,13 +1,19 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef _WIN32
 #define FAKE_MPI_CALL __stdcall
-typedef int fake_comm_t;
 #else
 #define FAKE_MPI_CALL
-typedef void *fake_comm_t;
 #endif
+
+/*
+ * The fixture is invoked through UniMPI's backend-neutral vtable, whose
+ * opaque handles use intptr_t.  Match that exact function-pointer ABI so
+ * strict C99 UBSan function checks do not flag calls through the vtable.
+ */
+typedef intptr_t fake_comm_t;
 
 int ompi_mpi_comm_null;
 int ompi_mpi_comm_world;
