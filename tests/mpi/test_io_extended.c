@@ -128,8 +128,17 @@ int test_file_sync(void) {
     ret = MPI_File_write_at(fh, offset, &value, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS) FAIL("MPI_File_write_at failed");
 
+    /*
+     * Independent writes need an explicit communicator synchronization
+     * before another rank may enter the read phase.  In particular, MS-MPI
+     * does not make this ordering portable through File_sync alone.
+     */
+    ret = MPI_Barrier(MPI_COMM_WORLD);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Barrier before MPI_File_sync failed");
     ret = MPI_File_sync(fh);
     if (ret != MPI_SUCCESS) FAIL("MPI_File_sync failed");
+    ret = MPI_Barrier(MPI_COMM_WORLD);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Barrier after MPI_File_sync failed");
 
     ret = MPI_File_read_at(fh, offset, &readback, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS || readback != value) {
