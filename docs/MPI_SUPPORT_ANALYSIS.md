@@ -203,20 +203,20 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 | MPI_File_call_errhandler | ✅ | MPI 2.2 - Call error handler |
 | MPI_File_set_errhandler/Get_errhandler | ✅ | MPI 2.2 - Error handler management |
 
-### ❌ Dynamic Processes (0/8 - 0%)
+### ✅ Dynamic Processes (8/8 - 100%)
 
 | Function | Status | Notes |
 |----------|--------|-------|
-| MPI_Comm_spawn | ❌ | Spawn processes |
-| MPI_Comm_spawn_multiple | ❌ | Multiple spawn |
-| MPI_Comm_get_parent | ❌ | Parent access |
-| MPI_Comm_join | ❌ | Join |
-| MPI_Comm_connect/Accept | ❌ | Client-server |
-| MPI_Open_port | ❌ | Port management |
-| MPI_Close_port | ❌ | Port management |
-| MPI_Publish/Lookup_name | ❌ | Name service |
+| MPI_Comm_spawn | ✅ | Spawn processes |
+| MPI_Comm_spawn_multiple | ✅ | Multiple spawn |
+| MPI_Comm_get_parent | ✅ | Parent access |
+| MPI_Comm_join | ✅ | Join |
+| MPI_Comm_connect/Accept | ✅ | Client-server |
+| MPI_Open_port | ✅ | Port management |
+| MPI_Close_port | ✅ | Port management |
+| MPI_Publish/Lookup_name | ✅ | Name service |
 
-**Note:** Dynamic processes require MPI runtime support beyond simple wrapper.
+**Note:** All functions implemented. See `tests/mpi/test_dynamic.c` for test coverage.
 
 ### ❌ Sessions (MPI-4) (0/6 - 0%)
 
@@ -258,10 +258,10 @@ UNIMPI currently implements **236 MPI functions** across multiple categories.
 - ✅ Full MPI-2.2 RMA window attributes (create_keyval, set_attr, get_attr, delete_attr, get_group)
 - ✅ Good RMA support (basic + MPI-2.2 attributes + MPI-3 atomics)
 - ✅ Complete MPI-2.2 I/O support (38/38 functions, including atomicity, sync, errhandler)
+- ✅ Complete Dynamic Processes support (8/8 functions, including spawn, connect, name service)
 - ✅ Message probing (including MPI-3 matched probes)
 
 ### Gaps
-- ❌ Dynamic processes (requires runtime support)
 - ❌ MPI-4 new features (sessions, partitioned, tools)
 - ⚠️ Non-blocking collectives (MPI-3) partial
 - ⚠️ Shared memory windows (MPI-3)

@@ -36,6 +36,37 @@ src/backends/
   msmpi.c                 # MS-MPI initialization (Windows, MPICH-derived)
 ```
 
+### Initialization Flow
+
+The library follows a strict initialization sequence:
+
+1. **Environment Check** (`src/loader.c:unimpi_loader_detect_backend`)
+   - Check `UNIMPI_BACKEND` environment variable (manual selection)
+   - Check `UNIMPI_LIBRARY` environment variable (custom path)
+   - Auto-detect based on platform
+
+2. **Library Loading** (`src/loader.c:unimpi_loader_load`)
+   - Reject standard MPI ABI libraries (not supported)
+   - Platform-specific `dlopen`/`LoadLibrary`
+   - Returns handle for symbol resolution
+
+3. **Backend Identification** (`src/loader.c:unimpi_loader_identify_backend`)
+   - OpenMPI: Check for `ompi_mpi_comm_world` symbol
+   - Intel-MPI: Check for `__I_MPI___cpu_core_type` symbol
+   - MPICH: Check for `MPIR_Err_create_code` or `MPIR_Dup_fn` symbols
+   - MS-MPI: Check for `MSMPI_Get_version` symbol (Windows only)
+
+4. **Platform Support Check** (`src/loader.c:unimpi_loader_check_platform_support`)
+   - Windows: Only MS-MPI supported
+   - macOS: OpenMPI and MPICH supported
+   - Linux: OpenMPI, MPICH, and Intel-MPI supported
+
+5. **Vtable Population** (`src/vtable.c:unimpi_vtable_init`)
+   - Validate core symbols (MPI_Init, MPI_Finalize, MPI_Comm_size, MPI_Comm_rank)
+   - Dispatch to backend-specific initialization
+   - Each backend fills 400+ function pointers via `unimpi_platform_dlsym`
+   - Set communicator constants specific to backend ABI
+
 ### Backend Detection Priority
 
 1. `UNIMPI_BACKEND` environment variable (manual selection)
@@ -81,6 +112,9 @@ cmake -B build . -DCMAKE_BUILD_TYPE=Debug
 
 # Enable standard MPI macros by default
 cmake -B build . -DUNIMPI_ENABLE_STD_MACROS=ON
+
+# Enable real MPI tests (requires mpirun/mpiexec)
+cmake -B build . -DUNIMPI_BUILD_MPI_TESTS=ON
 ```
 
 ## Test Commands
@@ -146,35 +180,6 @@ Different MPI implementations use different internal representations:
 
 Always verify communicator values match the backend when implementing new backends.
 
-## Common Development Tasks
-
-### Running Examples
-```bash
-# Build examples
-cmake -B build . -DUNIMPI_BUILD_EXAMPLES=ON
-
-# Run with auto-detection
-./build/examples/minimal
-
-# Run with specific backend
-UNIMPI_BACKEND=openmpi ./build/examples/minimal
-UNIMPI_LIBRARY=/opt/intel/oneapi/mpi/latest/lib/libmpi.so ./build/examples/minimal
-```
-
-### Debugging Backend Loading
-```bash
-# Enable verbose output (unimpi prints to stderr)
-UNIMPI_BACKEND=openmpi ./build/examples/minimal
-# Output: [unimpi] Loading backend library: libmpi.so.40
-```
-
-### Checking Function Coverage
-Compare function implementations across backends:
-```bash
-grep -c "unimpi_platform_dlsym" src/backends/openmpi.c
-grep -c "unimpi_platform_dlsym" src/backends/msmpi.c
-```
-
 ## Platform Considerations
 
 ### Windows/MS-MPI
@@ -236,3 +241,27 @@ unimpi.send(buf, count, UNIMPI_INT, dest, tag, UNIMPI_COMM_WORLD);
 ```
 
 The `UNIMPI_*` prefixes are for internal implementation only. The public API should always present as standard MPI to users.
+
+### Coding Standards
+
+- **Indentation**: 4 spaces (no tabs)
+- **Braces**: K&R style
+- **Line length**: Max 100 characters
+- **Naming**:
+  - Functions: `snake_case`
+  - Macros: `UPPER_CASE`
+  - Types: `snake_case_t`
+  - Global vtable: `unimpi`
+
+### Commit Messages
+
+Follow conventional commits format:
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation
+- `test:` - Tests
+- `refactor:` - Code refactoring
+- `perf:` - Performance
+- `chore:` - Maintenance
+
+Example: `test: add extended P2P communication tests (ssend, rsend, sendrecv, waitall, test)`
