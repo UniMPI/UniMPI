@@ -38,7 +38,7 @@ $MPIEXEC = "$env:ProgramFiles\Microsoft MPI\Bin\mpiexec.exe"
 | `backend_info` | Selected backend, library path, MPI/library version | 1 | Any supported backend |
 | `thread_init` | `unimpi_init_thread` and negotiated thread level | 1 | Backend with `MPI_Init_thread` |
 | `nonblocking` | `Isend`, `Irecv`, `Test`, `Wait`, `Sendrecv`, `Ibarrier` | 2 | Backend exporting these operations |
-| `collective` | Broadcast, reduce, all-reduce, gather/all-gather, scatter, scan | 2; 4 recommended | Backend exporting these collectives |
+| `collective` | Broadcast, reduce, all-reduce, gather/all-gather, typed all-to-all, scatter, scan | 2; 4 recommended | Backend exporting these collectives |
 | `rma` | Window allocation, fence epochs, ring `Put`, and result validation | 2 | Backend exporting the demonstrated RMA calls |
 
 The table describes the calls used by each executable; it is not a statement

@@ -89,9 +89,9 @@ standard rule is covered.
 | Thread initialization | Yes | Yes | Yes | Yes | Yes | Negotiation only; concurrent MPI calls are not certified |
 | Vtable required-field validation | Yes | Yes | Yes | Yes | Yes | Required profile, not every optional MPI symbol |
 | Basic point-to-point | No | Yes | Yes | Yes | Yes | Blocking, nonblocking, probe and sendrecv subset |
-| Request completion and persistent setup | No | Partial | Partial | Partial | Partial | Request-handle arrays, payload completion, zero counts and `Startall` are exercised; native/facade multi-status array stride adaptation remains open |
-| Blocking collectives | No | Yes | Yes | Yes | Yes | Barrier, broadcast, gather/scatter, all-to-all and reductions subset |
-| Nonblocking collectives | No | Yes | Partial | Partial | Partial | Open MPI exercises all 17 calls; MPICH/Intel exercise 16 while `Ialltoallw` awaits a typed datatype-array adapter; MS-MPI requires its documented nine-call subset |
+| Request completion and persistent setup | Yes | Yes | Yes | Yes | Yes | Unit ABI checks plus real request-handle arrays, distinct per-element status counts, zero counts and `Startall` |
+| Blocking collectives | Yes | Yes | Yes | Yes | Yes | Includes typed `Alltoallw` datatype arrays on pointer- and integer-handle backends |
+| Nonblocking collectives | Yes | Yes | Yes | Yes | Partial | Open MPI, MPICH and Intel exercise all 17 calls; MS-MPI requires its documented subset and exercises optional calls when exported |
 | Core datatypes and pack/unpack | No | Yes | Yes | Yes | Yes | Representative derived datatypes |
 | Communicators and groups | No | Yes | Yes | Yes | Yes | Representative create/split/compare/group operations |
 | Cartesian and graph topology | No | Yes | Yes | Yes | Yes | Focused MPI-2.2 topology cases |
@@ -111,12 +111,9 @@ focused, cross-backend semantic coverage. Important examples include:
 - matched probes, ready/buffered sends, and cancellation semantics;
 - persistent collective requests and broader persistent point-to-point
   lifecycle/error cases;
-- per-element status results from multi-request completion arrays;
 - portable direct access to `MPI_Status` source/tag/error fields across native
   status layouts;
-- remaining blocking and nonblocking collective variants and corner cases,
-  including typed datatype-array adapters for `Alltoallw` on integer-handle
-  backends;
+- remaining blocking and nonblocking collective variants and corner cases;
 - advanced datatype constructors and external data representation;
 - RMA atomics, dynamic/shared windows, and epoch models other than fence;
 - MPI I/O file views, shared/ordered pointers, seek operations, split

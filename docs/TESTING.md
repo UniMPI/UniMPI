@@ -75,7 +75,7 @@ Use labels to select the intended layer:
 
 | Label | Contents | External MPI required |
 |---|---|---:|
-| `unit` | Error, loader, platform, lifecycle, vtable, identity, and backend-parity tests | No |
+| `unit` | Error, loader, platform, lifecycle, vtable, identity, backend-parity, and backend ABI-adapter tests | No |
 | `fake` | Unit tests that load generated fake MPI shared libraries | No |
 | `integration` | Tests that initialize a real MPI runtime | Yes |
 | `mpi` | Real-MPI execution layer, including singleton lifecycle cases | Yes |
@@ -96,7 +96,7 @@ Benchmark labels run only smoke workloads under CTest. Full measurement runs
 are manual; see [BENCHMARKS.md](BENCHMARKS.md).
 
 With tests, real MPI, examples, and benchmarks all enabled, the current CTest
-registry contains 49 invocations: 20 unit tests and 29 integration
+registry contains 50 invocations: 21 unit tests and 29 integration
 invocations. The integration total includes 7 example smokes and 3 benchmark
 smokes. Recount after changing registrations:
 
@@ -116,7 +116,7 @@ behavior and add an important partition shape when it can expose another path.
 | Processes | Status | Primary scenarios |
 |---:|---|---|
 | 1 | Current | Lifecycle macros and single-rank example/dispatch smoke |
-| 2 | Current | Point-to-point, request arrays, datatype, RMA, MPI I/O, environment queries |
+| 2 | Current | Point-to-point, request/status arrays, datatype-array collectives, RMA, MPI I/O, environment queries |
 | 3 | Gap/candidate | Smallest odd communicator split when the operation permits it |
 | 4 | Current | Collectives, communicators, groups, Cartesian/graph topology, intercommunicators |
 | 5 | Current | Odd asymmetric intercommunicator partition |

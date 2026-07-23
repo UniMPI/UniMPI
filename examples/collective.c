@@ -171,6 +171,44 @@ int main(int argc, char **argv) {
     }
     printf("\n");
 
+    /* Alltoallw uses one datatype and byte displacement per peer. */
+    {
+        int *counts = (int *)malloc((size_t)size * sizeof(*counts));
+        int *byte_displacements =
+            (int *)malloc((size_t)size * sizeof(*byte_displacements));
+        MPI_Datatype *types =
+            (MPI_Datatype *)malloc((size_t)size * sizeof(*types));
+
+        if (!counts || !byte_displacements || !types) {
+            free(counts);
+            free(byte_displacements);
+            free(types);
+            return validation_failure("MPI_Alltoallw metadata allocation");
+        }
+        for (int i = 0; i < size; ++i) {
+            counts[i] = 1;
+            byte_displacements[i] = i * (int)sizeof(int);
+            types[i] = MPI_INT;
+            sendbuf_all[i] = rank * 100 + i;
+        }
+        CHECK_MPI(MPI_Alltoallw(
+            sendbuf_all, counts, byte_displacements, types,
+            recvbuf_all, counts, byte_displacements, types,
+            MPI_COMM_WORLD));
+        for (int source = 0; source < size; ++source) {
+            if (recvbuf_all[source] != source * 100 + rank) {
+                free(counts);
+                free(byte_displacements);
+                free(types);
+                return validation_failure(
+                    "MPI_Alltoallw produced the wrong payload");
+            }
+        }
+        free(counts);
+        free(byte_displacements);
+        free(types);
+    }
+
     /* ==================== Scatter ==================== */
     if (rank == root) {
         /* Root prepares data for scattering */

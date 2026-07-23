@@ -6,12 +6,17 @@ conformance tests and not CI performance gates.
 | Executable | Purpose | Recommended ranks |
 |---|---|---:|
 | `bench_latency` | Point-to-point ping-pong latency and throughput across message sizes | 2 |
-| `bench_collective` | Broadcast, all-reduce, gather, and barrier timing | 4 or more |
+| `bench_collective` | Broadcast, all-reduce, gather, typed all-to-all, and barrier timing | 4 or more |
 | `bench_overhead` | Paired direct-symbol and UniMPI-vtable `MPI_Comm_rank` dispatch timing | 1 or more |
 
 The current programs measure end-to-end MPI operations. They do not isolate a
 single indirect call from the backend's own work, so results must not be
 described as a proven nanosecond-level wrapper overhead.
+
+`bench_collective` reports `alltoallw` with a byte count per peer. On
+integer-handle backends this includes UniMPI's temporary native datatype-array
+conversion, while pointer-handle backends use their compatible native array
+representation. Keep the backend fixed when comparing measurements.
 
 ## Build
 
