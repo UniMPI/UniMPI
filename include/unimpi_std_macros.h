@@ -48,6 +48,9 @@
 /* Predefined request constant */
 #define MPI_REQUEST_NULL UNIMPI_REQUEST_NULL
 
+/* Completion-array status sentinel */
+#define MPI_STATUSES_IGNORE UNIMPI_STATUSES_IGNORE
+
 /* Topology types */
 #define MPI_CART UNIMPI_CART
 #define MPI_GRAPH UNIMPI_GRAPH

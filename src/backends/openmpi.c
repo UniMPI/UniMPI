@@ -36,8 +36,8 @@ static void init_openmpi_error_codes(void) {
     MPI_ERR_TRUNCATE = 15;
     MPI_ERR_OTHER = 16;
     MPI_ERR_INTERN = 17;
-    MPI_ERR_IN_STATUS = 17;    /* OpenMPI: 17 (MPICH: 18) */
-    MPI_ERR_PENDING = 18;      /* OpenMPI: 18 (MPICH: 19) */
+    MPI_ERR_IN_STATUS = 18;
+    MPI_ERR_PENDING = 19;
     MPI_ERR_ACCESS = 20;
     MPI_ERR_AMODE = 21;
     MPI_ERR_ASSERT = 22;
@@ -231,6 +231,8 @@ static int get_openmpi_op_values(unimpi_lib_handle_t handle) {
 }
 
 int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
+    unimpi_wrapper_set_error_class((unimpi_native_error_class_fn)
+        unimpi_platform_dlsym(handle, "MPI_Error_class"));
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
         unimpi_platform_dlsym(handle, "MPI_Init");
@@ -269,7 +271,7 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     unimpi.wait = (int (*)(MPI_Request*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Wait");
     unimpi_wrapper_set_openmpi_waitall(
-        (int (*)(int, MPI_Request*, unimpi_openmpi_native_status_t*))
+        (unimpi_native_openmpi_waitall_fn)
             unimpi_platform_dlsym(handle, "MPI_Waitall"));
     unimpi.waitall = unimpi_wrap_openmpi_waitall;
     unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
@@ -301,20 +303,17 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     unimpi.testany = (int (*)(int, MPI_Request*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testany");
     unimpi_wrapper_set_openmpi_testsome(
-        (int (*)(int, MPI_Request*, int*, int*,
-                 unimpi_openmpi_native_status_t*))
+        (unimpi_native_openmpi_some_fn)
             unimpi_platform_dlsym(handle, "MPI_Testsome"));
     unimpi.testsome = unimpi_wrap_openmpi_testsome;
     unimpi_wrapper_set_openmpi_testall(
-        (int (*)(int, MPI_Request*, int*,
-                 unimpi_openmpi_native_status_t*))
+        (unimpi_native_openmpi_testall_fn)
             unimpi_platform_dlsym(handle, "MPI_Testall"));
     unimpi.testall = unimpi_wrap_openmpi_testall;
     unimpi.waitany = (int (*)(int, MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitany");
     unimpi_wrapper_set_openmpi_waitsome(
-        (int (*)(int, MPI_Request*, int*, int*,
-                 unimpi_openmpi_native_status_t*))
+        (unimpi_native_openmpi_some_fn)
             unimpi_platform_dlsym(handle, "MPI_Waitsome"));
     unimpi.waitsome = unimpi_wrap_openmpi_waitsome;
 
@@ -495,8 +494,6 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Ialltoall");
     unimpi.ialltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ialltoallv");
-    unimpi.ialltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ialltoallw");
     unimpi.ialltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ialltoallw");
     unimpi.ireduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, int, MPI_Comm, MPI_Request*))

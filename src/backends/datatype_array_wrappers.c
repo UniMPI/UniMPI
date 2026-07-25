@@ -8,28 +8,20 @@ static unimpi_native_comm_query_fn real_comm_size;
 static unimpi_native_comm_query_fn real_comm_test_inter;
 static unimpi_native_comm_query_fn real_comm_remote_size;
 static unimpi_native_alltoallw_fn real_alltoallw;
-static unimpi_native_ialltoallw_fn real_ialltoallw;
 
 void unimpi_datatype_array_adapter_init(
     unimpi_native_comm_query_fn comm_size,
     unimpi_native_comm_query_fn comm_test_inter,
     unimpi_native_comm_query_fn comm_remote_size,
-    unimpi_native_alltoallw_fn alltoallw,
-    unimpi_native_ialltoallw_fn ialltoallw) {
+    unimpi_native_alltoallw_fn alltoallw) {
     real_comm_size = comm_size;
     real_comm_test_inter = comm_test_inter;
     real_comm_remote_size = comm_remote_size;
     real_alltoallw = alltoallw;
-    real_ialltoallw = ialltoallw;
 }
 
 int unimpi_datatype_array_has_alltoallw(void) {
     return real_alltoallw && real_comm_size && real_comm_test_inter &&
-           real_comm_remote_size;
-}
-
-int unimpi_datatype_array_has_ialltoallw(void) {
-    return real_ialltoallw && real_comm_size && real_comm_test_inter &&
            real_comm_remote_size;
 }
 
@@ -106,35 +98,6 @@ int unimpi_wrap_alltoallw(
         result = real_alltoallw(
             sendbuf, sendcounts, sdispls, native_sendtypes, recvbuf,
             recvcounts, rdispls, native_recvtypes, (int)(intptr_t)comm);
-    }
-    free(native_recvtypes);
-    free(native_sendtypes);
-    return result;
-}
-
-int unimpi_wrap_ialltoallw(
-    const void *sendbuf, const int *sendcounts, const int *sdispls,
-    const MPI_Datatype *sendtypes, void *recvbuf, const int *recvcounts,
-    const int *rdispls, const MPI_Datatype *recvtypes, MPI_Comm comm,
-    MPI_Request *request) {
-    int *native_sendtypes = NULL;
-    int *native_recvtypes = NULL;
-    int native_request = 0;
-    int result;
-
-    if (!request) {
-        return MPI_ERR_REQUEST;
-    }
-    result = prepare_types(
-        comm, sendtypes, recvtypes, &native_sendtypes, &native_recvtypes);
-    if (result == MPI_SUCCESS) {
-        result = real_ialltoallw(
-            sendbuf, sendcounts, sdispls, native_sendtypes, recvbuf,
-            recvcounts, rdispls, native_recvtypes, (int)(intptr_t)comm,
-            &native_request);
-        if (result == MPI_SUCCESS) {
-            *request = (MPI_Request)(intptr_t)native_request;
-        }
     }
     free(native_recvtypes);
     free(native_sendtypes);

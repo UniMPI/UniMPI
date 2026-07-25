@@ -17,39 +17,46 @@ typedef struct {
     size_t count;
 } unimpi_openmpi_native_status_t;
 
+typedef int (UNIMPI_MPI_CALL *unimpi_native_error_class_fn)(int, int *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_waitall_fn)(
+    int, int *, struct unimpi_status_legacy *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_any_fn)(
+    int, int *, int *, int *, struct unimpi_status_legacy *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_some_fn)(
+    int, int *, int *, int *, struct unimpi_status_legacy *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_testall_fn)(
+    int, int *, int *, struct unimpi_status_legacy *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_waitany_fn)(
+    int, int *, int *, struct unimpi_status_legacy *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_startall_fn)(int, int *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_waitall_fn)(
+    int, MPI_Request *, unimpi_openmpi_native_status_t *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_some_fn)(
+    int, MPI_Request *, int *, int *, unimpi_openmpi_native_status_t *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_testall_fn)(
+    int, MPI_Request *, int *, unimpi_openmpi_native_status_t *);
+
+/* Backend error-class query used to classify encoded error codes safely. */
+void unimpi_wrapper_set_error_class(unimpi_native_error_class_fn fn);
+
 /* Integer-handle backend function registration. */
-void unimpi_wrapper_set_waitall(
-    int (*fn)(int, int *, struct unimpi_status_legacy *));
-void unimpi_wrapper_set_testany(
-    int (*fn)(int, int *, int *, int *,
-              struct unimpi_status_legacy *));
-void unimpi_wrapper_set_testsome(
-    int (*fn)(int, int *, int *, int *,
-              struct unimpi_status_legacy *));
-void unimpi_wrapper_set_testall(
-    int (*fn)(int, int *, int *,
-              struct unimpi_status_legacy *));
-void unimpi_wrapper_set_waitany(
-    int (*fn)(int, int *, int *,
-              struct unimpi_status_legacy *));
-void unimpi_wrapper_set_waitsome(
-    int (*fn)(int, int *, int *, int *,
-              struct unimpi_status_legacy *));
-void unimpi_wrapper_set_startall(int (*fn)(int, int *));
+void unimpi_wrapper_set_waitall(unimpi_native_legacy_waitall_fn fn);
+void unimpi_wrapper_set_testany(unimpi_native_legacy_any_fn fn);
+void unimpi_wrapper_set_testsome(unimpi_native_legacy_some_fn fn);
+void unimpi_wrapper_set_testall(unimpi_native_legacy_testall_fn fn);
+void unimpi_wrapper_set_waitany(unimpi_native_legacy_waitany_fn fn);
+void unimpi_wrapper_set_waitsome(unimpi_native_legacy_some_fn fn);
+void unimpi_wrapper_set_startall(unimpi_native_legacy_startall_fn fn);
 
 /* Open MPI compact-status-array function registration. */
 void unimpi_wrapper_set_openmpi_waitall(
-    int (*fn)(int, MPI_Request *,
-              unimpi_openmpi_native_status_t *));
+    unimpi_native_openmpi_waitall_fn fn);
 void unimpi_wrapper_set_openmpi_testsome(
-    int (*fn)(int, MPI_Request *, int *, int *,
-              unimpi_openmpi_native_status_t *));
+    unimpi_native_openmpi_some_fn fn);
 void unimpi_wrapper_set_openmpi_testall(
-    int (*fn)(int, MPI_Request *, int *,
-              unimpi_openmpi_native_status_t *));
+    unimpi_native_openmpi_testall_fn fn);
 void unimpi_wrapper_set_openmpi_waitsome(
-    int (*fn)(int, MPI_Request *, int *, int *,
-              unimpi_openmpi_native_status_t *));
+    unimpi_native_openmpi_some_fn fn);
 
 /* Integer-handle backend wrappers. */
 int unimpi_wrap_waitall(int count, MPI_Request *array_of_requests,

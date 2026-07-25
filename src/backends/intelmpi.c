@@ -1,9 +1,14 @@
 /* src/backends/intelmpi.c */
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "unimpi_vtable.h"
 #include "unimpi_platform.h"
 #include "unimpi.h"
 #include "request_array_wrappers.h"
 #include "datatype_array_wrappers.h"
+#include <stdlib.h>
 
 /* Intel MPI is based on MPICH and uses MPICH-compatible error codes */
 static void init_intelmpi_error_codes(void) {
@@ -86,6 +91,13 @@ static int get_intelmpi_comm_world(unimpi_lib_handle_t handle, MPI_Comm *comm) {
 }
 
 int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
+#ifdef UNIMPI_POSIX
+    /* Intel MPI's OFI path disables dynamic-process support by default.
+     * Set the documented opt-in before MPI_Init, while preserving an
+     * explicit value supplied by the application. */
+    (void)setenv("I_MPI_SPAWN", "on", 0);
+#endif
+
     unimpi_datatype_array_adapter_init(
         (unimpi_native_comm_query_fn)
             unimpi_platform_dlsym(handle, "MPI_Comm_size"),
@@ -94,9 +106,9 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         (unimpi_native_comm_query_fn)
             unimpi_platform_dlsym(handle, "MPI_Comm_remote_size"),
         (unimpi_native_alltoallw_fn)
-            unimpi_platform_dlsym(handle, "MPI_Alltoallw"),
-        (unimpi_native_ialltoallw_fn)
-            unimpi_platform_dlsym(handle, "MPI_Ialltoallw"));
+            unimpi_platform_dlsym(handle, "MPI_Alltoallw"));
+    unimpi_wrapper_set_error_class((unimpi_native_error_class_fn)
+        unimpi_platform_dlsym(handle, "MPI_Error_class"));
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
         unimpi_platform_dlsym(handle, "MPI_Init");
@@ -134,7 +146,7 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Irecv");
     unimpi.wait = (int (*)(MPI_Request*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Wait");
-    unimpi_wrapper_set_waitall((int (*)(int, int*, struct unimpi_status_legacy*))
+    unimpi_wrapper_set_waitall((unimpi_native_legacy_waitall_fn)
         unimpi_platform_dlsym(handle, "MPI_Waitall"));
     unimpi.waitall = unimpi_wrap_waitall;
     unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
@@ -163,19 +175,19 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     /* Nonblocking test and wait */
     unimpi.test = (int (*)(MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Test");
-    unimpi_wrapper_set_testany((int (*)(int, int*, int*, int*, struct unimpi_status_legacy*))
+    unimpi_wrapper_set_testany((unimpi_native_legacy_any_fn)
         unimpi_platform_dlsym(handle, "MPI_Testany"));
     unimpi.testany = unimpi_wrap_testany;
-    unimpi_wrapper_set_testsome((int (*)(int, int*, int*, int*, struct unimpi_status_legacy*))
+    unimpi_wrapper_set_testsome((unimpi_native_legacy_some_fn)
         unimpi_platform_dlsym(handle, "MPI_Testsome"));
     unimpi.testsome = unimpi_wrap_testsome;
-    unimpi_wrapper_set_testall((int (*)(int, int*, int*, struct unimpi_status_legacy*))
+    unimpi_wrapper_set_testall((unimpi_native_legacy_testall_fn)
         unimpi_platform_dlsym(handle, "MPI_Testall"));
     unimpi.testall = unimpi_wrap_testall;
-    unimpi_wrapper_set_waitany((int (*)(int, int*, int*, struct unimpi_status_legacy*))
+    unimpi_wrapper_set_waitany((unimpi_native_legacy_waitany_fn)
         unimpi_platform_dlsym(handle, "MPI_Waitany"));
     unimpi.waitany = unimpi_wrap_waitany;
-    unimpi_wrapper_set_waitsome((int (*)(int, int*, int*, int*, struct unimpi_status_legacy*))
+    unimpi_wrapper_set_waitsome((unimpi_native_legacy_some_fn)
         unimpi_platform_dlsym(handle, "MPI_Waitsome"));
     unimpi.waitsome = unimpi_wrap_waitsome;
 
@@ -200,7 +212,7 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Recv_init");
     unimpi.start = (int (*)(MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Start");
-    unimpi_wrapper_set_startall((int (*)(int, int*))
+    unimpi_wrapper_set_startall((unimpi_native_legacy_startall_fn)
         unimpi_platform_dlsym(handle, "MPI_Startall"));
     unimpi.startall = unimpi_wrap_startall;
     unimpi.request_free = (int (*)(MPI_Request*))
@@ -451,8 +463,9 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Ialltoall");
     unimpi.ialltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ialltoallv");
-    unimpi.ialltoallw = unimpi_datatype_array_has_ialltoallw()
-        ? unimpi_wrap_ialltoallw : NULL;
+    /* Integer-handle datatype arrays must remain alive until completion.
+     * Do not publish this optional entry until request-bound storage exists. */
+    unimpi.ialltoallw = NULL;
     unimpi.ireduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, int, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ireduce");
     unimpi.iallreduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))

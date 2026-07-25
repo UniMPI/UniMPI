@@ -162,7 +162,8 @@ static void test_allgather_family(int rank, int size, int require_optional) {
     free(displacements);
 }
 
-static void test_alltoall_family(int rank, int size, int require_optional) {
+static void test_alltoall_family(int rank, int size, int require_optional,
+                                 int datatype_arrays_compatible) {
     MPI_Request request = MPI_REQUEST_NULL;
     int *send = (int *)calloc((size_t)size, sizeof(*send));
     int *receive = (int *)calloc((size_t)size, sizeof(*receive));
@@ -213,8 +214,18 @@ static void test_alltoall_family(int rank, int size, int require_optional) {
         }
     }
 
-    if (use_optional("MPI_Ialltoallw", unimpi.ialltoallw != NULL,
-                     require_optional, rank)) {
+    if (!datatype_arrays_compatible) {
+        if (unimpi.ialltoallw != NULL) {
+            fprintf(stderr,
+                    "integer-handle backend exposed unsafe MPI_Ialltoallw\n");
+            abort();
+        }
+        if (rank == 0) {
+            printf("SKIP: MPI_Ialltoallw requires request-bound datatype "
+                   "array storage on this backend\n");
+        }
+    } else if (use_optional("MPI_Ialltoallw",
+                            unimpi.ialltoallw != NULL, 1, rank)) {
         TEST_CHECK_SUCCESS(MPI_Ialltoallw(
             send, counts, byte_displacements, types, receive, counts,
             byte_displacements, types, MPI_COMM_WORLD, &request));
@@ -321,12 +332,14 @@ int main(int argc, char **argv) {
     int rank;
     int size;
     int require_optional;
+    int datatype_arrays_compatible;
 
     TEST_CHECK_SUCCESS(MPI_Init(&argc, &argv));
     TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
     backend = unimpi_get_backend_type();
     require_optional = backend != UNIMPI_BACKEND_MSMPI;
+    datatype_arrays_compatible = backend == UNIMPI_BACKEND_OPENMPI;
 
     use_optional("MPI_Ibarrier", unimpi.ibarrier != NULL, 1, rank);
     use_optional("MPI_Ibcast", unimpi.ibcast != NULL, 1, rank);
@@ -342,7 +355,8 @@ int main(int argc, char **argv) {
     test_bcast(rank);
     test_gather_family(rank, size);
     test_allgather_family(rank, size, require_optional);
-    test_alltoall_family(rank, size, require_optional);
+    test_alltoall_family(
+        rank, size, require_optional, datatype_arrays_compatible);
     test_reduce_family(rank, size, require_optional);
 
     if (rank == 0) {
