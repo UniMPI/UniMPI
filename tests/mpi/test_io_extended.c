@@ -8,7 +8,11 @@
 
 #define TEST(name) printf("Testing %s...\n", name)
 #define PASS() printf("  PASS\n")
-#define FAIL(msg) do { fprintf(stderr, "  FAIL: %s\n", msg); return 1; } while(0)
+#define FAIL(msg) do { \
+    fprintf(stderr, "  FAIL: %s\n", msg); \
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE); \
+    return 1; \
+} while(0)
 
 /* Get temp directory for current platform */
 static const char* get_temp_dir(void) {
@@ -129,16 +133,19 @@ int test_file_sync(void) {
     if (ret != MPI_SUCCESS) FAIL("MPI_File_write_at failed");
 
     /*
-     * Independent writes need an explicit communicator synchronization
-     * before another rank may enter the read phase.  In particular, MS-MPI
-     * does not make this ordering portable through File_sync alone.
+     * MPI_File_sync is collective but not necessarily temporally
+     * synchronizing.  The first sync flushes each rank's writes, the barrier
+     * orders those flushes, and the second sync makes every flushed update
+     * visible before the read phase.
      */
-    ret = MPI_Barrier(MPI_COMM_WORLD);
-    if (ret != MPI_SUCCESS) FAIL("MPI_Barrier before MPI_File_sync failed");
     ret = MPI_File_sync(fh);
-    if (ret != MPI_SUCCESS) FAIL("MPI_File_sync failed");
+    if (ret != MPI_SUCCESS) FAIL("first MPI_File_sync failed");
     ret = MPI_Barrier(MPI_COMM_WORLD);
-    if (ret != MPI_SUCCESS) FAIL("MPI_Barrier after MPI_File_sync failed");
+    if (ret != MPI_SUCCESS) {
+        FAIL("MPI_Barrier between MPI_File_sync calls failed");
+    }
+    ret = MPI_File_sync(fh);
+    if (ret != MPI_SUCCESS) FAIL("second MPI_File_sync failed");
 
     ret = MPI_File_read_at(fh, offset, &readback, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS || readback != value) {
