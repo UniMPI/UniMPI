@@ -10,8 +10,8 @@ The maintained verification contract is
 
 ## Inventory
 
-- 275 MPI function-pointer fields in `unimpi_vtable_t`.
-- 246 direct standard-name aliases in `unimpi_std_macros.h`.
+- 276 MPI function-pointer fields in `unimpi_vtable_t`.
+- 247 direct standard-name aliases in `unimpi_std_macros.h`.
 - Separate control wrappers for initialization, finalization, state queries,
   backend identity, diagnostics, and UniMPI errors.
 - Four backend adapters: Open MPI, MPICH, Intel MPI, and MS-MPI.
@@ -51,20 +51,21 @@ These cases run across the platform/backend matrix described in
 - broader persistent request lifecycle and error cases;
 - cancellation and cancelled-status semantics;
 - matched probe/receive semantics;
-- mixed completion errors and larger request-array stress;
-- per-element status results from multi-request completion arrays, pending a
-  native/facade status-array stride adapter;
+- broader mixed completion errors and larger request-array stress beyond the
+  covered per-element status, ignored-status, and error-class paths;
 - portable direct access to source/tag/error fields across native status
   layouts;
 - large counts, truncation, wildcard, and `MPI_PROC_NULL` corner cases.
 
 ### Collectives
 
-- remaining collective variants and full in-place/aliasing rules;
-- `Alltoallw` datatype arrays on integer-handle backends, pending a typed
-  array adapter;
+- remaining collective variants;
+- broader blocking `Alltoallw` in-place, zero-count, and asymmetric
+  intercommunicator cases beyond the typed array adapter;
+- integer-handle `Ialltoallw`, pending request-bound lifetime management for
+  converted datatype arrays; Open MPI uses its native pointer-handle path;
 - noncommutative reductions and user-defined operations;
-- in-place and zero-count corner cases;
+- full in-place, aliasing, and zero-count rules across other collectives;
 - broad non-power-of-two and large-process testing.
 
 ### Datatypes

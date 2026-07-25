@@ -96,7 +96,7 @@ Benchmark labels run only smoke workloads under CTest. Full measurement runs
 are manual; see [BENCHMARKS.md](BENCHMARKS.md).
 
 With tests, real MPI, examples, and benchmarks all enabled, the current CTest
-registry contains 50 invocations: 21 unit tests and 29 integration
+registry contains 51 invocations: 21 unit tests and 30 integration
 invocations. The integration total includes 7 example smokes and 3 benchmark
 smokes. Recount after changing registrations:
 
@@ -116,9 +116,9 @@ behavior and add an important partition shape when it can expose another path.
 | Processes | Status | Primary scenarios |
 |---:|---|---|
 | 1 | Current | Lifecycle macros and single-rank example/dispatch smoke |
-| 2 | Current | Point-to-point, request/status arrays, datatype-array collectives, RMA, MPI I/O, environment queries |
+| 2 | Current | Point-to-point, request/status arrays, RMA, MPI I/O, environment queries |
 | 3 | Gap/candidate | Smallest odd communicator split when the operation permits it |
-| 4 | Current | Collectives, communicators, groups, Cartesian/graph topology, intercommunicators |
+| 4 | Current | Collectives including blocking datatype arrays on all backends and native nonblocking datatype arrays on Open MPI; communicators, groups, Cartesian/graph topology, intercommunicators |
 | 5 | Current | Odd asymmetric intercommunicator partition |
 | 8 | Optional | Stress/scaling checks; not required for every change |
 

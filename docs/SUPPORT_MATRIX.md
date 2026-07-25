@@ -11,8 +11,8 @@ MPI conformance or runtime availability.
 
 ## Current API inventory
 
-- `unimpi_vtable_t` contains 275 MPI function-pointer fields.
-- `unimpi_std_macros.h` contains 246 direct standard-name aliases of the form
+- `unimpi_vtable_t` contains 276 MPI function-pointer fields.
+- `unimpi_std_macros.h` contains 247 direct standard-name aliases of the form
   `MPI_* -> unimpi.<field>`.
 - Initialization, finalization, constants, and a small number of function-like
   convenience macros are defined separately.
@@ -91,7 +91,7 @@ standard rule is covered.
 | Basic point-to-point | No | Yes | Yes | Yes | Yes | Blocking, nonblocking, probe and sendrecv subset |
 | Request completion and persistent setup | Yes | Yes | Yes | Yes | Yes | Unit ABI checks plus real request-handle arrays, distinct per-element status counts, zero counts and `Startall` |
 | Blocking collectives | Yes | Yes | Yes | Yes | Yes | Includes typed `Alltoallw` datatype arrays on pointer- and integer-handle backends |
-| Nonblocking collectives | Yes | Yes | Yes | Yes | Partial | Open MPI, MPICH and Intel exercise all 17 calls; MS-MPI requires its documented subset and exercises optional calls when exported |
+| Nonblocking collectives | Partial | Yes | Partial | Partial | Partial | Open MPI exercises all 17 calls; MPICH/Intel exercise 16 safe calls, MS-MPI exercises its exported subset, and all integer-handle backends defer `Ialltoallw` until request-bound datatype-array storage exists |
 | Core datatypes and pack/unpack | No | Yes | Yes | Yes | Yes | Representative derived datatypes |
 | Communicators and groups | No | Yes | Yes | Yes | Yes | Representative create/split/compare/group operations |
 | Cartesian and graph topology | No | Yes | Yes | Yes | Yes | Focused MPI-2.2 topology cases |

@@ -3,7 +3,7 @@
 UniMPI is a C99 runtime-dispatch layer for MPI. An application links to UniMPI
 once, then loads Open MPI, MPICH, Intel MPI, or Microsoft MPI at runtime.
 
-The current interface contains 275 MPI function-pointer fields and 246 direct
+The current interface contains 276 MPI function-pointer fields and 247 direct
 standard-name aliases. This is a broad MPI-2.2/MPI-3-era surface, not a claim
 of complete MPI-3 or MPI-4 coverage. See the
 [support matrix](docs/SUPPORT_MATRIX.md) for what is exercised on each backend.
