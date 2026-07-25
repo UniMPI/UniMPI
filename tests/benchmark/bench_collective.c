@@ -2,6 +2,7 @@
 #define UNIMPI_USE_STD_NAMES
 #include <errno.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -416,21 +417,42 @@ static int benchmark_alltoallw(int buffer_size,
                                int rank,
                                int process_count,
                                double *maximum_time_us) {
-    size_t total_size = (size_t)buffer_size * (size_t)process_count;
-    unsigned char *send_buffer = (unsigned char *)malloc(total_size);
-    unsigned char *receive_buffer = (unsigned char *)malloc(total_size);
-    int *counts = (int *)malloc(
-        (size_t)process_count * sizeof(*counts));
-    int *displacements = (int *)malloc(
-        (size_t)process_count * sizeof(*displacements));
-    MPI_Datatype *types = (MPI_Datatype *)malloc(
-        (size_t)process_count * sizeof(*types));
+    size_t total_size;
+    unsigned char *send_buffer;
+    unsigned char *receive_buffer;
+    int *counts;
+    int *displacements;
+    MPI_Datatype *types;
     double start;
     double end;
     double local_time_us;
     int local_allocated;
     int local_valid = 1;
     int i;
+
+    if (buffer_size <= 0 || process_count <= 0 ||
+        (size_t)process_count > SIZE_MAX / (size_t)buffer_size ||
+        (process_count > 1 &&
+         buffer_size > INT_MAX / (process_count - 1)) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*counts) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*displacements) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*types)) {
+        if (rank == 0) {
+            fprintf(stderr,
+                    "alltoallw benchmark dimensions exceed address or "
+                    "displacement limits\n");
+        }
+        return -1;
+    }
+
+    total_size = (size_t)buffer_size * (size_t)process_count;
+    send_buffer = (unsigned char *)malloc(total_size);
+    receive_buffer = (unsigned char *)malloc(total_size);
+    counts = (int *)malloc((size_t)process_count * sizeof(*counts));
+    displacements = (int *)malloc(
+        (size_t)process_count * sizeof(*displacements));
+    types = (MPI_Datatype *)malloc(
+        (size_t)process_count * sizeof(*types));
 
     local_allocated = send_buffer && receive_buffer && counts &&
                       displacements && types;
