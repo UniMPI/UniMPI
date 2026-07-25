@@ -1,7 +1,8 @@
 /* test_backend_identification.c - Test backend identification via symbols
  *
  * This internal test validates that the loader correctly identifies
- * different MPI backends by examining the symbols exported by the library.
+ * different MPI backends by examining the symbols exported by the library,
+ * and that Intel backend initialization preserves application environment.
  *
  * Usage: test_backend_identification <openmpi_fake> <mpich_fake> <intelmpi_fake> <unknown_fake>
  *   where each argument is the path to a fake MPI library fixture.
@@ -26,16 +27,24 @@
 #ifndef _WIN32
 int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle);
 
-static void assert_intelmpi_spawn_default(const char *path) {
+static void assert_intelmpi_spawn_environment_preserved(const char *path) {
     unimpi_lib_handle_t handle = NULL;
+    const char *original_value = getenv("I_MPI_SPAWN");
+    char *saved_value = NULL;
     const char *value;
+
+    if (original_value != NULL) {
+        size_t saved_size = strlen(original_value) + 1;
+        saved_value = (char *)malloc(saved_size);
+        assert(saved_value != NULL);
+        memcpy(saved_value, original_value, saved_size);
+    }
 
     assert(unsetenv("I_MPI_SPAWN") == 0);
     assert(unimpi_loader_load(path, &handle) == UNIMPI_OK);
     assert(unimpi_vtable_init_intelmpi(handle) == UNIMPI_OK);
     value = getenv("I_MPI_SPAWN");
-    assert(value != NULL);
-    assert(strcmp(value, "on") == 0);
+    assert(value == NULL);
 
     assert(setenv("I_MPI_SPAWN", "off", 1) == 0);
     assert(unimpi_vtable_init_intelmpi(handle) == UNIMPI_OK);
@@ -43,8 +52,19 @@ static void assert_intelmpi_spawn_default(const char *path) {
     assert(value != NULL);
     assert(strcmp(value, "off") == 0);
 
+    assert(setenv("I_MPI_SPAWN", "on", 1) == 0);
+    assert(unimpi_vtable_init_intelmpi(handle) == UNIMPI_OK);
+    value = getenv("I_MPI_SPAWN");
+    assert(value != NULL);
+    assert(strcmp(value, "on") == 0);
+
     unimpi_loader_unload(handle);
-    assert(unsetenv("I_MPI_SPAWN") == 0);
+    if (saved_value != NULL) {
+        assert(setenv("I_MPI_SPAWN", saved_value, 1) == 0);
+        free(saved_value);
+    } else {
+        assert(unsetenv("I_MPI_SPAWN") == 0);
+    }
 }
 #endif
 
@@ -100,7 +120,7 @@ int main(int argc, char **argv) {
     printf("  Testing IntelMPI-style backend...\n");
     load_and_assert_identity(argv[3], UNIMPI_BACKEND_INTELMPI);
 #ifndef _WIN32
-    assert_intelmpi_spawn_default(argv[3]);
+    assert_intelmpi_spawn_environment_preserved(argv[3]);
 #endif
 
     /* Test unknown backend identification

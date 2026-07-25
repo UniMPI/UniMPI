@@ -1,14 +1,9 @@
 /* src/backends/intelmpi.c */
-#ifndef _WIN32
-#define _POSIX_C_SOURCE 200809L
-#endif
-
 #include "unimpi_vtable.h"
 #include "unimpi_platform.h"
 #include "unimpi.h"
 #include "request_array_wrappers.h"
 #include "datatype_array_wrappers.h"
-#include <stdlib.h>
 
 /* Intel MPI is based on MPICH and uses MPICH-compatible error codes */
 static void init_intelmpi_error_codes(void) {
@@ -91,13 +86,6 @@ static int get_intelmpi_comm_world(unimpi_lib_handle_t handle, MPI_Comm *comm) {
 }
 
 int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
-#ifdef UNIMPI_POSIX
-    /* Intel MPI's OFI path disables dynamic-process support by default.
-     * Set the documented opt-in before MPI_Init, while preserving an
-     * explicit value supplied by the application. */
-    (void)setenv("I_MPI_SPAWN", "on", 0);
-#endif
-
     unimpi_datatype_array_adapter_init(
         (unimpi_native_comm_query_fn)
             unimpi_platform_dlsym(handle, "MPI_Comm_size"),
