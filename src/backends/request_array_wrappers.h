@@ -18,16 +18,17 @@ typedef struct {
 } unimpi_openmpi_native_status_t;
 
 typedef int (UNIMPI_MPI_CALL *unimpi_native_error_class_fn)(int, int *);
+/* Integer backends export struct MPI_Status * (incomplete here). */
 typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_waitall_fn)(
-    int, int *, struct unimpi_status_legacy *);
+    int, int *, struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_any_fn)(
-    int, int *, int *, int *, struct unimpi_status_legacy *);
+    int, int *, int *, int *, struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_some_fn)(
-    int, int *, int *, int *, struct unimpi_status_legacy *);
+    int, int *, int *, int *, struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_testall_fn)(
-    int, int *, int *, struct unimpi_status_legacy *);
+    int, int *, int *, struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_waitany_fn)(
-    int, int *, int *, struct unimpi_status_legacy *);
+    int, int *, int *, struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *unimpi_native_legacy_startall_fn)(int, int *);
 typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_waitall_fn)(
     int, MPI_Request *, unimpi_openmpi_native_status_t *);

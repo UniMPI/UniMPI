@@ -106,23 +106,31 @@ static int status_is_ignored(const MPI_Status *status) {
     return status == NULL || status == UNIMPI_STATUSES_IGNORE;
 }
 
-static struct unimpi_status_legacy *legacy_status_ignore(void) {
-    return (struct unimpi_status_legacy *)UNIMPI_STATUSES_IGNORE;
+/* Five-int native status stride; never sizeof incomplete struct MPI_Status. */
+enum {
+    UNIMPI_IH_STATUS_BYTES = sizeof(struct unimpi_status_legacy)
+};
+
+static struct MPI_Status *native_status_ignore(void) {
+    return (struct MPI_Status *)UNIMPI_STATUSES_IGNORE;
 }
 
-static void zero_legacy_status(struct unimpi_status_legacy *native) {
-    if (native) {
-        memset(native, 0, sizeof(*native));
+static void zero_native_status_cell(void *cell) {
+    if (cell) {
+        memset(cell, 0, UNIMPI_IH_STATUS_BYTES);
     }
 }
 
-static void store_legacy_status(const struct unimpi_status_legacy *native,
-                                MPI_Status *status) {
-    if (!status || status_is_ignored(status) || !native) {
+static struct MPI_Status *as_native_status(void *cell) {
+    return (struct MPI_Status *)cell;
+}
+
+static void store_native_status_to_facade(const void *cell, MPI_Status *status) {
+    if (!status || status_is_ignored(status) || !cell) {
         return;
     }
     memset(status, 0, sizeof(*status));
-    memcpy(&status->legacy, native, sizeof(*native));
+    memcpy(&status->legacy, cell, UNIMPI_IH_STATUS_BYTES);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -136,22 +144,22 @@ typedef int (UNIMPI_MPI_CALL *native_recv_req_fn)(
     void *, int, unimpi_ih_datatype_t, int, int, unimpi_ih_comm_t,
     unimpi_ih_request_t *);
 typedef int (UNIMPI_MPI_CALL *native_wait_fn)(
-    unimpi_ih_request_t *, struct unimpi_status_legacy *);
+    unimpi_ih_request_t *, struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *native_test_fn)(
-    unimpi_ih_request_t *, int *, struct unimpi_status_legacy *);
+    unimpi_ih_request_t *, int *, struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *native_req_only_fn)(unimpi_ih_request_t *);
 typedef int (UNIMPI_MPI_CALL *native_imrecv_fn)(
     void *, int, unimpi_ih_datatype_t, unimpi_ih_message_t *,
     unimpi_ih_request_t *);
 typedef int (UNIMPI_MPI_CALL *native_mprobe_fn)(
     int, int, unimpi_ih_comm_t, unimpi_ih_message_t *,
-    struct unimpi_status_legacy *);
+    struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *native_improbe_fn)(
     int, int, unimpi_ih_comm_t, int *, unimpi_ih_message_t *,
-    struct unimpi_status_legacy *);
+    struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *native_mrecv_fn)(
     void *, int, unimpi_ih_datatype_t, unimpi_ih_message_t *,
-    struct unimpi_status_legacy *);
+    struct MPI_Status *);
 typedef int (UNIMPI_MPI_CALL *native_ibarrier_fn)(
     unimpi_ih_comm_t, unimpi_ih_request_t *);
 typedef int (UNIMPI_MPI_CALL *native_ibcast_fn)(
@@ -310,20 +318,20 @@ int unimpi_wrap_wait(MPI_Request *request, MPI_Status *status) {
     unimpi_ih_request_t native;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status;
+    struct unimpi_status_legacy native_status_cell;
 
     if (!request) {
         return request_arg_error();
     }
     native = (unimpi_ih_request_t)unimpi_request_to_native(*request);
     ignore = status_is_ignored(status);
-    zero_legacy_status(&native_status);
+    zero_native_status_cell(&native_status_cell);
     result = real_wait(
-        &native, ignore ? legacy_status_ignore() : &native_status);
+        &native, ignore ? native_status_ignore() : as_native_status(&native_status_cell));
     if (call_succeeded(result)) {
         store_facade_request(request, native);
         if (!ignore) {
-            store_legacy_status(&native_status, status);
+            store_native_status_to_facade(&native_status_cell, status);
         }
     }
     return result;
@@ -333,21 +341,21 @@ int unimpi_wrap_test(MPI_Request *request, int *flag, MPI_Status *status) {
     unimpi_ih_request_t native;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status;
+    struct unimpi_status_legacy native_status_cell;
 
     if (!request) {
         return request_arg_error();
     }
     native = (unimpi_ih_request_t)unimpi_request_to_native(*request);
     ignore = status_is_ignored(status);
-    zero_legacy_status(&native_status);
+    zero_native_status_cell(&native_status_cell);
     result = real_test(
-        &native, flag, ignore ? legacy_status_ignore() : &native_status);
+        &native, flag, ignore ? native_status_ignore() : as_native_status(&native_status_cell));
     if (call_succeeded(result)) {
         store_facade_request(request, native);
         /* Status is defined only when the request completed. */
         if (!ignore && flag && *flag) {
-            store_legacy_status(&native_status, status);
+            store_native_status_to_facade(&native_status_cell, status);
         }
     }
     return result;
@@ -509,20 +517,20 @@ int unimpi_wrap_mprobe(int source, int tag, MPI_Comm comm,
     unimpi_ih_message_t native_message = 0;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status;
+    struct unimpi_status_legacy native_status_cell;
 
     if (!message) {
         return request_arg_error();
     }
     ignore = status_is_ignored(status);
-    zero_legacy_status(&native_status);
+    zero_native_status_cell(&native_status_cell);
     result = real_mprobe(
         source, tag, ih_comm(comm), &native_message,
-        ignore ? legacy_status_ignore() : &native_status);
+        ignore ? native_status_ignore() : as_native_status(&native_status_cell));
     if (call_succeeded(result)) {
         store_facade_message(message, native_message);
         if (!ignore) {
-            store_legacy_status(&native_status, status);
+            store_native_status_to_facade(&native_status_cell, status);
         }
     }
     return result;
@@ -533,20 +541,20 @@ int unimpi_wrap_improbe(int source, int tag, MPI_Comm comm, int *flag,
     unimpi_ih_message_t native_message = 0;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status;
+    struct unimpi_status_legacy native_status_cell;
 
     if (!flag || !message) {
         return request_arg_error();
     }
     ignore = status_is_ignored(status);
-    zero_legacy_status(&native_status);
+    zero_native_status_cell(&native_status_cell);
     result = real_improbe(
         source, tag, ih_comm(comm), flag, &native_message,
-        ignore ? legacy_status_ignore() : &native_status);
+        ignore ? native_status_ignore() : as_native_status(&native_status_cell));
     if (call_succeeded(result) && flag && *flag) {
         store_facade_message(message, native_message);
         if (!ignore) {
-            store_legacy_status(&native_status, status);
+            store_native_status_to_facade(&native_status_cell, status);
         }
     }
     /* flag false or failed call: leave caller message and status alone. */
@@ -558,7 +566,7 @@ int unimpi_wrap_mrecv(void *buf, int count, MPI_Datatype datatype,
     unimpi_ih_message_t native_message;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status;
+    struct unimpi_status_legacy native_status_cell;
 
     if (!message) {
         return request_arg_error();
@@ -566,14 +574,14 @@ int unimpi_wrap_mrecv(void *buf, int count, MPI_Datatype datatype,
     native_message =
         (unimpi_ih_message_t)unimpi_message_to_native(*message);
     ignore = status_is_ignored(status);
-    zero_legacy_status(&native_status);
+    zero_native_status_cell(&native_status_cell);
     result = real_mrecv(
         buf, count, ih_datatype(datatype), &native_message,
-        ignore ? legacy_status_ignore() : &native_status);
+        ignore ? native_status_ignore() : as_native_status(&native_status_cell));
     if (call_succeeded(result)) {
         store_facade_message(message, native_message);
         if (!ignore) {
-            store_legacy_status(&native_status, status);
+            store_native_status_to_facade(&native_status_cell, status);
         }
     }
     return result;

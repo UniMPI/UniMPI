@@ -9,6 +9,16 @@
 #include "unimpi_errors.h"
 #include "unimpi_std_macros.h"
 
+/* Complete vendor native status tag for in-process fakes registered with the
+ * integer-backend completion adapters (must match five-int stride). */
+struct MPI_Status {
+    int count_lo;
+    int count_hi_and_cancelled;
+    int MPI_SOURCE;
+    int MPI_TAG;
+    int MPI_ERROR;
+};
+
 enum {
     FAKE_ERR_ARG_CLASS = 12,
     FAKE_ERR_IN_STATUS_CLASS = 17,
@@ -25,7 +35,7 @@ static int UNIMPI_MPI_CALL fake_error_class(
 }
 
 static int UNIMPI_MPI_CALL fake_legacy_waitall(
-    int count, int *requests, struct unimpi_status_legacy *statuses) {
+    int count, int *requests, struct MPI_Status *statuses) {
     int i;
 
     assert(count == 2);
@@ -57,7 +67,7 @@ static int UNIMPI_MPI_CALL fake_openmpi_waitall(
 
 static int UNIMPI_MPI_CALL fake_legacy_some(
     int count, int *requests, int *outcount, int *indices,
-    struct unimpi_status_legacy *statuses) {
+    struct MPI_Status *statuses) {
     assert(count == 2);
     requests[1] = 0;
     *outcount = 1;
@@ -81,7 +91,7 @@ static int UNIMPI_MPI_CALL fake_openmpi_some(
 
 static int UNIMPI_MPI_CALL fake_legacy_testall(
     int count, int *requests, int *flag,
-    struct unimpi_status_legacy *statuses) {
+    struct MPI_Status *statuses) {
     int i;
 
     assert(count == 2);
@@ -108,10 +118,10 @@ static int UNIMPI_MPI_CALL fake_openmpi_testall(
 }
 
 static int UNIMPI_MPI_CALL fake_legacy_waitall_ignore(
-    int count, int *requests, struct unimpi_status_legacy *statuses) {
+    int count, int *requests, struct MPI_Status *statuses) {
     assert(count == 2);
     assert(statuses ==
-           (struct unimpi_status_legacy *)(intptr_t)1);
+           (struct MPI_Status *)(intptr_t)1);
     requests[0] = 0;
     requests[1] = 0;
     return 0;
@@ -119,10 +129,10 @@ static int UNIMPI_MPI_CALL fake_legacy_waitall_ignore(
 
 static int UNIMPI_MPI_CALL fake_legacy_some_ignore(
     int count, int *requests, int *outcount, int *indices,
-    struct unimpi_status_legacy *statuses) {
+    struct MPI_Status *statuses) {
     assert(count == 2);
     assert(statuses ==
-           (struct unimpi_status_legacy *)(intptr_t)1);
+           (struct MPI_Status *)(intptr_t)1);
     requests[0] = 0;
     *outcount = 1;
     indices[0] = 0;
@@ -131,10 +141,10 @@ static int UNIMPI_MPI_CALL fake_legacy_some_ignore(
 
 static int UNIMPI_MPI_CALL fake_legacy_testall_ignore(
     int count, int *requests, int *flag,
-    struct unimpi_status_legacy *statuses) {
+    struct MPI_Status *statuses) {
     assert(count == 2);
     assert(statuses ==
-           (struct unimpi_status_legacy *)(intptr_t)1);
+           (struct MPI_Status *)(intptr_t)1);
     requests[0] = 0;
     requests[1] = 0;
     *flag = 1;
@@ -174,11 +184,11 @@ static int UNIMPI_MPI_CALL fake_openmpi_testall_ignore(
 }
 
 static int UNIMPI_MPI_CALL fake_legacy_waitall_zero(
-    int count, int *requests, struct unimpi_status_legacy *statuses) {
+    int count, int *requests, struct MPI_Status *statuses) {
     assert(count == 0);
     assert(requests == NULL);
     assert(statuses ==
-           (struct unimpi_status_legacy *)UNIMPI_STATUSES_IGNORE);
+           (struct MPI_Status *)UNIMPI_STATUSES_IGNORE);
     return 0;
 }
 
@@ -192,7 +202,7 @@ static int UNIMPI_MPI_CALL fake_openmpi_waitall_zero(
 }
 
 static int UNIMPI_MPI_CALL fake_legacy_waitall_error(
-    int count, int *requests, struct unimpi_status_legacy *statuses) {
+    int count, int *requests, struct MPI_Status *statuses) {
     assert(count == 2);
     assert(requests);
     assert(statuses);
@@ -201,7 +211,7 @@ static int UNIMPI_MPI_CALL fake_legacy_waitall_error(
 
 static int UNIMPI_MPI_CALL fake_legacy_some_error(
     int count, int *requests, int *outcount, int *indices,
-    struct unimpi_status_legacy *statuses) {
+    struct MPI_Status *statuses) {
     assert(count == 2);
     assert(requests);
     assert(outcount);
@@ -212,7 +222,7 @@ static int UNIMPI_MPI_CALL fake_legacy_some_error(
 
 static int UNIMPI_MPI_CALL fake_legacy_testall_error(
     int count, int *requests, int *flag,
-    struct unimpi_status_legacy *statuses) {
+    struct MPI_Status *statuses) {
     assert(count == 2);
     assert(requests);
     assert(flag);
@@ -252,7 +262,7 @@ static int UNIMPI_MPI_CALL fake_openmpi_testall_error(
 
 static int UNIMPI_MPI_CALL fake_legacy_testall_in_status(
     int count, int *requests, int *flag,
-    struct unimpi_status_legacy *statuses) {
+    struct MPI_Status *statuses) {
     int i;
 
     assert(count == 2);

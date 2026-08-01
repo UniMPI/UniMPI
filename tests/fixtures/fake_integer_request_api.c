@@ -1,23 +1,23 @@
 /* Fake integer-handle MPI DSO for production binder regressions.
  *
- * Exports the real MPICH / Intel MPI / MS-MPI native C signatures
- * (int handles, struct ADIOI_FileD * for MPI_File, legacy status layout),
- * not UniMPI facade intptr_t aliases, so UBSan exercises the production
- * contract rather than a mirrored facade typedef.
+ * Exports real MPICH / Intel MPI / MS-MPI native C signatures:
+ *   int handles, struct ADIOI_FileD * for files, and struct MPI_Status *
+ * for status-bearing entry points. The five-int MPI_Status layout follows
+ * the MPICH-style field names so UBSan sees the exact vendor tag.
  */
 #include <stdint.h>
 #include <string.h>
 
 #include "unimpi_platform.h"
 
-/* Match production integer-backend status layout without facade aliases. */
-struct unimpi_status_legacy {
+/* Real vendor tag used by integer backends (MPICH-style member names). */
+typedef struct MPI_Status {
     int count_lo;
     int count_hi_and_cancelled;
     int MPI_SOURCE;
     int MPI_TAG;
     int MPI_ERROR;
-};
+} MPI_Status;
 
 struct ADIOI_FileD;
 
@@ -30,7 +30,7 @@ enum {
 };
 
 /* Same sentinel value as UNIMPI_STATUSES_IGNORE ((MPI_Status *)1). */
-#define FAKE_STATUSES_IGNORE ((struct unimpi_status_legacy *)(intptr_t)1)
+#define FAKE_STATUSES_IGNORE ((MPI_Status *)(intptr_t)1)
 
 static int g_started;
 static int g_message_live;
@@ -39,11 +39,10 @@ static int g_fail_next_mprobe;
 static int g_fail_next_improbe;
 static int g_fail_next_mrecv;
 
-static int status_is_ignored(const struct unimpi_status_legacy *status) {
+static int status_is_ignored(const MPI_Status *status) {
     return status == NULL || status == FAKE_STATUSES_IGNORE;
 }
 
-/* Test-visible failure injection (called via weak optional symbols below). */
 int UNIMPI_MPI_CALL unimpi_fake_set_fail_next_wait(int enable) {
     g_fail_next_wait = enable ? 1 : 0;
     return 0;
@@ -100,7 +99,7 @@ int UNIMPI_MPI_CALL MPI_Error_class(int errorcode, int *error_class) {
     return 0;
 }
 
-/* --- Request producers / completion (native int handles) --- */
+/* --- Request producers / completion --- */
 
 int UNIMPI_MPI_CALL MPI_Irecv(void *buf, int count, int datatype, int source,
                               int tag, int comm, int *request) {
@@ -152,14 +151,12 @@ int UNIMPI_MPI_CALL MPI_Request_free(int *request) {
     return 0;
 }
 
-int UNIMPI_MPI_CALL MPI_Wait(int *request,
-                             struct unimpi_status_legacy *status) {
+int UNIMPI_MPI_CALL MPI_Wait(int *request, MPI_Status *status) {
     if (!request || *request != FAKE_NATIVE_REQUEST) {
         return 19;
     }
     if (g_fail_next_wait) {
         g_fail_next_wait = 0;
-        /* Leave request and status undefined on failure. */
         *request = (int)0xdeadbeef;
         if (!status_is_ignored(status)) {
             status->MPI_SOURCE = 99;
@@ -181,7 +178,7 @@ int UNIMPI_MPI_CALL MPI_Wait(int *request,
 }
 
 int UNIMPI_MPI_CALL MPI_Testall(int count, int *requests, int *flag,
-                                struct unimpi_status_legacy *statuses) {
+                                MPI_Status *statuses) {
     int i;
     int ignore;
 
@@ -264,7 +261,7 @@ int UNIMPI_MPI_CALL MPI_File_iread(struct ADIOI_FileD *fh, void *buf, int count,
 /* --- Matched message path --- */
 
 int UNIMPI_MPI_CALL MPI_Mprobe(int source, int tag, int comm, int *message,
-                               struct unimpi_status_legacy *status) {
+                               MPI_Status *status) {
     (void)comm;
     if (!message) {
         return 19;
@@ -291,8 +288,7 @@ int UNIMPI_MPI_CALL MPI_Mprobe(int source, int tag, int comm, int *message,
 }
 
 int UNIMPI_MPI_CALL MPI_Improbe(int source, int tag, int comm, int *flag,
-                                int *message,
-                                struct unimpi_status_legacy *status) {
+                                int *message, MPI_Status *status) {
     (void)source;
     (void)tag;
     (void)comm;
@@ -310,13 +306,12 @@ int UNIMPI_MPI_CALL MPI_Improbe(int source, int tag, int comm, int *flag,
         }
         return FAKE_ERR_OTHER;
     }
-    /* No match: leave *message and status untouched. */
     *flag = 0;
     return 0;
 }
 
 int UNIMPI_MPI_CALL MPI_Mrecv(void *buf, int count, int datatype, int *message,
-                              struct unimpi_status_legacy *status) {
+                              MPI_Status *status) {
     (void)buf;
     (void)datatype;
     if (!message || *message != FAKE_NATIVE_MESSAGE || !g_message_live) {
