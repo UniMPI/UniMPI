@@ -15,6 +15,7 @@
 #include "unimpi.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* ------------------------------------------------------------------------- */
@@ -98,6 +99,10 @@ static int request_arg_error(void) {
     return MPI_ERR_REQUEST != MPI_SUCCESS ? MPI_ERR_REQUEST : 19;
 }
 
+static int no_memory_error(void) {
+    return MPI_ERR_NO_MEM != MPI_SUCCESS ? MPI_ERR_NO_MEM : 39;
+}
+
 static int call_succeeded(int result) {
     return result == MPI_SUCCESS;
 }
@@ -115,14 +120,12 @@ static struct MPI_Status *native_status_ignore(void) {
     return (struct MPI_Status *)UNIMPI_STATUSES_IGNORE;
 }
 
-static void zero_native_status_cell(void *cell) {
-    if (cell) {
-        memset(cell, 0, UNIMPI_IH_STATUS_BYTES);
-    }
-}
-
 static struct MPI_Status *as_native_status(void *cell) {
     return (struct MPI_Status *)cell;
+}
+
+static void *allocate_native_status_cell(void) {
+    return calloc(1, UNIMPI_IH_STATUS_BYTES);
 }
 
 static void store_native_status_to_facade(const void *cell, MPI_Status *status) {
@@ -318,22 +321,28 @@ int unimpi_wrap_wait(MPI_Request *request, MPI_Status *status) {
     unimpi_ih_request_t native;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status_cell;
+    void *native_status_cell = NULL;
 
     if (!request) {
         return request_arg_error();
     }
     native = (unimpi_ih_request_t)unimpi_request_to_native(*request);
     ignore = status_is_ignored(status);
-    zero_native_status_cell(&native_status_cell);
+    if (!ignore) {
+        native_status_cell = allocate_native_status_cell();
+        if (!native_status_cell) {
+            return no_memory_error();
+        }
+    }
     result = real_wait(
-        &native, ignore ? native_status_ignore() : as_native_status(&native_status_cell));
+        &native, ignore ? native_status_ignore() : as_native_status(native_status_cell));
     if (call_succeeded(result)) {
         store_facade_request(request, native);
         if (!ignore) {
-            store_native_status_to_facade(&native_status_cell, status);
+            store_native_status_to_facade(native_status_cell, status);
         }
     }
+    free(native_status_cell);
     return result;
 }
 
@@ -341,23 +350,29 @@ int unimpi_wrap_test(MPI_Request *request, int *flag, MPI_Status *status) {
     unimpi_ih_request_t native;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status_cell;
+    void *native_status_cell = NULL;
 
     if (!request) {
         return request_arg_error();
     }
     native = (unimpi_ih_request_t)unimpi_request_to_native(*request);
     ignore = status_is_ignored(status);
-    zero_native_status_cell(&native_status_cell);
+    if (!ignore) {
+        native_status_cell = allocate_native_status_cell();
+        if (!native_status_cell) {
+            return no_memory_error();
+        }
+    }
     result = real_test(
-        &native, flag, ignore ? native_status_ignore() : as_native_status(&native_status_cell));
+        &native, flag, ignore ? native_status_ignore() : as_native_status(native_status_cell));
     if (call_succeeded(result)) {
         store_facade_request(request, native);
         /* Status is defined only when the request completed. */
         if (!ignore && flag && *flag) {
-            store_native_status_to_facade(&native_status_cell, status);
+            store_native_status_to_facade(native_status_cell, status);
         }
     }
+    free(native_status_cell);
     return result;
 }
 
@@ -517,22 +532,28 @@ int unimpi_wrap_mprobe(int source, int tag, MPI_Comm comm,
     unimpi_ih_message_t native_message = 0;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status_cell;
+    void *native_status_cell = NULL;
 
     if (!message) {
         return request_arg_error();
     }
     ignore = status_is_ignored(status);
-    zero_native_status_cell(&native_status_cell);
+    if (!ignore) {
+        native_status_cell = allocate_native_status_cell();
+        if (!native_status_cell) {
+            return no_memory_error();
+        }
+    }
     result = real_mprobe(
         source, tag, ih_comm(comm), &native_message,
-        ignore ? native_status_ignore() : as_native_status(&native_status_cell));
+        ignore ? native_status_ignore() : as_native_status(native_status_cell));
     if (call_succeeded(result)) {
         store_facade_message(message, native_message);
         if (!ignore) {
-            store_native_status_to_facade(&native_status_cell, status);
+            store_native_status_to_facade(native_status_cell, status);
         }
     }
+    free(native_status_cell);
     return result;
 }
 
@@ -541,23 +562,29 @@ int unimpi_wrap_improbe(int source, int tag, MPI_Comm comm, int *flag,
     unimpi_ih_message_t native_message = 0;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status_cell;
+    void *native_status_cell = NULL;
 
     if (!flag || !message) {
         return request_arg_error();
     }
     ignore = status_is_ignored(status);
-    zero_native_status_cell(&native_status_cell);
+    if (!ignore) {
+        native_status_cell = allocate_native_status_cell();
+        if (!native_status_cell) {
+            return no_memory_error();
+        }
+    }
     result = real_improbe(
         source, tag, ih_comm(comm), flag, &native_message,
-        ignore ? native_status_ignore() : as_native_status(&native_status_cell));
+        ignore ? native_status_ignore() : as_native_status(native_status_cell));
     if (call_succeeded(result) && flag && *flag) {
         store_facade_message(message, native_message);
         if (!ignore) {
-            store_native_status_to_facade(&native_status_cell, status);
+            store_native_status_to_facade(native_status_cell, status);
         }
     }
     /* flag false or failed call: leave caller message and status alone. */
+    free(native_status_cell);
     return result;
 }
 
@@ -566,7 +593,7 @@ int unimpi_wrap_mrecv(void *buf, int count, MPI_Datatype datatype,
     unimpi_ih_message_t native_message;
     int result;
     int ignore;
-    struct unimpi_status_legacy native_status_cell;
+    void *native_status_cell = NULL;
 
     if (!message) {
         return request_arg_error();
@@ -574,16 +601,22 @@ int unimpi_wrap_mrecv(void *buf, int count, MPI_Datatype datatype,
     native_message =
         (unimpi_ih_message_t)unimpi_message_to_native(*message);
     ignore = status_is_ignored(status);
-    zero_native_status_cell(&native_status_cell);
+    if (!ignore) {
+        native_status_cell = allocate_native_status_cell();
+        if (!native_status_cell) {
+            return no_memory_error();
+        }
+    }
     result = real_mrecv(
         buf, count, ih_datatype(datatype), &native_message,
-        ignore ? native_status_ignore() : as_native_status(&native_status_cell));
+        ignore ? native_status_ignore() : as_native_status(native_status_cell));
     if (call_succeeded(result)) {
         store_facade_message(message, native_message);
         if (!ignore) {
-            store_native_status_to_facade(&native_status_cell, status);
+            store_native_status_to_facade(native_status_cell, status);
         }
     }
+    free(native_status_cell);
     return result;
 }
 

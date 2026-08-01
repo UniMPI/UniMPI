@@ -184,7 +184,7 @@ static void native_statuses_store_to_facade(
 }
 
 static void openmpi_statuses_store(
-    const unimpi_openmpi_native_status_t *native_statuses,
+    const struct ompi_status_public_t *native_statuses,
     MPI_Status *statuses,
     int count) {
     int i;
@@ -193,6 +193,33 @@ static void openmpi_statuses_store(
         memset(&statuses[i], 0, sizeof(statuses[i]));
         memcpy(&statuses[i].openmpi, &native_statuses[i],
                sizeof(native_statuses[i]));
+    }
+}
+
+static struct ompi_request_t **openmpi_requests_create(
+    const MPI_Request *requests, int count) {
+    struct ompi_request_t **native;
+    int i;
+
+    native = (struct ompi_request_t **)allocate_array(
+        count, sizeof(*native));
+    if (!native) {
+        return NULL;
+    }
+    for (i = 0; i < count; ++i) {
+        native[i] = (struct ompi_request_t *)(intptr_t)requests[i];
+    }
+    return native;
+}
+
+static void openmpi_requests_store(
+    struct ompi_request_t *const *native,
+    MPI_Request *requests,
+    int count) {
+    int i;
+
+    for (i = 0; i < count; ++i) {
+        requests[i] = (MPI_Request)(intptr_t)native[i];
     }
 }
 
@@ -532,36 +559,47 @@ int unimpi_wrap_startall(int count, MPI_Request *array_of_requests) {
 int unimpi_wrap_openmpi_waitall(int count,
                                 MPI_Request *array_of_requests,
                                 MPI_Status *array_of_statuses) {
-    unimpi_openmpi_native_status_t *native_statuses = NULL;
+    struct ompi_request_t **native_requests = NULL;
+    struct ompi_status_public_t *native_statuses = NULL;
     int ignore_statuses;
     int result;
     int result_class;
 
+    ignore_statuses = statuses_are_ignored(array_of_statuses);
     if (count <= 0) {
         return real_openmpi_waitall(
-            count, array_of_requests,
-            statuses_are_ignored(array_of_statuses)
-                ? NULL
-                : (unimpi_openmpi_native_status_t *)array_of_statuses);
+            count, NULL,
+            ignore_statuses ? NULL : (struct ompi_status_public_t *)array_of_statuses);
     }
-    ignore_statuses = statuses_are_ignored(array_of_statuses);
+    if (!array_of_requests) {
+        return MPI_ERR_REQUEST;
+    }
+
+    native_requests = openmpi_requests_create(array_of_requests, count);
+    if (!native_requests) {
+        return no_memory_error();
+    }
     if (!ignore_statuses) {
-        native_statuses = (unimpi_openmpi_native_status_t *)allocate_array(
+        native_statuses = (struct ompi_status_public_t *)allocate_array(
             count, sizeof(*native_statuses));
         if (!native_statuses) {
+            free(native_requests);
             return no_memory_error();
         }
     }
 
-    result = real_openmpi_waitall(
-        count, array_of_requests, native_statuses);
+    result = real_openmpi_waitall(count, native_requests, native_statuses);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_SUCCESS ||
-         result_class == MPI_ERR_IN_STATUS)) {
-        openmpi_statuses_store(native_statuses, array_of_statuses, count);
+    if (should_store_completion(result)) {
+        openmpi_requests_store(native_requests, array_of_requests, count);
+        if (native_statuses &&
+            (result_class == MPI_SUCCESS ||
+             result_class == MPI_ERR_IN_STATUS)) {
+            openmpi_statuses_store(native_statuses, array_of_statuses, count);
+        }
     }
     free(native_statuses);
+    free(native_requests);
     return result;
 }
 
@@ -570,42 +608,54 @@ int unimpi_wrap_openmpi_testsome(int incount,
                                  int *outcount,
                                  int *array_of_indices,
                                  MPI_Status *array_of_statuses) {
-    unimpi_openmpi_native_status_t *native_statuses = NULL;
+    struct ompi_request_t **native_requests = NULL;
+    struct ompi_status_public_t *native_statuses = NULL;
     int ignore_statuses;
     int result;
     int result_class;
     int status_count;
 
+    ignore_statuses = statuses_are_ignored(array_of_statuses);
     if (incount <= 0) {
         return real_openmpi_testsome(
-            incount, array_of_requests, outcount, array_of_indices,
-            statuses_are_ignored(array_of_statuses)
-                ? NULL
-                : (unimpi_openmpi_native_status_t *)array_of_statuses);
+            incount, NULL, outcount, array_of_indices,
+            ignore_statuses ? NULL
+                            : (struct ompi_status_public_t *)array_of_statuses);
     }
-    ignore_statuses = statuses_are_ignored(array_of_statuses);
+    if (!array_of_requests) {
+        return MPI_ERR_REQUEST;
+    }
+
+    native_requests = openmpi_requests_create(array_of_requests, incount);
+    if (!native_requests) {
+        return no_memory_error();
+    }
     if (!ignore_statuses) {
-        native_statuses = (unimpi_openmpi_native_status_t *)allocate_array(
+        native_statuses = (struct ompi_status_public_t *)allocate_array(
             incount, sizeof(*native_statuses));
         if (!native_statuses) {
+            free(native_requests);
             return no_memory_error();
         }
     }
 
     result = real_openmpi_testsome(
-        incount, array_of_requests, outcount, array_of_indices,
-        native_statuses);
+        incount, native_requests, outcount, array_of_indices, native_statuses);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_SUCCESS ||
-         result_class == MPI_ERR_IN_STATUS)) {
-        status_count = completed_status_count(incount, outcount);
-        if (status_count > 0) {
-            openmpi_statuses_store(
-                native_statuses, array_of_statuses, status_count);
+    if (should_store_completion(result)) {
+        openmpi_requests_store(native_requests, array_of_requests, incount);
+        if (native_statuses &&
+            (result_class == MPI_SUCCESS ||
+             result_class == MPI_ERR_IN_STATUS)) {
+            status_count = completed_status_count(incount, outcount);
+            if (status_count > 0) {
+                openmpi_statuses_store(
+                    native_statuses, array_of_statuses, status_count);
+            }
         }
     }
     free(native_statuses);
+    free(native_requests);
     return result;
 }
 
@@ -613,36 +663,49 @@ int unimpi_wrap_openmpi_testall(int count,
                                 MPI_Request *array_of_requests,
                                 int *flag,
                                 MPI_Status *array_of_statuses) {
-    unimpi_openmpi_native_status_t *native_statuses = NULL;
+    struct ompi_request_t **native_requests = NULL;
+    struct ompi_status_public_t *native_statuses = NULL;
     int ignore_statuses;
     int result;
     int result_class;
 
+    ignore_statuses = statuses_are_ignored(array_of_statuses);
     if (count <= 0) {
         return real_openmpi_testall(
-            count, array_of_requests, flag,
-            statuses_are_ignored(array_of_statuses)
-                ? NULL
-                : (unimpi_openmpi_native_status_t *)array_of_statuses);
+            count, NULL, flag,
+            ignore_statuses ? NULL
+                            : (struct ompi_status_public_t *)array_of_statuses);
     }
-    ignore_statuses = statuses_are_ignored(array_of_statuses);
+    if (!array_of_requests) {
+        return MPI_ERR_REQUEST;
+    }
+
+    native_requests = openmpi_requests_create(array_of_requests, count);
+    if (!native_requests) {
+        return no_memory_error();
+    }
     if (!ignore_statuses) {
-        native_statuses = (unimpi_openmpi_native_status_t *)allocate_array(
+        native_statuses = (struct ompi_status_public_t *)allocate_array(
             count, sizeof(*native_statuses));
         if (!native_statuses) {
+            free(native_requests);
             return no_memory_error();
         }
     }
 
     result = real_openmpi_testall(
-        count, array_of_requests, flag, native_statuses);
+        count, native_requests, flag, native_statuses);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_ERR_IN_STATUS ||
-         (result_class == MPI_SUCCESS && flag && *flag))) {
-        openmpi_statuses_store(native_statuses, array_of_statuses, count);
+    if (should_store_completion(result)) {
+        openmpi_requests_store(native_requests, array_of_requests, count);
+        if (native_statuses &&
+            (result_class == MPI_ERR_IN_STATUS ||
+             (result_class == MPI_SUCCESS && flag && *flag))) {
+            openmpi_statuses_store(native_statuses, array_of_statuses, count);
+        }
     }
     free(native_statuses);
+    free(native_requests);
     return result;
 }
 
@@ -651,41 +714,53 @@ int unimpi_wrap_openmpi_waitsome(int incount,
                                  int *outcount,
                                  int *array_of_indices,
                                  MPI_Status *array_of_statuses) {
-    unimpi_openmpi_native_status_t *native_statuses = NULL;
+    struct ompi_request_t **native_requests = NULL;
+    struct ompi_status_public_t *native_statuses = NULL;
     int ignore_statuses;
     int result;
     int result_class;
     int status_count;
 
+    ignore_statuses = statuses_are_ignored(array_of_statuses);
     if (incount <= 0) {
         return real_openmpi_waitsome(
-            incount, array_of_requests, outcount, array_of_indices,
-            statuses_are_ignored(array_of_statuses)
-                ? NULL
-                : (unimpi_openmpi_native_status_t *)array_of_statuses);
+            incount, NULL, outcount, array_of_indices,
+            ignore_statuses ? NULL
+                            : (struct ompi_status_public_t *)array_of_statuses);
     }
-    ignore_statuses = statuses_are_ignored(array_of_statuses);
+    if (!array_of_requests) {
+        return MPI_ERR_REQUEST;
+    }
+
+    native_requests = openmpi_requests_create(array_of_requests, incount);
+    if (!native_requests) {
+        return no_memory_error();
+    }
     if (!ignore_statuses) {
-        native_statuses = (unimpi_openmpi_native_status_t *)allocate_array(
+        native_statuses = (struct ompi_status_public_t *)allocate_array(
             incount, sizeof(*native_statuses));
         if (!native_statuses) {
+            free(native_requests);
             return no_memory_error();
         }
     }
 
     result = real_openmpi_waitsome(
-        incount, array_of_requests, outcount, array_of_indices,
-        native_statuses);
+        incount, native_requests, outcount, array_of_indices, native_statuses);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_SUCCESS ||
-         result_class == MPI_ERR_IN_STATUS)) {
-        status_count = completed_status_count(incount, outcount);
-        if (status_count > 0) {
-            openmpi_statuses_store(
-                native_statuses, array_of_statuses, status_count);
+    if (should_store_completion(result)) {
+        openmpi_requests_store(native_requests, array_of_requests, incount);
+        if (native_statuses &&
+            (result_class == MPI_SUCCESS ||
+             result_class == MPI_ERR_IN_STATUS)) {
+            status_count = completed_status_count(incount, outcount);
+            if (status_count > 0) {
+                openmpi_statuses_store(
+                    native_statuses, array_of_statuses, status_count);
+            }
         }
     }
     free(native_statuses);
+    free(native_requests);
     return result;
 }

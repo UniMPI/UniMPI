@@ -50,8 +50,8 @@ static int UNIMPI_MPI_CALL fake_legacy_waitall(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_waitall(
-    int count, MPI_Request *requests,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests,
+    struct ompi_status_public_t *statuses) {
     int i;
 
     assert(count == 2);
@@ -60,7 +60,7 @@ static int UNIMPI_MPI_CALL fake_openmpi_waitall(
         statuses[i].MPI_SOURCE = 30 + i;
         statuses[i].MPI_TAG = 40 + i;
         statuses[i].MPI_ERROR = 0;
-        statuses[i].count = (size_t)(i + 3);
+        statuses[i]._ucount = (size_t)(i + 3);
     }
     return 0;
 }
@@ -78,13 +78,13 @@ static int UNIMPI_MPI_CALL fake_legacy_some(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_some(
-    int count, MPI_Request *requests, int *outcount, int *indices,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests, int *outcount, int *indices,
+    struct ompi_status_public_t *statuses) {
     assert(count == 2);
     requests[1] = 0;
     *outcount = 1;
     indices[0] = 1;
-    statuses[0].count = 8;
+    statuses[0]._ucount = 8;
     statuses[0].MPI_SOURCE = 61;
     return 0;
 }
@@ -104,15 +104,15 @@ static int UNIMPI_MPI_CALL fake_legacy_testall(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_testall(
-    int count, MPI_Request *requests, int *flag,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests, int *flag,
+    struct ompi_status_public_t *statuses) {
     int i;
 
     assert(count == 2);
     *flag = 1;
     for (i = 0; i < count; ++i) {
         requests[i] = 0;
-        statuses[i].count = (size_t)(11 + i);
+        statuses[i]._ucount = (size_t)(11 + i);
     }
     return 0;
 }
@@ -152,8 +152,8 @@ static int UNIMPI_MPI_CALL fake_legacy_testall_ignore(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_waitall_ignore(
-    int count, MPI_Request *requests,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests,
+    struct ompi_status_public_t *statuses) {
     assert(count == 2);
     assert(statuses == NULL);
     requests[0] = 0;
@@ -162,8 +162,8 @@ static int UNIMPI_MPI_CALL fake_openmpi_waitall_ignore(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_some_ignore(
-    int count, MPI_Request *requests, int *outcount, int *indices,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests, int *outcount, int *indices,
+    struct ompi_status_public_t *statuses) {
     assert(count == 2);
     assert(statuses == NULL);
     requests[0] = 0;
@@ -173,8 +173,8 @@ static int UNIMPI_MPI_CALL fake_openmpi_some_ignore(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_testall_ignore(
-    int count, MPI_Request *requests, int *flag,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests, int *flag,
+    struct ompi_status_public_t *statuses) {
     assert(count == 2);
     assert(statuses == NULL);
     requests[0] = 0;
@@ -193,8 +193,8 @@ static int UNIMPI_MPI_CALL fake_legacy_waitall_zero(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_waitall_zero(
-    int count, MPI_Request *requests,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests,
+    struct ompi_status_public_t *statuses) {
     assert(count == 0);
     assert(requests == NULL);
     assert(statuses == NULL);
@@ -231,8 +231,8 @@ static int UNIMPI_MPI_CALL fake_legacy_testall_error(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_waitall_error(
-    int count, MPI_Request *requests,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests,
+    struct ompi_status_public_t *statuses) {
     assert(count == 2);
     assert(requests);
     assert(statuses);
@@ -240,8 +240,8 @@ static int UNIMPI_MPI_CALL fake_openmpi_waitall_error(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_some_error(
-    int count, MPI_Request *requests, int *outcount, int *indices,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests, int *outcount, int *indices,
+    struct ompi_status_public_t *statuses) {
     assert(count == 2);
     assert(requests);
     assert(outcount);
@@ -251,8 +251,8 @@ static int UNIMPI_MPI_CALL fake_openmpi_some_error(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_testall_error(
-    int count, MPI_Request *requests, int *flag,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests, int *flag,
+    struct ompi_status_public_t *statuses) {
     assert(count == 2);
     assert(requests);
     assert(flag);
@@ -277,8 +277,8 @@ static int UNIMPI_MPI_CALL fake_legacy_testall_in_status(
 }
 
 static int UNIMPI_MPI_CALL fake_openmpi_testall_in_status(
-    int count, MPI_Request *requests, int *flag,
-    unimpi_openmpi_native_status_t *statuses) {
+    int count, struct ompi_request_t **requests, int *flag,
+    struct ompi_status_public_t *statuses) {
     int i;
 
     assert(count == 2);
@@ -287,7 +287,7 @@ static int UNIMPI_MPI_CALL fake_openmpi_testall_in_status(
     assert(statuses);
     for (i = 0; i < count; ++i) {
         statuses[i].MPI_ERROR = FAKE_ERR_IN_STATUS_CLASS;
-        statuses[i].count = (size_t)(80 + i);
+        statuses[i]._ucount = (size_t)(80 + i);
     }
     return FAKE_ENCODED_ERR_IN_STATUS;
 }

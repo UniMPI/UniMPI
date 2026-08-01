@@ -270,10 +270,13 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Irecv");
     unimpi.wait = (int (*)(MPI_Request*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Wait");
-    unimpi_wrapper_set_openmpi_waitall(
-        (unimpi_native_openmpi_waitall_fn)
-            unimpi_platform_dlsym(handle, "MPI_Waitall"));
-    unimpi.waitall = unimpi_wrap_openmpi_waitall;
+    {
+        unimpi_native_openmpi_waitall_fn waitall_fn =
+            (unimpi_native_openmpi_waitall_fn)
+                unimpi_platform_dlsym(handle, "MPI_Waitall");
+        unimpi_wrapper_set_openmpi_waitall(waitall_fn);
+        unimpi.waitall = waitall_fn ? unimpi_wrap_openmpi_waitall : NULL;
+    }
     unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Sendrecv");
     unimpi.sendrecv_replace = (int (*)(void*, int, MPI_Datatype, int, int, int, int, MPI_Comm, MPI_Status*))
@@ -302,20 +305,31 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Test");
     unimpi.testany = (int (*)(int, MPI_Request*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testany");
-    unimpi_wrapper_set_openmpi_testsome(
-        (unimpi_native_openmpi_some_fn)
-            unimpi_platform_dlsym(handle, "MPI_Testsome"));
-    unimpi.testsome = unimpi_wrap_openmpi_testsome;
-    unimpi_wrapper_set_openmpi_testall(
-        (unimpi_native_openmpi_testall_fn)
-            unimpi_platform_dlsym(handle, "MPI_Testall"));
-    unimpi.testall = unimpi_wrap_openmpi_testall;
+    {
+        unimpi_native_openmpi_some_fn testsome_fn =
+            (unimpi_native_openmpi_some_fn)
+                unimpi_platform_dlsym(handle, "MPI_Testsome");
+        unimpi_wrapper_set_openmpi_testsome(testsome_fn);
+        unimpi.testsome =
+            testsome_fn ? unimpi_wrap_openmpi_testsome : NULL;
+    }
+    {
+        unimpi_native_openmpi_testall_fn testall_fn =
+            (unimpi_native_openmpi_testall_fn)
+                unimpi_platform_dlsym(handle, "MPI_Testall");
+        unimpi_wrapper_set_openmpi_testall(testall_fn);
+        unimpi.testall = testall_fn ? unimpi_wrap_openmpi_testall : NULL;
+    }
     unimpi.waitany = (int (*)(int, MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitany");
-    unimpi_wrapper_set_openmpi_waitsome(
-        (unimpi_native_openmpi_some_fn)
-            unimpi_platform_dlsym(handle, "MPI_Waitsome"));
-    unimpi.waitsome = unimpi_wrap_openmpi_waitsome;
+    {
+        unimpi_native_openmpi_some_fn waitsome_fn =
+            (unimpi_native_openmpi_some_fn)
+                unimpi_platform_dlsym(handle, "MPI_Waitsome");
+        unimpi_wrapper_set_openmpi_waitsome(waitsome_fn);
+        unimpi.waitsome =
+            waitsome_fn ? unimpi_wrap_openmpi_waitsome : NULL;
+    }
 
     /* Message probing */
     unimpi.probe = (int (*)(int, int, MPI_Comm, MPI_Status*))

@@ -267,6 +267,31 @@ set_tests_properties(test_request_handle_width PROPERTIES
     TIMEOUT 30
 )
 
+# Open MPI completion-array binders: real ompi request/status tags + missing
+# optional symbols remain NULL against the identity fixture.
+add_library(fake_openmpi_request_api SHARED
+    fixtures/fake_openmpi_request_api.c)
+target_include_directories(fake_openmpi_request_api PRIVATE
+    ${PROJECT_SOURCE_DIR}/include)
+set_target_properties(fake_openmpi_request_api PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_executable(test_openmpi_request_arrays
+    internal/test_openmpi_request_arrays.c)
+target_link_libraries(test_openmpi_request_arrays unimpi)
+add_dependencies(test_openmpi_request_arrays
+    fake_openmpi_request_api fake_openmpi_identity)
+add_test(NAME test_openmpi_request_arrays
+    COMMAND test_openmpi_request_arrays
+            $<TARGET_FILE:fake_openmpi_request_api>
+            $<TARGET_FILE:fake_openmpi_identity>)
+set_tests_properties(test_openmpi_request_arrays PROPERTIES
+    LABELS "unit;fake;internal;adapter"
+    TIMEOUT 30
+)
+
 # ============================================
 # MPI layer tests (standard MPI API)
 # ============================================
