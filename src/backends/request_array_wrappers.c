@@ -88,6 +88,7 @@ static int no_memory_error(void) {
     return MPI_ERR_NO_MEM != MPI_SUCCESS ? MPI_ERR_NO_MEM : 39;
 }
 
+
 static int completion_error_class(int result) {
     int error_class;
 
@@ -100,6 +101,17 @@ static int completion_error_class(int result) {
     }
     return error_class;
 }
+
+static int should_store_completion(int result) {
+    int result_class;
+
+    if (result == MPI_SUCCESS) {
+        return 1;
+    }
+    result_class = completion_error_class(result);
+    return result_class == MPI_ERR_IN_STATUS;
+}
+
 
 static int statuses_are_ignored(const MPI_Status *statuses) {
     return statuses == NULL || statuses == UNIMPI_STATUSES_IGNORE;
@@ -210,12 +222,14 @@ int unimpi_wrap_waitall(int count, MPI_Request *array_of_requests,
     result = real_waitall(
         count, native_requests,
         ignore_statuses ? legacy_statuses_ignore() : native_statuses);
-    legacy_requests_store(native_requests, array_of_requests, count);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_SUCCESS ||
-         result_class == MPI_ERR_IN_STATUS)) {
-        legacy_statuses_store(native_statuses, array_of_statuses, count);
+    if (should_store_completion(result)) {
+        legacy_requests_store(native_requests, array_of_requests, count);
+        if (native_statuses &&
+            (result_class == MPI_SUCCESS ||
+             result_class == MPI_ERR_IN_STATUS)) {
+            legacy_statuses_store(native_statuses, array_of_statuses, count);
+        }
     }
 
     free(native_statuses);
@@ -243,7 +257,9 @@ int unimpi_wrap_testany(int count, MPI_Request *array_of_requests,
     result = real_testany(
         count, native_requests, index, flag,
         (struct unimpi_status_legacy *)status);
-    legacy_requests_store(native_requests, array_of_requests, count);
+    if (should_store_completion(result)) {
+        legacy_requests_store(native_requests, array_of_requests, count);
+    }
     free(native_requests);
     return result;
 }
@@ -286,15 +302,17 @@ int unimpi_wrap_testsome(int incount, MPI_Request *array_of_requests,
     result = real_testsome(
         incount, native_requests, outcount, array_of_indices,
         ignore_statuses ? legacy_statuses_ignore() : native_statuses);
-    legacy_requests_store(native_requests, array_of_requests, incount);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_SUCCESS ||
-         result_class == MPI_ERR_IN_STATUS)) {
-        status_count = completed_status_count(incount, outcount);
-        if (status_count > 0) {
-            legacy_statuses_store(
-                native_statuses, array_of_statuses, status_count);
+    if (should_store_completion(result)) {
+        legacy_requests_store(native_requests, array_of_requests, incount);
+        if (native_statuses &&
+            (result_class == MPI_SUCCESS ||
+             result_class == MPI_ERR_IN_STATUS)) {
+            status_count = completed_status_count(incount, outcount);
+            if (status_count > 0) {
+                legacy_statuses_store(
+                    native_statuses, array_of_statuses, status_count);
+            }
         }
     }
 
@@ -339,12 +357,14 @@ int unimpi_wrap_testall(int count, MPI_Request *array_of_requests,
     result = real_testall(
         count, native_requests, flag,
         ignore_statuses ? legacy_statuses_ignore() : native_statuses);
-    legacy_requests_store(native_requests, array_of_requests, count);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_ERR_IN_STATUS ||
-         (result_class == MPI_SUCCESS && flag && *flag))) {
-        legacy_statuses_store(native_statuses, array_of_statuses, count);
+    if (should_store_completion(result)) {
+        legacy_requests_store(native_requests, array_of_requests, count);
+        if (native_statuses &&
+            (result_class == MPI_ERR_IN_STATUS ||
+             (result_class == MPI_SUCCESS && flag && *flag))) {
+            legacy_statuses_store(native_statuses, array_of_statuses, count);
+        }
     }
 
     free(native_statuses);
@@ -373,7 +393,9 @@ int unimpi_wrap_waitany(int count, MPI_Request *array_of_requests,
     result = real_waitany(
         count, native_requests, index,
         (struct unimpi_status_legacy *)status);
-    legacy_requests_store(native_requests, array_of_requests, count);
+    if (should_store_completion(result)) {
+        legacy_requests_store(native_requests, array_of_requests, count);
+    }
     free(native_requests);
     return result;
 }
@@ -416,15 +438,17 @@ int unimpi_wrap_waitsome(int incount, MPI_Request *array_of_requests,
     result = real_waitsome(
         incount, native_requests, outcount, array_of_indices,
         ignore_statuses ? legacy_statuses_ignore() : native_statuses);
-    legacy_requests_store(native_requests, array_of_requests, incount);
     result_class = completion_error_class(result);
-    if (native_statuses &&
-        (result_class == MPI_SUCCESS ||
-         result_class == MPI_ERR_IN_STATUS)) {
-        status_count = completed_status_count(incount, outcount);
-        if (status_count > 0) {
-            legacy_statuses_store(
-                native_statuses, array_of_statuses, status_count);
+    if (should_store_completion(result)) {
+        legacy_requests_store(native_requests, array_of_requests, incount);
+        if (native_statuses &&
+            (result_class == MPI_SUCCESS ||
+             result_class == MPI_ERR_IN_STATUS)) {
+            status_count = completed_status_count(incount, outcount);
+            if (status_count > 0) {
+                legacy_statuses_store(
+                    native_statuses, array_of_statuses, status_count);
+            }
         }
     }
 
@@ -449,7 +473,9 @@ int unimpi_wrap_startall(int count, MPI_Request *array_of_requests) {
         return no_memory_error();
     }
     result = real_startall(count, native_requests);
-    legacy_requests_store(native_requests, array_of_requests, count);
+    if (should_store_completion(result)) {
+        legacy_requests_store(native_requests, array_of_requests, count);
+    }
     free(native_requests);
     return result;
 }

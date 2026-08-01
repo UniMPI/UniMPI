@@ -1,10 +1,10 @@
-/* Single-request ABI adapters for integer-handle MPI backends.
+/* Single-request / message ABI adapters for integer-handle MPI backends.
  *
- * UniMPI facade MPI_Request is intptr_t.  MPICH, Intel MPI, and MS-MPI use
- * native 32-bit int request handles.  Directly assigning native functions that
- * take MPI_Request* lets producers write only four bytes while consumers keep
- * stale high bytes.  These adapters convert through a local native int and
- * store a full-width facade value after every call.
+ * UniMPI facade handles are intptr_t.  MPICH, Intel MPI, and MS-MPI use native
+ * int for Comm/Datatype/Op/Win/Request/Message and struct ADIOI_FileD * for
+ * File.  Adapters convert every by-value handle at the call boundary, use a
+ * local native request/message int for pointer arguments, and store a
+ * full-width facade value only when the native call defines the output.
  *
  * Array completion/start paths remain in request_array_wrappers.h.
  * Open MPI keeps direct pointer-handle assignment in its backend.
