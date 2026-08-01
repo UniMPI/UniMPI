@@ -3,6 +3,7 @@
 #include "unimpi_platform.h"
 #include "unimpi.h"
 #include "request_array_wrappers.h"
+#include "request_handle_wrappers.h"
 #include "datatype_array_wrappers.h"
 #include <string.h>
 
@@ -85,6 +86,10 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
             unimpi_platform_dlsym(handle, "MPI_Alltoallw"));
     unimpi_wrapper_set_error_class((unimpi_native_error_class_fn)
         unimpi_platform_dlsym(handle, "MPI_Error_class"));
+
+    /* Integer-handle request pointer width adapters (and array
+     * completion adapters). Missing symbols stay NULL. */
+    unimpi_bind_integer_request_apis(handle);
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
         unimpi_platform_dlsym(handle, "MPI_Init");
@@ -116,15 +121,6 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Send");
     unimpi.recv = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Recv");
-    unimpi.isend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Isend");
-    unimpi.irecv = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Irecv");
-    unimpi.wait = (int (*)(MPI_Request*, MPI_Status*))
-        unimpi_platform_dlsym(handle, "MPI_Wait");
-    unimpi_wrapper_set_waitall((unimpi_native_legacy_waitall_fn)
-        unimpi_platform_dlsym(handle, "MPI_Waitall"));
-    unimpi.waitall = unimpi_wrap_waitall;
     unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Sendrecv");
     unimpi.sendrecv_replace = (int (*)(void*, int, MPI_Datatype, int, int, int, int, MPI_Comm, MPI_Status*))
@@ -133,39 +129,14 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Point-to-Point - Sync/Buffered/Ready */
     unimpi.ssend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Ssend");
-    unimpi.ssend_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ssend_init");
     unimpi.bsend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Bsend");
-    unimpi.bsend_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Bsend_init");
     unimpi.buffer_attach = (int (*)(void*, int))
         unimpi_platform_dlsym(handle, "MPI_Buffer_attach");
     unimpi.buffer_detach = (int (*)(void*, int*))
         unimpi_platform_dlsym(handle, "MPI_Buffer_detach");
     unimpi.rsend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Rsend");
-    unimpi.rsend_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Rsend_init");
-
-    /* Nonblocking test and wait */
-    unimpi.test = (int (*)(MPI_Request*, int*, MPI_Status*))
-        unimpi_platform_dlsym(handle, "MPI_Test");
-    unimpi_wrapper_set_testany((unimpi_native_legacy_any_fn)
-        unimpi_platform_dlsym(handle, "MPI_Testany"));
-    unimpi.testany = unimpi_wrap_testany;
-    unimpi_wrapper_set_testsome((unimpi_native_legacy_some_fn)
-        unimpi_platform_dlsym(handle, "MPI_Testsome"));
-    unimpi.testsome = unimpi_wrap_testsome;
-    unimpi_wrapper_set_testall((unimpi_native_legacy_testall_fn)
-        unimpi_platform_dlsym(handle, "MPI_Testall"));
-    unimpi.testall = unimpi_wrap_testall;
-    unimpi_wrapper_set_waitany((unimpi_native_legacy_waitany_fn)
-        unimpi_platform_dlsym(handle, "MPI_Waitany"));
-    unimpi.waitany = unimpi_wrap_waitany;
-    unimpi_wrapper_set_waitsome((unimpi_native_legacy_some_fn)
-        unimpi_platform_dlsym(handle, "MPI_Waitsome"));
-    unimpi.waitsome = unimpi_wrap_waitsome;
 
     /* Message probing */
     unimpi.probe = (int (*)(int, int, MPI_Comm, MPI_Status*))
@@ -173,32 +144,6 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     unimpi.iprobe = (int (*)(int, int, MPI_Comm, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Iprobe");
 
-    /* MPI-3 Matched probing */
-    unimpi.mprobe = (int (*)(int, int, MPI_Comm, MPI_Message*, MPI_Status*))
-        unimpi_platform_dlsym(handle, "MPI_Mprobe");
-    unimpi.improbe = (int (*)(int, int, MPI_Comm, int*, MPI_Message*, MPI_Status*))
-        unimpi_platform_dlsym(handle, "MPI_Improbe");
-    unimpi.mrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, MPI_Status*))
-        unimpi_platform_dlsym(handle, "MPI_Mrecv");
-    unimpi.imrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Imrecv");
-
-    /* Persistent communication */
-    unimpi.send_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Send_init");
-    unimpi.recv_init = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Recv_init");
-    unimpi.start = (int (*)(MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Start");
-    unimpi_wrapper_set_startall((unimpi_native_legacy_startall_fn)
-        unimpi_platform_dlsym(handle, "MPI_Startall"));
-    unimpi.startall = unimpi_wrap_startall;
-    unimpi.request_free = (int (*)(MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Request_free");
-
-    /* Cancel and status */
-    unimpi.cancel = (int (*)(MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Cancel");
     unimpi.test_cancelled = (int (*)(const MPI_Status*, int*))
         unimpi_platform_dlsym(handle, "MPI_Test_cancelled");
     unimpi.get_count = (int (*)(const MPI_Status*, MPI_Datatype, int*))
@@ -247,43 +192,6 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Exscan");
 
     /* MPI-3 Non-blocking Collectives */
-    unimpi.ibarrier = (int (*)(MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ibarrier");
-    unimpi.ibcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ibcast");
-    unimpi.igather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Igather");
-    unimpi.igatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Igatherv");
-    unimpi.iscatter = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Iscatter");
-    unimpi.iscatterv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Iscatterv");
-    unimpi.iallgather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Iallgather");
-    unimpi.iallgatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Iallgatherv");
-    unimpi.ialltoall = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ialltoall");
-    unimpi.ialltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ialltoallv");
-
-    /* MPI-3 Ialltoallw */
-    /* Integer-handle datatype arrays must remain alive until completion.
-     * Do not publish this optional entry until request-bound storage exists. */
-    unimpi.ialltoallw = NULL;
-    unimpi.ireduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ireduce");
-    unimpi.iallreduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Iallreduce");
-    unimpi.ireduce_scatter = (int (*)(const void*, void*, const int*, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ireduce_scatter");
-    unimpi.ireduce_scatter_block = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ireduce_scatter_block");
-    unimpi.iscan = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Iscan");
-    unimpi.iexscan = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Iexscan");
 
     /* Communicator */
     unimpi.comm_size = (int (*)(MPI_Comm, int*))
@@ -500,16 +408,8 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Fetch_and_op");
     unimpi.compare_and_swap = (int (*)(const void*, const void*, void*, MPI_Datatype, int, MPI_Aint, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Compare_and_swap");
-    unimpi.rput = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Rput");
-    unimpi.rget = (int (*)(void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Rget");
 
     /* MPI-3 Extended RMA operations */
-    unimpi.raccumulate = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Raccumulate");
-    unimpi.rget_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Rget_accumulate");
 
     /* RMA Synchronization */
     unimpi.win_fence = (int (*)(int, MPI_Win))
@@ -600,16 +500,6 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_File_read_ordered");
     unimpi.file_write_ordered = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write_ordered");
-
-    /* Parallel I/O - Non-blocking */
-    unimpi.file_iread = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_File_iread");
-    unimpi.file_iwrite = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_File_iwrite");
-    unimpi.file_iread_at = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_File_iread_at");
-    unimpi.file_iwrite_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_File_iwrite_at");
 
     /* Parallel I/O - Views */
     unimpi.file_set_view = (int (*)(MPI_File, MPI_Offset, MPI_Datatype, MPI_Datatype, const char*, MPI_Info))

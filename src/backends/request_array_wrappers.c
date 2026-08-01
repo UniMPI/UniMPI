@@ -8,6 +8,7 @@
  * temporary arrays keep both representations isolated at the call boundary.
  */
 #include "request_array_wrappers.h"
+#include "request_handle_wrappers.h"
 #include "unimpi.h"
 
 #include <stdint.h>
@@ -125,7 +126,7 @@ static int *legacy_requests_create(const MPI_Request *requests, int count) {
         return NULL;
     }
     for (i = 0; i < count; ++i) {
-        native_requests[i] = (int)(intptr_t)requests[i];
+        native_requests[i] = unimpi_request_to_native(requests[i]);
     }
     return native_requests;
 }
@@ -136,7 +137,7 @@ static void legacy_requests_store(const int *native_requests,
     int i;
 
     for (i = 0; i < count; ++i) {
-        requests[i] = (MPI_Request)(intptr_t)native_requests[i];
+        requests[i] = unimpi_request_from_native(native_requests[i]);
     }
 }
 

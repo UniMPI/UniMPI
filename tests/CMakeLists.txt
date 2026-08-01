@@ -226,6 +226,43 @@ set_tests_properties(test_abi_adapters PROPERTIES
     TIMEOUT 30
 )
 
+# MPICH/Intel error-class tables must match public MPICH constants after the
+# real backend initializers run against fake identity fixtures.
+add_executable(test_mpich_error_classes internal/test_mpich_error_classes.c)
+target_link_libraries(test_mpich_error_classes unimpi)
+add_dependencies(test_mpich_error_classes
+    fake_mpich_identity fake_intelmpi_identity)
+add_test(NAME test_mpich_error_classes
+    COMMAND test_mpich_error_classes
+            $<TARGET_FILE:fake_mpich_identity>
+            $<TARGET_FILE:fake_intelmpi_identity>)
+set_tests_properties(test_mpich_error_classes PROPERTIES
+    LABELS "unit;fake;internal;error"
+    TIMEOUT 30
+)
+
+# Production binder path for integer-handle request/message width adapters.
+add_library(fake_integer_request_api SHARED
+    fixtures/fake_integer_request_api.c)
+set_target_properties(fake_integer_request_api PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_executable(test_request_handle_width
+    internal/test_request_handle_width.c)
+target_link_libraries(test_request_handle_width unimpi)
+add_dependencies(test_request_handle_width
+    fake_integer_request_api fake_mpich_identity)
+add_test(NAME test_request_handle_width
+    COMMAND test_request_handle_width
+            $<TARGET_FILE:fake_integer_request_api>
+            $<TARGET_FILE:fake_mpich_identity>)
+set_tests_properties(test_request_handle_width PROPERTIES
+    LABELS "unit;fake;internal;adapter"
+    TIMEOUT 30
+)
+
 # ============================================
 # MPI layer tests (standard MPI API)
 # ============================================
