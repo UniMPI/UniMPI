@@ -96,7 +96,7 @@ Benchmark labels run only smoke workloads under CTest. Full measurement runs
 are manual; see [BENCHMARKS.md](BENCHMARKS.md).
 
 With tests, real MPI, examples, and benchmarks all enabled, the current CTest
-registry contains 53 invocations: 23 unit tests and 30 integration
+registry contains 54 invocations: 24 unit tests and 30 integration
 invocations. The integration total includes 7 example smokes and 3 benchmark
 smokes. Recount after changing registrations:
 
