@@ -91,7 +91,7 @@ static void test_irecv_testall_wait(void) {
     MPI_Request request = 0;
     MPI_Status status;
     int flag = 1;
-    char buffer[4];
+    char buffer[4] = {0};
 
     memset(&status, 0xff, sizeof(status));
     assert(unimpi.irecv(
@@ -114,7 +114,7 @@ static void test_irecv_testall_wait(void) {
 
 static void test_send_init_startall_free(void) {
     MPI_Request request = 0;
-    char buffer[4];
+    char buffer[4] = {0};
 
     assert(unimpi.send_init(
                buffer, 1, (MPI_Datatype)1, 0, 0, (MPI_Comm)1,
@@ -175,7 +175,7 @@ static void test_mprobe_imrecv_wait(void) {
     MPI_Message message = 0;
     MPI_Request request = 0;
     MPI_Status status;
-    char buffer[4];
+    char buffer[4] = {0};
 
     memset(&status, 0xff, sizeof(status));
     assert(unimpi.mprobe(0, 1, (MPI_Comm)1, &message, &status) == 0);
@@ -194,7 +194,7 @@ static void test_mprobe_imrecv_wait(void) {
 static void test_mprobe_mrecv(void) {
     MPI_Message message = 0;
     MPI_Status status;
-    char buffer[4];
+    char buffer[4] = {0};
 
     memset(&status, 0xff, sizeof(status));
     assert(unimpi.mprobe(1, 2, (MPI_Comm)1, &message, &status) == 0);

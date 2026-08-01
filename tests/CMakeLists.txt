@@ -242,8 +242,12 @@ set_tests_properties(test_mpich_error_classes PROPERTIES
 )
 
 # Production binder path for integer-handle request/message width adapters.
+# Include public headers so native exports use the same status/handle types
+# and UNIMPI_MPI_CALL convention as the production binder typedefs.
 add_library(fake_integer_request_api SHARED
     fixtures/fake_integer_request_api.c)
+target_include_directories(fake_integer_request_api PRIVATE
+    ${PROJECT_SOURCE_DIR}/include)
 set_target_properties(fake_integer_request_api PROPERTIES
     PREFIX ""
     WINDOWS_EXPORT_ALL_SYMBOLS ON

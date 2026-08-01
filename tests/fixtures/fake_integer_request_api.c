@@ -1,51 +1,46 @@
 /* Fake integer-handle MPI DSO for production binder regressions.
  *
- * Exports UNIMPI_MPI_CALL-compatible natives with 32-bit request/message
- * handles. High-bit values ensure stale facade high bytes fail equality.
- * Core lifecycle symbols satisfy backend validate_core.
+ * Exports UNIMPI_MPI_CALL natives with signatures that match the integer
+ * backend adapter typedefs exactly (including status pointer types) so
+ * dlsym-bound calls pass C strict function-type checks under UBSan.
+ *
+ * High-bit request/message handles ensure stale facade high bytes fail
+ * equality. Core lifecycle symbols satisfy backend validate_core.
  */
 #include <stdint.h>
 #include <string.h>
 
-#ifdef _WIN32
-#define FAKE_MPI_CALL __stdcall
-#else
-#define FAKE_MPI_CALL
-#endif
+#include "unimpi_platform.h"
+#include "unimpi_vtable.h"
 
 enum {
     FAKE_NATIVE_REQUEST = (int)0xac000001,
     FAKE_NATIVE_MESSAGE = (int)0xad000002,
     FAKE_NATIVE_NULL = (int)0x2c000000,
-    FAKE_ERR_IN_STATUS_CODE = 0x10000 | 17,
-    FAKE_STATUSES_IGNORE = 1
-};
-
-/* Compact legacy status layout matching UniMPI integer backends. */
-struct fake_status_legacy {
-    int count_lo;
-    int count_hi_and_cancelled;
-    int MPI_SOURCE;
-    int MPI_TAG;
-    int MPI_ERROR;
+    FAKE_ERR_IN_STATUS_CODE = 0x10000 | 17
 };
 
 static int g_started;
 static int g_message_live;
 
+static int status_is_ignored(const struct unimpi_status_legacy *status) {
+    return status == NULL ||
+        (const void *)status == (const void *)UNIMPI_STATUSES_IGNORE;
+}
+
 /* --- Core symbols required by vtable validation --- */
 
-int FAKE_MPI_CALL MPI_Init(int *argc, char ***argv) {
+int UNIMPI_MPI_CALL MPI_Init(int *argc, char ***argv) {
     (void)argc;
     (void)argv;
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Finalize(void) {
+int UNIMPI_MPI_CALL MPI_Finalize(void) {
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Comm_size(intptr_t comm, int *size) {
+int UNIMPI_MPI_CALL MPI_Comm_size(MPI_Comm comm, int *size) {
     (void)comm;
     if (size) {
         *size = 1;
@@ -53,7 +48,7 @@ int FAKE_MPI_CALL MPI_Comm_size(intptr_t comm, int *size) {
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Comm_rank(intptr_t comm, int *rank) {
+int UNIMPI_MPI_CALL MPI_Comm_rank(MPI_Comm comm, int *rank) {
     (void)comm;
     if (rank) {
         *rank = 0;
@@ -61,7 +56,7 @@ int FAKE_MPI_CALL MPI_Comm_rank(intptr_t comm, int *rank) {
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Error_class(int errorcode, int *error_class) {
+int UNIMPI_MPI_CALL MPI_Error_class(int errorcode, int *error_class) {
     if (!error_class) {
         return 13;
     }
@@ -71,9 +66,9 @@ int FAKE_MPI_CALL MPI_Error_class(int errorcode, int *error_class) {
 
 /* --- Request producers / completion --- */
 
-int FAKE_MPI_CALL MPI_Irecv(void *buf, int count, intptr_t datatype,
-                            int source, int tag, intptr_t comm,
-                            int *request) {
+int UNIMPI_MPI_CALL MPI_Irecv(void *buf, int count, MPI_Datatype datatype,
+                              int source, int tag, MPI_Comm comm,
+                              int *request) {
     (void)buf;
     (void)count;
     (void)datatype;
@@ -87,9 +82,9 @@ int FAKE_MPI_CALL MPI_Irecv(void *buf, int count, intptr_t datatype,
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Send_init(const void *buf, int count, intptr_t datatype,
-                                int dest, int tag, intptr_t comm,
-                                int *request) {
+int UNIMPI_MPI_CALL MPI_Send_init(const void *buf, int count,
+                                  MPI_Datatype datatype, int dest, int tag,
+                                  MPI_Comm comm, int *request) {
     (void)buf;
     (void)count;
     (void)datatype;
@@ -104,7 +99,7 @@ int FAKE_MPI_CALL MPI_Send_init(const void *buf, int count, intptr_t datatype,
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Startall(int count, int *requests) {
+int UNIMPI_MPI_CALL MPI_Startall(int count, int *requests) {
     if (count <= 0) {
         return 0;
     }
@@ -115,7 +110,7 @@ int FAKE_MPI_CALL MPI_Startall(int count, int *requests) {
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Request_free(int *request) {
+int UNIMPI_MPI_CALL MPI_Request_free(int *request) {
     if (!request || *request != FAKE_NATIVE_REQUEST || !g_started) {
         return 19;
     }
@@ -123,12 +118,12 @@ int FAKE_MPI_CALL MPI_Request_free(int *request) {
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Wait(int *request, struct fake_status_legacy *status) {
+int UNIMPI_MPI_CALL MPI_Wait(int *request,
+                             struct unimpi_status_legacy *status) {
     if (!request || *request != FAKE_NATIVE_REQUEST) {
         return 19;
     }
-    if (status &&
-        (intptr_t)status != (intptr_t)FAKE_STATUSES_IGNORE) {
+    if (!status_is_ignored(status)) {
         memset(status, 0, sizeof(*status));
         status->MPI_SOURCE = 3;
         status->MPI_TAG = 7;
@@ -139,16 +134,16 @@ int FAKE_MPI_CALL MPI_Wait(int *request, struct fake_status_legacy *status) {
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Testall(int count, int *requests, int *flag,
-                              struct fake_status_legacy *statuses) {
+/* Signature must match unimpi_native_legacy_testall_fn exactly. */
+int UNIMPI_MPI_CALL MPI_Testall(int count, int *requests, int *flag,
+                                struct unimpi_status_legacy *statuses) {
     int i;
     int ignore;
 
     if (!flag) {
         return 13;
     }
-    ignore = !statuses ||
-        (intptr_t)statuses == (intptr_t)FAKE_STATUSES_IGNORE;
+    ignore = status_is_ignored(statuses);
 
     /* Two-request path: post-init ERR_IN_STATUS status copyback. */
     if (count == 2 && requests && !ignore) {
@@ -182,7 +177,7 @@ int FAKE_MPI_CALL MPI_Testall(int count, int *requests, int *flag,
 
 /* --- Representative NBC / RMA / I/O producers --- */
 
-int FAKE_MPI_CALL MPI_Ibarrier(intptr_t comm, int *request) {
+int UNIMPI_MPI_CALL MPI_Ibarrier(MPI_Comm comm, int *request) {
     (void)comm;
     if (!request) {
         return 19;
@@ -191,11 +186,11 @@ int FAKE_MPI_CALL MPI_Ibarrier(intptr_t comm, int *request) {
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Rput(const void *origin_addr, int origin_count,
-                           intptr_t origin_datatype, int target_rank,
-                           intptr_t target_disp, int target_count,
-                           intptr_t target_datatype, intptr_t win,
-                           int *request) {
+int UNIMPI_MPI_CALL MPI_Rput(const void *origin_addr, int origin_count,
+                             MPI_Datatype origin_datatype, int target_rank,
+                             MPI_Aint target_disp, int target_count,
+                             MPI_Datatype target_datatype, MPI_Win win,
+                             int *request) {
     (void)origin_addr;
     (void)origin_count;
     (void)origin_datatype;
@@ -211,8 +206,8 @@ int FAKE_MPI_CALL MPI_Rput(const void *origin_addr, int origin_count,
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_File_iread(intptr_t fh, void *buf, int count,
-                                 intptr_t datatype, int *request) {
+int UNIMPI_MPI_CALL MPI_File_iread(MPI_File fh, void *buf, int count,
+                                   MPI_Datatype datatype, int *request) {
     (void)fh;
     (void)buf;
     (void)count;
@@ -226,18 +221,16 @@ int FAKE_MPI_CALL MPI_File_iread(intptr_t fh, void *buf, int count,
 
 /* --- Matched message path --- */
 
-int FAKE_MPI_CALL MPI_Mprobe(int source, int tag, intptr_t comm,
-                             int *message, struct fake_status_legacy *status) {
-    (void)source;
-    (void)tag;
+int UNIMPI_MPI_CALL MPI_Mprobe(int source, int tag, MPI_Comm comm,
+                               int *message,
+                               struct unimpi_status_legacy *status) {
     (void)comm;
     if (!message) {
         return 19;
     }
     *message = FAKE_NATIVE_MESSAGE;
     g_message_live = 1;
-    if (status &&
-        (intptr_t)status != (intptr_t)FAKE_STATUSES_IGNORE) {
+    if (!status_is_ignored(status)) {
         memset(status, 0, sizeof(*status));
         status->MPI_SOURCE = source >= 0 ? source : 0;
         status->MPI_TAG = tag >= 0 ? tag : 0;
@@ -246,9 +239,9 @@ int FAKE_MPI_CALL MPI_Mprobe(int source, int tag, intptr_t comm,
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Improbe(int source, int tag, intptr_t comm, int *flag,
-                              int *message,
-                              struct fake_status_legacy *status) {
+int UNIMPI_MPI_CALL MPI_Improbe(int source, int tag, MPI_Comm comm, int *flag,
+                                int *message,
+                                struct unimpi_status_legacy *status) {
     (void)source;
     (void)tag;
     (void)comm;
@@ -261,16 +254,15 @@ int FAKE_MPI_CALL MPI_Improbe(int source, int tag, intptr_t comm, int *flag,
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Mrecv(void *buf, int count, intptr_t datatype,
-                            int *message, struct fake_status_legacy *status) {
+int UNIMPI_MPI_CALL MPI_Mrecv(void *buf, int count, MPI_Datatype datatype,
+                              int *message,
+                              struct unimpi_status_legacy *status) {
     (void)buf;
-    (void)count;
     (void)datatype;
     if (!message || *message != FAKE_NATIVE_MESSAGE || !g_message_live) {
         return 19;
     }
-    if (status &&
-        (intptr_t)status != (intptr_t)FAKE_STATUSES_IGNORE) {
+    if (!status_is_ignored(status)) {
         memset(status, 0, sizeof(*status));
         status->MPI_SOURCE = 1;
         status->MPI_TAG = 2;
@@ -281,8 +273,8 @@ int FAKE_MPI_CALL MPI_Mrecv(void *buf, int count, intptr_t datatype,
     return 0;
 }
 
-int FAKE_MPI_CALL MPI_Imrecv(void *buf, int count, intptr_t datatype,
-                             int *message, int *request) {
+int UNIMPI_MPI_CALL MPI_Imrecv(void *buf, int count, MPI_Datatype datatype,
+                               int *message, int *request) {
     (void)buf;
     (void)count;
     (void)datatype;
