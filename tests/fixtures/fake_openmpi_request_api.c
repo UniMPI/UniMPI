@@ -160,3 +160,58 @@ int UNIMPI_MPI_CALL MPI_Waitsome(int incount, struct ompi_request_t **requests,
                                  struct ompi_status_public_t *statuses) {
     return MPI_Testsome(incount, requests, outcount, indices, statuses);
 }
+
+int UNIMPI_MPI_CALL MPI_Testany(int count, struct ompi_request_t **requests,
+                                int *index, int *flag,
+                                struct ompi_status_public_t *status) {
+    if (!index || !flag) {
+        return 13;
+    }
+    if (count <= 0) {
+        *flag = 1;
+        *index = -32766; /* MPI_UNDEFINED */
+        return 0;
+    }
+    if (!requests) {
+        return 7;
+    }
+    /* Complete request 1 when present. */
+    *flag = 1;
+    *index = count > 1 ? 1 : 0;
+    requests[*index] = NULL;
+    if (status) {
+        memset(status, 0, sizeof(*status));
+        status->MPI_SOURCE = 80;
+        status->MPI_TAG = 81;
+        status->_ucount = 82;
+    }
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Waitany(int count, struct ompi_request_t **requests,
+                                int *index,
+                                struct ompi_status_public_t *status) {
+    int flag = 0;
+
+    return MPI_Testany(count, requests, index, &flag, status);
+}
+
+int UNIMPI_MPI_CALL MPI_Startall(int count, struct ompi_request_t **requests) {
+    int i;
+
+    /* Match Open MPI: NULL array is MPI_ERR_REQUEST even when count == 0. */
+    if (!requests) {
+        return 7;
+    }
+    if (count <= 0) {
+        return 0;
+    }
+    /* Persistent start leaves handles live; bump id to prove round-trip. */
+    for (i = 0; i < count; ++i) {
+        if (requests[i]) {
+            requests[i] = (struct ompi_request_t *)(intptr_t)(
+                (int)(intptr_t)requests[i] | 0x100);
+        }
+    }
+    return 0;
+}

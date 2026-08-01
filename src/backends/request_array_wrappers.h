@@ -41,6 +41,13 @@ typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_some_fn)(
     struct ompi_status_public_t *);
 typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_testall_fn)(
     int, struct ompi_request_t **, int *, struct ompi_status_public_t *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_testany_fn)(
+    int, struct ompi_request_t **, int *, int *,
+    struct ompi_status_public_t *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_waitany_fn)(
+    int, struct ompi_request_t **, int *, struct ompi_status_public_t *);
+typedef int (UNIMPI_MPI_CALL *unimpi_native_openmpi_startall_fn)(
+    int, struct ompi_request_t **);
 
 /* Backend error-class query used to classify encoded error codes safely. */
 void unimpi_wrapper_set_error_class(unimpi_native_error_class_fn fn);
@@ -63,6 +70,12 @@ void unimpi_wrapper_set_openmpi_testall(
     unimpi_native_openmpi_testall_fn fn);
 void unimpi_wrapper_set_openmpi_waitsome(
     unimpi_native_openmpi_some_fn fn);
+void unimpi_wrapper_set_openmpi_testany(
+    unimpi_native_openmpi_testany_fn fn);
+void unimpi_wrapper_set_openmpi_waitany(
+    unimpi_native_openmpi_waitany_fn fn);
+void unimpi_wrapper_set_openmpi_startall(
+    unimpi_native_openmpi_startall_fn fn);
 
 /* Integer-handle backend wrappers. */
 int unimpi_wrap_waitall(int count, MPI_Request *array_of_requests,
@@ -99,5 +112,13 @@ int unimpi_wrap_openmpi_waitsome(int incount,
                                  int *outcount,
                                  int *array_of_indices,
                                  MPI_Status *array_of_statuses);
+int unimpi_wrap_openmpi_testany(int count,
+                                MPI_Request *array_of_requests,
+                                int *index, int *flag, MPI_Status *status);
+int unimpi_wrap_openmpi_waitany(int count,
+                                MPI_Request *array_of_requests,
+                                int *index, MPI_Status *status);
+int unimpi_wrap_openmpi_startall(int count,
+                                 MPI_Request *array_of_requests);
 
 #endif /* UNIMPI_REQUEST_ARRAY_WRAPPERS_H */

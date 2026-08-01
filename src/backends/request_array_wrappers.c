@@ -24,11 +24,14 @@ static unimpi_native_legacy_waitany_fn real_waitany;
 static unimpi_native_legacy_some_fn real_waitsome;
 static unimpi_native_legacy_startall_fn real_startall;
 
-/* Open MPI entry points needing compact status arrays. */
+/* Open MPI entry points needing request-pointer and status arrays. */
 static unimpi_native_openmpi_waitall_fn real_openmpi_waitall;
 static unimpi_native_openmpi_some_fn real_openmpi_testsome;
 static unimpi_native_openmpi_testall_fn real_openmpi_testall;
 static unimpi_native_openmpi_some_fn real_openmpi_waitsome;
+static unimpi_native_openmpi_testany_fn real_openmpi_testany;
+static unimpi_native_openmpi_waitany_fn real_openmpi_waitany;
+static unimpi_native_openmpi_startall_fn real_openmpi_startall;
 
 static unimpi_native_error_class_fn real_error_class;
 
@@ -82,6 +85,21 @@ void unimpi_wrapper_set_openmpi_testall(
 void unimpi_wrapper_set_openmpi_waitsome(
     unimpi_native_openmpi_some_fn fn) {
     real_openmpi_waitsome = fn;
+}
+
+void unimpi_wrapper_set_openmpi_testany(
+    unimpi_native_openmpi_testany_fn fn) {
+    real_openmpi_testany = fn;
+}
+
+void unimpi_wrapper_set_openmpi_waitany(
+    unimpi_native_openmpi_waitany_fn fn) {
+    real_openmpi_waitany = fn;
+}
+
+void unimpi_wrapper_set_openmpi_startall(
+    unimpi_native_openmpi_startall_fn fn) {
+    real_openmpi_startall = fn;
 }
 
 static int no_memory_error(void) {
@@ -761,6 +779,131 @@ int unimpi_wrap_openmpi_waitsome(int incount,
         }
     }
     free(native_statuses);
+    free(native_requests);
+    return result;
+}
+
+int unimpi_wrap_openmpi_testany(int count,
+                                MPI_Request *array_of_requests,
+                                int *index, int *flag, MPI_Status *status) {
+    struct ompi_request_t **native_requests = NULL;
+    struct ompi_status_public_t *native_status = NULL;
+    int ignore;
+    int result;
+
+    ignore = statuses_are_ignored(status);
+    if (count <= 0) {
+        return real_openmpi_testany(
+            count, NULL, index, flag,
+            ignore ? NULL : (struct ompi_status_public_t *)status);
+    }
+    if (!array_of_requests) {
+        return MPI_ERR_REQUEST;
+    }
+
+    native_requests = openmpi_requests_create(array_of_requests, count);
+    if (!native_requests) {
+        return no_memory_error();
+    }
+    if (!ignore) {
+        native_status = (struct ompi_status_public_t *)allocate_array(
+            1, sizeof(*native_status));
+        if (!native_status) {
+            free(native_requests);
+            return no_memory_error();
+        }
+    }
+
+    result = real_openmpi_testany(
+        count, native_requests, index, flag, native_status);
+    if (should_store_completion(result)) {
+        openmpi_requests_store(native_requests, array_of_requests, count);
+        /* Status is defined only when a request completed (flag true). */
+        if (native_status && flag && *flag) {
+            openmpi_statuses_store(native_status, status, 1);
+        }
+    }
+    free(native_status);
+    free(native_requests);
+    return result;
+}
+
+int unimpi_wrap_openmpi_waitany(int count,
+                                MPI_Request *array_of_requests,
+                                int *index, MPI_Status *status) {
+    struct ompi_request_t **native_requests = NULL;
+    struct ompi_status_public_t *native_status = NULL;
+    int ignore;
+    int result;
+
+    ignore = statuses_are_ignored(status);
+    if (count <= 0) {
+        return real_openmpi_waitany(
+            count, NULL, index,
+            ignore ? NULL : (struct ompi_status_public_t *)status);
+    }
+    if (!array_of_requests) {
+        return MPI_ERR_REQUEST;
+    }
+
+    native_requests = openmpi_requests_create(array_of_requests, count);
+    if (!native_requests) {
+        return no_memory_error();
+    }
+    if (!ignore) {
+        native_status = (struct ompi_status_public_t *)allocate_array(
+            1, sizeof(*native_status));
+        if (!native_status) {
+            free(native_requests);
+            return no_memory_error();
+        }
+    }
+
+    result = real_openmpi_waitany(
+        count, native_requests, index, native_status);
+    if (should_store_completion(result)) {
+        openmpi_requests_store(native_requests, array_of_requests, count);
+        /* Status is defined when a request completed (index is not
+         * MPI_UNDEFINED). MPI_UNDEFINED is -32766 in Open MPI; compare via
+         * the runtime MPI_UNDEFINED if set, else treat any defined index. */
+        if (native_status && index &&
+            *index != MPI_UNDEFINED) {
+            openmpi_statuses_store(native_status, status, 1);
+        }
+    }
+    free(native_status);
+    free(native_requests);
+    return result;
+}
+
+int unimpi_wrap_openmpi_startall(int count,
+                                 MPI_Request *array_of_requests) {
+    struct ompi_request_t **native_requests = NULL;
+    struct ompi_request_t *zero_count_scratch = NULL;
+    int result;
+
+    /*
+     * Open MPI validates the request array pointer even when count == 0:
+     *   Startall(0, non-NULL) -> MPI_SUCCESS
+     *   Startall(0, NULL)     -> MPI_ERR_REQUEST
+     * Do not force NULL on the zero-count path. Contents are not read.
+     */
+    if (count <= 0) {
+        return real_openmpi_startall(
+            count, array_of_requests ? &zero_count_scratch : NULL);
+    }
+    if (!array_of_requests) {
+        return MPI_ERR_REQUEST;
+    }
+
+    native_requests = openmpi_requests_create(array_of_requests, count);
+    if (!native_requests) {
+        return no_memory_error();
+    }
+    result = real_openmpi_startall(count, native_requests);
+    if (should_store_completion(result)) {
+        openmpi_requests_store(native_requests, array_of_requests, count);
+    }
     free(native_requests);
     return result;
 }

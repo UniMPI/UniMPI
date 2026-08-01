@@ -303,8 +303,13 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     /* Nonblocking test and wait */
     unimpi.test = (int (*)(MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Test");
-    unimpi.testany = (int (*)(int, MPI_Request*, int*, int*, MPI_Status*))
-        unimpi_platform_dlsym(handle, "MPI_Testany");
+    {
+        unimpi_native_openmpi_testany_fn testany_fn =
+            (unimpi_native_openmpi_testany_fn)
+                unimpi_platform_dlsym(handle, "MPI_Testany");
+        unimpi_wrapper_set_openmpi_testany(testany_fn);
+        unimpi.testany = testany_fn ? unimpi_wrap_openmpi_testany : NULL;
+    }
     {
         unimpi_native_openmpi_some_fn testsome_fn =
             (unimpi_native_openmpi_some_fn)
@@ -320,8 +325,13 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_wrapper_set_openmpi_testall(testall_fn);
         unimpi.testall = testall_fn ? unimpi_wrap_openmpi_testall : NULL;
     }
-    unimpi.waitany = (int (*)(int, MPI_Request*, int*, MPI_Status*))
-        unimpi_platform_dlsym(handle, "MPI_Waitany");
+    {
+        unimpi_native_openmpi_waitany_fn waitany_fn =
+            (unimpi_native_openmpi_waitany_fn)
+                unimpi_platform_dlsym(handle, "MPI_Waitany");
+        unimpi_wrapper_set_openmpi_waitany(waitany_fn);
+        unimpi.waitany = waitany_fn ? unimpi_wrap_openmpi_waitany : NULL;
+    }
     {
         unimpi_native_openmpi_some_fn waitsome_fn =
             (unimpi_native_openmpi_some_fn)
@@ -352,8 +362,14 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Recv_init");
     unimpi.start = (int (*)(MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Start");
-    unimpi.startall = (int (*)(int, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Startall");
+    {
+        unimpi_native_openmpi_startall_fn startall_fn =
+            (unimpi_native_openmpi_startall_fn)
+                unimpi_platform_dlsym(handle, "MPI_Startall");
+        unimpi_wrapper_set_openmpi_startall(startall_fn);
+        unimpi.startall =
+            startall_fn ? unimpi_wrap_openmpi_startall : NULL;
+    }
     unimpi.request_free = (int (*)(MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Request_free");
 
