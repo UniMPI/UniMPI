@@ -126,6 +126,13 @@ Some installations place `libmpi.so` under `lib/release`; use the file that is
 actually present. Intel MPI is supported by this project on Linux, not macOS or
 Windows.
 
+UniMPI does not modify
+[`I_MPI_SPAWN`](https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-18/other-environment-variables.html)
+during Intel backend initialization. Applications that need Intel MPI
+dynamic-process operations must opt in before `MPI_Init`, for example by
+exporting `I_MPI_SPAWN=on` before launch, and follow any provider-specific
+requirements. Leave the variable unset or disabled for ordinary runs.
+
 ### Windows: MS-MPI
 
 Install the MS-MPI runtime and SDK. The launcher and DLL normally live in

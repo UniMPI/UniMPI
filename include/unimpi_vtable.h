@@ -29,13 +29,16 @@ typedef int (MPI_Win_copy_attr_function)(MPI_Win oldwin, int win_keyval, void *e
 typedef int (MPI_Win_delete_attr_function)(MPI_Win win, int win_keyval, void *attribute_val,
                                            void *extra_state);
 
-/* Status struct - must be defined before MPI_Status
- * Union to accommodate different backend layouts:
- * - Legacy (MPICH/MS-MPI): 20 bytes with internal count fields
- * - OpenMPI: 96+ bytes with different layout
+/* Status layout helpers and public facade.
+ *
+ * Vendor integer backends export struct MPI_Status * in native prototypes.
+ * That struct is not completed here: MPICH/Intel and MS-MPI use different
+ * member names for the same five-int stride.  Native adapters allocate raw
+ * storage of the known five-int size and pass it as struct MPI_Status *.
  */
+struct MPI_Status;
 
-/* Legacy backend status layout (MPICH/Intel MPI/MS-MPI) */
+/* Known five-int stride for MPICH-family / MS-MPI native status objects. */
 struct unimpi_status_legacy {
     int count_lo;                /* Lower 32-bits of count */
     int count_hi_and_cancelled;  /* Upper 32-bits and cancelled flag */
@@ -55,8 +58,8 @@ struct unimpi_status_openmpi {
     char _padding[80];           /* Ensure at least 96 bytes total */
 };  /* ~96-100 bytes */
 
-/* Union accommodating all backend status layouts */
-union MPI_Status {
+/* Public facade union: keep typedef name MPI_Status for the API. */
+union unimpi_status_facade {
     /* Common interface - standard field access */
     struct {
         int MPI_SOURCE;
@@ -72,7 +75,16 @@ union MPI_Status {
     /* Raw buffer for maximum size */
     char _raw[128];
 };
-typedef union MPI_Status MPI_Status;
+typedef union unimpi_status_facade MPI_Status;
+
+/*
+ * Runtime-selected native status-ignore sentinel. Open MPI uses NULL while
+ * integer-handle backends use pointer value 1. As with other predefined MPI
+ * values, applications must evaluate it after successful initialization.
+ * Singular and plural share the selected backend value.
+ */
+extern MPI_Status *UNIMPI_STATUS_IGNORE;
+#define UNIMPI_STATUSES_IGNORE UNIMPI_STATUS_IGNORE
 
 /* MPI predefined operations - will be resolved at runtime from backend */
 extern MPI_Op UNIMPI_MAX;

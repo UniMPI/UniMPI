@@ -15,6 +15,7 @@ static void assert_core_vtable_cleared(void) {
     assert(unimpi.get_library_version == NULL);
     assert(UNIMPI_COMM_WORLD == 0);
     assert(UNIMPI_COMM_SELF == 0);
+    assert(UNIMPI_STATUS_IGNORE == NULL);
     assert(unimpi_get_backend_type() == UNIMPI_BACKEND_UNKNOWN);
 }
 
@@ -25,6 +26,7 @@ static void test_missing_core_symbol(const char *library_path) {
     assert_core_vtable_cleared();
     assert(unimpi_loader_load(library_path, &handle) == UNIMPI_OK);
     assert(handle != NULL);
+    UNIMPI_STATUS_IGNORE = (MPI_Status *)(intptr_t)1;
     assert(unimpi_vtable_init(handle) == UNIMPI_ERR_SYMBOL_NOT_FOUND);
     assert_core_vtable_cleared();
     unimpi_loader_unload(handle);

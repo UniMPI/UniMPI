@@ -215,13 +215,17 @@ static void test_alltoall_family(int rank, int size, int require_optional,
     }
 
     if (!datatype_arrays_compatible) {
-        if (rank == 0) {
-            printf("SKIP: MPI_Ialltoallw requires a typed datatype-array "
-                   "adapter for this backend ABI\n");
+        if (unimpi.ialltoallw != NULL) {
+            fprintf(stderr,
+                    "integer-handle backend exposed unsafe MPI_Ialltoallw\n");
+            abort();
         }
-    } else if (use_optional(
-                   "MPI_Ialltoallw", unimpi.ialltoallw != NULL,
-                   require_optional, rank)) {
+        if (rank == 0) {
+            printf("SKIP: MPI_Ialltoallw requires request-bound datatype "
+                   "array storage on this backend\n");
+        }
+    } else if (use_optional("MPI_Ialltoallw",
+                            unimpi.ialltoallw != NULL, 1, rank)) {
         TEST_CHECK_SUCCESS(MPI_Ialltoallw(
             send, counts, byte_displacements, types, receive, counts,
             byte_displacements, types, MPI_COMM_WORLD, &request));
@@ -325,10 +329,10 @@ static void test_reduce_family(int rank, int size, int require_optional) {
 
 int main(int argc, char **argv) {
     unimpi_backend_type_t backend;
-    int datatype_arrays_compatible;
     int rank;
     int size;
     int require_optional;
+    int datatype_arrays_compatible;
 
     TEST_CHECK_SUCCESS(MPI_Init(&argc, &argv));
     TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));

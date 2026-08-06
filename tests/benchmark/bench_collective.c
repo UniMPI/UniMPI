@@ -2,6 +2,7 @@
 #define UNIMPI_USE_STD_NAMES
 #include <errno.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -411,6 +412,120 @@ static int benchmark_gather(int buffer_size,
     return 0;
 }
 
+static int benchmark_alltoallw(int buffer_size,
+                               const benchmark_config_t *config,
+                               int rank,
+                               int process_count,
+                               double *maximum_time_us) {
+    size_t total_size;
+    unsigned char *send_buffer;
+    unsigned char *receive_buffer;
+    int *counts;
+    int *displacements;
+    MPI_Datatype *types;
+    double start;
+    double end;
+    double local_time_us;
+    int local_allocated;
+    int local_valid = 1;
+    int i;
+
+    if (buffer_size <= 0 || process_count <= 0 ||
+        (size_t)process_count > SIZE_MAX / (size_t)buffer_size ||
+        (process_count > 1 &&
+         buffer_size > INT_MAX / (process_count - 1)) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*counts) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*displacements) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*types)) {
+        if (rank == 0) {
+            fprintf(stderr,
+                    "alltoallw benchmark dimensions exceed address or "
+                    "displacement limits\n");
+        }
+        return -1;
+    }
+
+    total_size = (size_t)buffer_size * (size_t)process_count;
+    send_buffer = (unsigned char *)malloc(total_size);
+    receive_buffer = (unsigned char *)malloc(total_size);
+    counts = (int *)malloc((size_t)process_count * sizeof(*counts));
+    displacements = (int *)malloc(
+        (size_t)process_count * sizeof(*displacements));
+    types = (MPI_Datatype *)malloc(
+        (size_t)process_count * sizeof(*types));
+
+    local_allocated = send_buffer && receive_buffer && counts &&
+                      displacements && types;
+    if (allocation_succeeded(
+            local_allocated, rank, "alltoallw buffers") != 0) {
+        free(types);
+        free(displacements);
+        free(counts);
+        free(receive_buffer);
+        free(send_buffer);
+        return -1;
+    }
+    memset(send_buffer, rank + 1, total_size);
+    memset(receive_buffer, 0, total_size);
+    for (i = 0; i < process_count; ++i) {
+        counts[i] = buffer_size;
+        displacements[i] = i * buffer_size;
+        types[i] = MPI_CHAR;
+    }
+
+    for (i = 0; i < config->warmup_iterations; ++i) {
+        if (require_mpi_success(MPI_Alltoallw(
+                send_buffer, counts, displacements, types,
+                receive_buffer, counts, displacements, types,
+                MPI_COMM_WORLD), "MPI_Alltoallw(warmup)") != 0) {
+            local_valid = 0;
+            break;
+        }
+    }
+    if (local_valid &&
+        require_mpi_success(MPI_Barrier(MPI_COMM_WORLD),
+                            "MPI_Barrier(before alltoallw)") != 0) {
+        local_valid = 0;
+    }
+    start = MPI_Wtime();
+    for (i = 0; local_valid && i < config->benchmark_iterations; ++i) {
+        if (require_mpi_success(MPI_Alltoallw(
+                send_buffer, counts, displacements, types,
+                receive_buffer, counts, displacements, types,
+                MPI_COMM_WORLD), "MPI_Alltoallw(measurement)") != 0) {
+            local_valid = 0;
+        }
+    }
+    end = MPI_Wtime();
+    local_time_us =
+        (end - start) * 1.0e6 / (double)config->benchmark_iterations;
+
+    for (i = 0; local_valid && i < process_count; ++i) {
+        size_t offset = (size_t)i * (size_t)buffer_size;
+        int j;
+
+        for (j = 0; j < buffer_size; ++j) {
+            if (receive_buffer[offset + (size_t)j] !=
+                (unsigned char)(i + 1)) {
+                local_valid = 0;
+                break;
+            }
+        }
+    }
+    if (validate_collective_result(
+            local_valid, rank, "MPI_Alltoallw") != 0 ||
+        reduce_max_time(local_time_us, maximum_time_us) != 0) {
+        local_valid = 0;
+    }
+
+    free(types);
+    free(displacements);
+    free(counts);
+    free(receive_buffer);
+    free(send_buffer);
+    return local_valid ? 0 : -1;
+}
+
 static int benchmark_barrier(const benchmark_config_t *config,
                              double *maximum_time_us) {
     double start;
@@ -556,6 +671,17 @@ int main(int argc, char **argv) {
         if (rank == 0) {
             print_result(config.format, backend_name, process_count, &config,
                          "gather", buffer_sizes[i], maximum_time_us);
+        }
+
+        maximum_time_us = 0.0;
+        if (benchmark_alltoallw(
+                buffer_sizes[i], &config, rank, process_count,
+                &maximum_time_us) != 0) {
+            return 1;
+        }
+        if (rank == 0) {
+            print_result(config.format, backend_name, process_count, &config,
+                         "alltoallw", buffer_sizes[i], maximum_time_us);
         }
     }
 

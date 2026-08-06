@@ -10,8 +10,8 @@ The maintained verification contract is
 
 ## Inventory
 
-- 275 MPI function-pointer fields in `unimpi_vtable_t`.
-- 246 direct standard-name aliases in `unimpi_std_macros.h`.
+- 276 MPI function-pointer fields in `unimpi_vtable_t`.
+- 247 direct standard-name aliases in `unimpi_std_macros.h`.
 - Separate control wrappers for initialization, finalization, state queries,
   backend identity, diagnostics, and UniMPI errors.
 - Four backend adapters: Open MPI, MPICH, Intel MPI, and MS-MPI.
@@ -33,9 +33,10 @@ The current test suite has focused cases for:
   collectives;
 - communicators, groups, intercommunicators, and selected topologies;
 - representative derived datatypes and pack/unpack;
-- MPI-2.2 resized/envelope/contents datatype operations;
-- environment/thread queries, Info CRUD, object names, memory allocation,
-  custom operations, and status helpers;
+- MPI-2.2 resized and envelope datatype operations;
+- environment/thread queries, selected Info operations other than
+  `MPI_Info_create` on integer-handle backends, object names, memory
+  allocation, custom operations, and status helpers;
 - fence-based RMA `Put`, `Get`, and `Accumulate` plus window lifecycle,
   attributes, and group plumbing;
 - positioned MPI I/O round trips in independent, collective, and nonblocking
@@ -46,25 +47,34 @@ These cases run across the platform/backend matrix described in
 
 ## Important uncovered or partial categories
 
+### Integer-handle ABI boundaries
+
+- complete typed adaptation of non-request opaque-handle outputs and arrays;
+- known raw-binding debt includes `MPI_Comm_dup`, `MPI_Type_get_contents`,
+  `MPI_Comm_spawn_multiple`, and `MPI_Info_create`; these paths need
+  native-width temporary storage before they can be treated as fully
+  ABI-hardened on MPICH, Intel MPI, and MS-MPI.
+
 ### Point-to-point and requests
 
 - broader persistent request lifecycle and error cases;
 - cancellation and cancelled-status semantics;
 - matched probe/receive semantics;
-- mixed completion errors and larger request-array stress;
-- per-element status results from multi-request completion arrays, pending a
-  native/facade status-array stride adapter;
+- broader mixed completion errors and larger request-array stress beyond the
+  covered per-element status, ignored-status, and error-class paths;
 - portable direct access to source/tag/error fields across native status
   layouts;
 - large counts, truncation, wildcard, and `MPI_PROC_NULL` corner cases.
 
 ### Collectives
 
-- remaining collective variants and full in-place/aliasing rules;
-- `Alltoallw` datatype arrays on integer-handle backends, pending a typed
-  array adapter;
+- remaining collective variants;
+- broader blocking `Alltoallw` in-place, zero-count, and asymmetric
+  intercommunicator cases beyond the typed array adapter;
+- integer-handle `Ialltoallw`, pending request-bound lifetime management for
+  converted datatype arrays; Open MPI uses its native pointer-handle path;
 - noncommutative reductions and user-defined operations;
-- in-place and zero-count corner cases;
+- full in-place, aliasing, and zero-count rules across other collectives;
 - broad non-power-of-two and large-process testing.
 
 ### Datatypes
@@ -112,113 +122,74 @@ When adding an API:
 5. add focused real-backend semantics with the necessary process counts;
 6. update `SUPPORT_MATRIX.md` only after those tests pass.
 
-### ⚠️ I/O (38/38 - 100%)
+### Appendix: coverage posture (not a completeness claim)
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_File_open/Close | ✅ | Basic I/O |
-| MPI_File_delete | ✅ | File deletion |
-| MPI_File_set_size/Get_size | ✅ | File sizing |
-| MPI_File_preallocate | ✅ | Preallocation |
-| MPI_File_get_group | ✅ | Group query |
-| MPI_File_get_amode | ✅ | Access mode query |
-| MPI_File_get_info/Set_info | ✅ | Info management |
-| MPI_File_seek/Get_position/Get_byte_offset | ✅ | Positioning |
-| MPI_File_read/Write | ✅ | Individual I/O |
-| MPI_File_read_all/Write_all | ✅ | Collective I/O |
-| MPI_File_read_at/Write_at | ✅ | Explicit offset |
-| MPI_File_read_at_all/Write_at_all | ✅ | Collective explicit offset |
-| MPI_File_read_shared/Write_shared | ✅ | Shared pointer |
-| MPI_File_read_ordered/Write_ordered | ✅ | Ordered collective |
-| MPI_File_iread/Iwrite | ✅ | Nonblocking |
-| MPI_File_iread_at/Iwrite_at | ✅ | Nonblocking explicit offset |
-| MPI_File_set_view/Get_view | ✅ | View management |
-| MPI_File_set_atomicity/Get_atomicity | ✅ | MPI 2.2 - Atomicity |
-| MPI_File_sync | ✅ | MPI 2.2 - Synchronization |
-| MPI_File_create_errhandler | ✅ | Error handler creation |
-| MPI_File_call_errhandler | ✅ | MPI 2.2 - Call error handler |
-| MPI_File_set_errhandler/Get_errhandler | ✅ | MPI 2.2 - Error handler management |
+The sections above and [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) are authoritative.
+The following notes retain only currently verified inventory facts and known
+partial areas; they intentionally avoid "100% complete" language.
 
-### ✅ Dynamic Processes (8/8 - 100%)
+#### MPI I/O
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Comm_spawn | ✅ | Spawn processes |
-| MPI_Comm_spawn_multiple | ✅ | Multiple spawn |
-| MPI_Comm_get_parent | ✅ | Parent access |
-| MPI_Comm_join | ✅ | Join |
-| MPI_Comm_connect/Accept | ✅ | Client-server |
-| MPI_Open_port | ✅ | Port management |
-| MPI_Close_port | ✅ | Port management |
-| MPI_Publish/Lookup_name | ✅ | Name service |
+- Backends resolve a broad MPI I/O surface (open/close, positioned
+  read/write, collective and nonblocking forms, atomicity, sync, metadata,
+  and error-handler plumbing).
+- Focused real-backend coverage exercises positioned independent, collective,
+  and nonblocking round trips plus selected metadata/error-handler paths.
+- Still partial or uncovered: shared/ordered file-pointer operations, split
+  collectives, views, seek/position breadth, preallocation, deletion/error
+  matrices, custom data representations, and broad filesystem behavior.
 
-**Note:** All functions implemented. See `tests/mpi/test_dynamic.c` for test coverage.
+#### Dynamic processes
 
-### ❌ Sessions (MPI-4) (0/6 - 0%)
+- Backends attempt to load spawn, connect/accept, port, name-service, and
+  parent-query symbols where the vendor exports them.
+- Focused tests exist (`tests/mpi/test_dynamic.c`), but runtime availability
+  and correctness remain backend- and environment-dependent (for example,
+  MS-MPI stubs several process-management entry points).
+- Dynamic process management remains listed under uncovered/partial categories
+  above and must not be described as fully covered.
 
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Session_init | ❌ | MPI-4 |
-| MPI_Session_finalize | ❌ | MPI-4 |
-| MPI_Session_get_info | ❌ | MPI-4 |
-| MPI_Session_get_pset | ❌ | MPI-4 |
-| MPI_Group_from_session | ❌ | MPI-4 |
-| MPI_Comm_create_from_group | ❌ | MPI-4 |
+#### MPI-4 surfaces
 
-### ❌ Partitioned Communication (MPI-4) (0/4 - 0%)
-
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_Psend_init | ❌ | MPI-4 |
-| MPI_Precv_init | ❌ | MPI-4 |
-| MPI_Pready | ❌ | MPI-4 |
-| MPI_Parrived | ❌ | MPI-4 |
-
-### ❌ Tools Interface (MPI-4) (0/5 - 0%)
-
-| Function | Status | Notes |
-|----------|--------|-------|
-| MPI_T_init_thread | ❌ | MPI-4 |
-| MPI_T_finalize | ❌ | MPI-4 |
-| MPI_T_category_get_info | ❌ | MPI-4 |
-| MPI_T_pvar_read/write | ❌ | MPI-4 |
-| MPI_T_cvar_get_info | ❌ | MPI-4 |
+- Sessions, partitioned communication, and the tools interface are not part of
+  the verified UniMPI support surface.
 
 ## Summary
 
-### Strengths
-- ✅ Complete environment management
-- ✅ Comprehensive P2P and collective communication
-- ✅ Full communicator and group operations
-- ✅ Complete process topology support (Cartesian and Graph)
-- ✅ Full MPI-2.2 RMA window attributes (create_keyval, set_attr, get_attr, delete_attr, get_group)
-- ✅ Good RMA support (basic + MPI-2.2 attributes + MPI-3 atomics)
-- ✅ Complete MPI-2.2 I/O support (38/38 functions, including atomicity, sync, errhandler)
-- ✅ Complete Dynamic Processes support (8/8 functions, including spawn, connect, name service)
-- ✅ Message probing (including MPI-3 matched probes)
+### Strengths (verified inventory, not completeness)
 
-### Gaps
-- ❌ MPI-4 new features (sessions, partitioned, tools)
-- ⚠️ Non-blocking collectives (MPI-3) partial
-- ⚠️ Shared memory windows (MPI-3)
-- ⚠️ I/O incomplete
+- Broad environment management, P2P, collectives, communicators/groups, and
+  selected topology coverage through focused tests.
+- Representative RMA fence paths and window lifecycle/attribute plumbing.
+- Positioned MPI I/O round trips with selected metadata and error-handler paths.
+- Backend adapters for Open MPI, MPICH, Intel MPI, and MS-MPI with runtime
+  loading and identity detection.
+
+### Gaps and partial areas
+
+- Non-request opaque-handle output and array ABI hardening remains partial on
+  integer-handle backends.
+- Dynamic process management, ports, and name publishing remain partial and
+  environment-dependent.
+- MPI I/O beyond the focused positioned/collective/nonblocking paths remains
+  partial.
+- Nonblocking collectives and integer-handle `Ialltoallw` remain partial on
+  some backends (see the support matrix).
+- Shared/dynamic windows, broader RMA epochs, and request-based RMA remain
+  partial or uncovered.
+- MPI-4 sessions, partitioned communication, and tools interface are absent.
 
 ### Recommendations
 
-1. **High Priority**
-   - Complete non-blocking collectives (Iallgather, Iallreduce, etc.)
-   - Add shared memory window support (MPI_Win_allocate_shared)
-
-2. **Medium Priority**
-   - Complete I/O operations
-   - Add RMA request-based operations (Rput, Rget)
-
-3. **Low Priority / Complex**
-   - Dynamic processes (requires significant runtime integration)
-   - MPI-4 sessions and partitioned communication
+1. Extend real-backend semantics only with focused tests that update
+   `SUPPORT_MATRIX.md` after they pass.
+2. Prefer matrix-driven claims over historical percentage tables.
+3. Keep process-failure and vendor extension classes out of the portable
+   support claims unless a backend publishes stable public constants.
 
 ## References
 
+- [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) - maintained verification contract
 - [MPI References](mpi-references.md) - Official documentation links
 - [MPI API Summary](mpi-api-summary.md) - Quick reference
 

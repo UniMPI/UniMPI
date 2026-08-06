@@ -216,6 +216,82 @@ set_tests_properties(test_backend_parity PROPERTIES
     TIMEOUT 30
 )
 
+add_executable(test_abi_adapters internal/test_abi_adapters.c)
+target_include_directories(test_abi_adapters PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/backends)
+target_link_libraries(test_abi_adapters unimpi)
+add_test(NAME test_abi_adapters COMMAND test_abi_adapters)
+set_tests_properties(test_abi_adapters PROPERTIES
+    LABELS "unit;internal;adapter"
+    TIMEOUT 30
+)
+
+# MPICH/Intel error-class tables must match public MPICH constants after the
+# real backend initializers run against fake identity fixtures.
+add_executable(test_mpich_error_classes internal/test_mpich_error_classes.c)
+target_link_libraries(test_mpich_error_classes unimpi)
+add_dependencies(test_mpich_error_classes
+    fake_mpich_identity fake_intelmpi_identity)
+add_test(NAME test_mpich_error_classes
+    COMMAND test_mpich_error_classes
+            $<TARGET_FILE:fake_mpich_identity>
+            $<TARGET_FILE:fake_intelmpi_identity>)
+set_tests_properties(test_mpich_error_classes PROPERTIES
+    LABELS "unit;fake;internal;error"
+    TIMEOUT 30
+)
+
+# Production binder path for integer-handle request/message width adapters.
+# Include public headers so native exports use the same status/handle types
+# and UNIMPI_MPI_CALL convention as the production binder typedefs.
+add_library(fake_integer_request_api SHARED
+    fixtures/fake_integer_request_api.c)
+target_include_directories(fake_integer_request_api PRIVATE
+    ${PROJECT_SOURCE_DIR}/include)
+set_target_properties(fake_integer_request_api PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_executable(test_request_handle_width
+    internal/test_request_handle_width.c)
+target_link_libraries(test_request_handle_width unimpi)
+add_dependencies(test_request_handle_width
+    fake_integer_request_api fake_mpich_identity)
+add_test(NAME test_request_handle_width
+    COMMAND test_request_handle_width
+            $<TARGET_FILE:fake_integer_request_api>
+            $<TARGET_FILE:fake_mpich_identity>)
+set_tests_properties(test_request_handle_width PROPERTIES
+    LABELS "unit;fake;internal;adapter"
+    TIMEOUT 30
+)
+
+# Open MPI completion-array binders: real ompi request/status tags + missing
+# optional symbols remain NULL against the identity fixture.
+add_library(fake_openmpi_request_api SHARED
+    fixtures/fake_openmpi_request_api.c)
+target_include_directories(fake_openmpi_request_api PRIVATE
+    ${PROJECT_SOURCE_DIR}/include)
+set_target_properties(fake_openmpi_request_api PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_executable(test_openmpi_request_arrays
+    internal/test_openmpi_request_arrays.c)
+target_link_libraries(test_openmpi_request_arrays unimpi)
+add_dependencies(test_openmpi_request_arrays
+    fake_openmpi_request_api fake_openmpi_identity)
+add_test(NAME test_openmpi_request_arrays
+    COMMAND test_openmpi_request_arrays
+            $<TARGET_FILE:fake_openmpi_request_api>
+            $<TARGET_FILE:fake_openmpi_identity>)
+set_tests_properties(test_openmpi_request_arrays PROPERTIES
+    LABELS "unit;fake;internal;adapter"
+    TIMEOUT 30
+)
+
 # ============================================
 # MPI layer tests (standard MPI API)
 # ============================================

@@ -55,6 +55,47 @@ foreach(backend IN LISTS backends)
         )
         list(APPEND assigned_fields "${field}")
     endforeach()
+
+    # Integer-handle backends bind request/message adapters through
+    # unimpi_bind_integer_request_apis(), which expands field names via macros
+    # rather than writing unimpi.<field> = in the backend file.
+    if(backend_source MATCHES "unimpi_bind_integer_request_apis")
+        set(request_bind_source_file
+            "${UNIMPI_SOURCE_DIR}/src/backends/request_handle_wrappers.c")
+        if(EXISTS "${request_bind_source_file}")
+            file(READ "${request_bind_source_file}" request_bind_source)
+            # Match only call sites: BIND_OPTIONAL(name, or BIND_ARRAY(name,
+            # after stripping macro definitions so a parameter named "field"
+            # or "slot" is never treated as an assigned vtable field.
+            string(REGEX REPLACE
+                "#[ \t]*define[ \t]+BIND_(OPTIONAL|ARRAY)\\([^\n]*\n"
+                ""
+                request_bind_calls
+                "${request_bind_source}"
+            )
+            string(REGEX MATCHALL
+                "BIND_(OPTIONAL|ARRAY)\\([A-Za-z0-9_]+,"
+                bind_calls
+                "${request_bind_calls}"
+            )
+            foreach(bind_call IN LISTS bind_calls)
+                string(REGEX REPLACE
+                    "BIND_(OPTIONAL|ARRAY)\\(([A-Za-z0-9_]+),.*"
+                    "\\2"
+                    field
+                    "${bind_call}"
+                )
+                # Defensive filter for any residual macro-parameter tokens.
+                if(NOT field STREQUAL "field" AND NOT field STREQUAL "slot")
+                    list(APPEND assigned_fields "${field}")
+                endif()
+            endforeach()
+            # Ialltoallw is intentionally forced to NULL inside the binder.
+            if(request_bind_source MATCHES "unimpi\\.ialltoallw[ \t]*=")
+                list(APPEND assigned_fields "ialltoallw")
+            endif()
+        endif()
+    endif()
     list(REMOVE_DUPLICATES assigned_fields)
 
     set(missing_fields)

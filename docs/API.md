@@ -1,8 +1,8 @@
 # API Reference
 
 Reference for UniMPI's public control API and commonly used runtime-dispatch
-fields. The vtable currently contains 275 MPI function-pointer fields and the
-standard-name header contains 246 direct aliases. This document is not a claim
+fields. The vtable currently contains 276 MPI function-pointer fields and the
+standard-name header contains 247 direct aliases. This document is not a claim
 of complete MPI-standard coverage; consult
 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) before depending on a category.
 
@@ -302,6 +302,13 @@ int (*wait)(MPI_Request *request, UNIMPI_Status *status);
 ```
 
 Wait for non-blocking operation to complete.
+
+Pass `UNIMPI_STATUS_IGNORE` to ignore a singular status output and
+`UNIMPI_STATUSES_IGNORE` to ignore a status array. With standard names these
+are `MPI_STATUS_IGNORE` and `MPI_STATUSES_IGNORE`. Their opaque pointer value
+is selected during backend initialization, so evaluate and pass the named
+sentinel only after successful initialization; do not dereference, cache, or
+compare its numeric value.
 
 ---
 

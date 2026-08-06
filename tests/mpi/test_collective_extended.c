@@ -34,6 +34,84 @@ void test_alltoall(void) {
     if (rank == 0) printf("  Alltoall test passed\n");
 }
 
+void test_alltoallw(void) {
+    int rank, size;
+    int *send_buf = NULL;
+    int *recv_buf = NULL;
+    int *counts = NULL;
+    int *displacements = NULL;
+    MPI_Datatype *types = NULL;
+    int local_ready;
+    int all_ready;
+    int local_ok;
+    int all_ok;
+    int i;
+
+    TEST_CHECK_SUCCESS(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+    TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
+    send_buf = (int*)malloc((size_t)size * sizeof(*send_buf));
+    recv_buf = (int*)malloc((size_t)size * sizeof(*recv_buf));
+    counts = (int*)malloc((size_t)size * sizeof(*counts));
+    displacements = (int*)malloc((size_t)size * sizeof(*displacements));
+    types = (MPI_Datatype*)malloc((size_t)size * sizeof(*types));
+
+    /* Coordinate allocation failure so one rank cannot exit while peers
+     * continue into later collectives. */
+    local_ready = (send_buf && recv_buf && counts && displacements && types)
+        ? 1 : 0;
+    TEST_CHECK_SUCCESS(MPI_Allreduce(
+        &local_ready, &all_ready, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD));
+    if (!all_ready) {
+        free(types);
+        free(displacements);
+        free(counts);
+        free(recv_buf);
+        free(send_buf);
+        if (rank == 0) {
+            fprintf(stderr, "Alltoallw allocation failed on at least one rank\n");
+        }
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return;
+    }
+
+    for (i = 0; i < size; i++) {
+        send_buf[i] = rank * 100 + i;
+        counts[i] = 1;
+        displacements[i] = i * (int)sizeof(int);
+        types[i] = MPI_INT;
+    }
+    TEST_CHECK_SUCCESS(MPI_Alltoallw(
+        send_buf, counts, displacements, types,
+        recv_buf, counts, displacements, types, MPI_COMM_WORLD));
+
+    local_ok = 1;
+    for (i = 0; i < size; i++) {
+        if (recv_buf[i] != i * 100 + rank) {
+            local_ok = 0;
+            break;
+        }
+    }
+    TEST_CHECK_SUCCESS(MPI_Allreduce(
+        &local_ok, &all_ok, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD));
+
+    free(types);
+    free(displacements);
+    free(counts);
+    free(recv_buf);
+    free(send_buf);
+
+    if (!all_ok) {
+        if (rank == 0) {
+            fprintf(stderr, "Alltoallw result validation failed\n");
+        }
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return;
+    }
+    if (rank == 0) {
+        printf("  Alltoallw test passed\n");
+    }
+}
+
 void test_scan(void) {
     int rank, size;
     int send_val, recv_val;
@@ -147,6 +225,7 @@ int main(int argc, char **argv) {
     printf("Using backend: %s\n", backend_name);
 
     test_alltoall();
+    test_alltoallw();
     test_scan();
     test_reduce_scatter();
     test_gatherv();

@@ -1,7 +1,7 @@
 # Standard-Name API Quick Reference
 
 This is a UniMPI usage reference, not a complete MPI standard reference. The
-current standard-name header provides 246 direct `MPI_*` aliases plus separate
+current standard-name header provides 247 direct `MPI_*` aliases plus separate
 control wrappers, function-like macros, and constants. Availability at compile
 time does not prove that every backend exports or semantically verifies an
 operation.
@@ -76,6 +76,18 @@ Focused tests cover representative blocking/nonblocking paths, request-array
 completion, zero-count request arrays, and a `Send_init`/`Recv_init` +
 `Startall` path. They do not cover matched probes, cancellation semantics,
 every send mode, wildcard behavior, or the full persistent-request lifecycle.
+
+Ignore a singular or array status output with the standard sentinels:
+
+```c
+MPI_Wait(&request, MPI_STATUS_IGNORE);
+MPI_Waitall(count, requests, MPI_STATUSES_IGNORE);
+```
+
+The sentinel value is selected during backend initialization: Open MPI uses
+`NULL`, while MPICH, Intel MPI, and MS-MPI use pointer value 1. Treat both
+sentinels as opaque, do not dereference them, and evaluate them only after a
+successful `MPI_Init`/`MPI_Init_thread`.
 
 ## Collectives
 

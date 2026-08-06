@@ -84,6 +84,7 @@ static void test_init_finalize_cleanup(const char *library_path) {
     assert(unimpi.get_library_version == NULL);
     assert(UNIMPI_COMM_WORLD == 0);
     assert(UNIMPI_COMM_SELF == 0);
+    assert(UNIMPI_STATUS_IGNORE == NULL);
     assert(unimpi_init(NULL, NULL) == UNIMPI_ERR_FINALIZED);
 }
 

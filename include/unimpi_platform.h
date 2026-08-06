@@ -11,8 +11,10 @@
 /* Dynamic library handle */
 #ifdef UNIMPI_WINDOWS
     #include <windows.h>
+    #define UNIMPI_MPI_CALL __stdcall
     typedef HMODULE unimpi_lib_handle_t;
 #else
+    #define UNIMPI_MPI_CALL
     typedef void* unimpi_lib_handle_t;
 #endif
 
