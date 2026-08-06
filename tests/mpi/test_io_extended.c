@@ -268,6 +268,14 @@ int test_file_sync(void) {
     offset = (MPI_Offset)rank * (MPI_Offset)sizeof(value);
     ret = MPI_File_write_at_all(fh, offset, &value, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS) FAIL("MPI_File_write_at_all failed");
+
+    /* Establish cross-rank visibility before the following read and size
+     * query.  MPI_File_get_size is itself a data-access operation, and a
+     * collective write alone does not make nonatomic file access sequentially
+     * consistent across every process's file handle. */
+    ret = MPI_File_sync(fh);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_sync (collective write) failed");
+
     readback = -1;
     ret = MPI_File_read_at_all(
         fh, offset, &readback, 1, MPI_INT, &status);

@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "unimpi_platform.h"
+#include "unimpi_vtable.h"
 
 /* MSVC does not export data symbols via WINDOWS_EXPORT_ALL_SYMBOLS alone;
  * match fake_mpi_identity.c so GetProcAddress can resolve Open MPI globals.
@@ -77,8 +78,10 @@ int UNIMPI_MPI_CALL MPI_Error_class(int errorcode, int *error_class) {
     return 0;
 }
 
-int UNIMPI_MPI_CALL MPI_Wait(struct ompi_request_t **request,
-                             struct ompi_status_public_t *status) {
+/* MPI_Wait is bound directly into the public vtable, so its fixture prototype
+ * must exactly match that slot.  Array routines below are reached through the
+ * Open MPI ABI adapters and intentionally retain their native tag types. */
+int UNIMPI_MPI_CALL MPI_Wait(MPI_Request *request, MPI_Status *status) {
     if (!request) {
         return 7;
     }
@@ -86,7 +89,7 @@ int UNIMPI_MPI_CALL MPI_Wait(struct ompi_request_t **request,
     if (status != NULL) {
         return 13;
     }
-    *request = NULL;
+    *request = 0;
     return 0;
 }
 
