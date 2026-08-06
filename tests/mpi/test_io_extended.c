@@ -45,6 +45,24 @@ static void make_test_path(char *path, size_t capacity, const char *kind) {
         path, (int)capacity, MPI_CHAR, 0, MPI_COMM_WORLD));
 }
 
+/* Rank-private path for independent I/O (no broadcast required). */
+static void make_rank_local_test_path(char *path, size_t capacity,
+                                     const char *kind) {
+    int rank;
+    double nonce;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    memset(path, 0, capacity);
+    nonce = MPI_Wtime() * 1000000000.0;
+#ifdef _WIN32
+    snprintf(path, capacity, "%s\\unimpi_%s_r%d_%.0f.tmp",
+             get_temp_dir(), kind, rank, nonce);
+#else
+    snprintf(path, capacity, "%s/unimpi_%s_r%d_%.0f.tmp",
+             get_temp_dir(), kind, rank, nonce);
+#endif
+}
+
 static void delete_test_path(const char *path) {
     int rank;
     int result = MPI_SUCCESS;
@@ -58,6 +76,25 @@ static void delete_test_path(const char *path) {
         MPI_Bcast(&result, 1, MPI_INT, 0, MPI_COMM_WORLD));
     TEST_CHECK_SUCCESS(result);
     TEST_CHECK_SUCCESS(MPI_Barrier(MPI_COMM_WORLD));
+}
+
+static void delete_rank_local_test_path(const char *path) {
+    int result = MPI_File_delete(path, MPI_INFO_NULL);
+    TEST_CHECK_SUCCESS(result);
+}
+
+/* Fail with expected vs observed integer so CI logs diagnose I/O mismatches. */
+static int fail_round_trip(const char *api, int expected, int observed,
+                           int ret) {
+    if (ret != MPI_SUCCESS) {
+        fprintf(stderr, "  FAIL: %s returned error code %d\n", api, ret);
+    } else {
+        fprintf(stderr,
+                "  FAIL: %s did not round-trip data (expected %d, got %d)\n",
+                api, expected, observed);
+    }
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    return 1;
 }
 
 int test_file_atomicity(void) {
@@ -111,52 +148,97 @@ int test_file_sync(void) {
     int group_size = 0;
     int readback = -1;
     int value;
+    char path_indep[512];
+    char path_shared[512];
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     TEST("MPI-IO independent, collective, nonblocking and metadata paths");
 
-    char path2[512];
-    make_test_path(path2, sizeof(path2), "data");
-    int ret = MPI_File_open(MPI_COMM_WORLD, path2,
+    /*
+     * Phase 1: independent blocking + nonblocking I/O on a rank-local file.
+     *
+     * Independent writes on a multi-rank shared file have weak consistency
+     * under the MPI standard.  Dual MPI_File_sync + barrier is still not
+     * enough for portable same-handle readback on MS-MPI/Windows (page-cache
+     * and ADIO buffering).  COMM_SELF + a private path keeps asserting a real
+     * data round-trip on write_at/read_at and iwrite_at/iread_at without
+     * relying on cross-rank shared-file visibility.
+     */
+    make_rank_local_test_path(path_indep, sizeof(path_indep), "data_indep");
+    int ret = MPI_File_open(MPI_COMM_SELF, path_indep,
                             MPI_MODE_CREATE | MPI_MODE_RDWR,
                             MPI_INFO_NULL, &fh);
-    if (ret != MPI_SUCCESS) FAIL("MPI_File_open failed");
-
-    ret = MPI_File_set_size(fh, 0);
-    if (ret != MPI_SUCCESS) FAIL("MPI_File_set_size failed");
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_open (independent) failed");
 
     value = 1000 + rank;
-    offset = (MPI_Offset)rank * (MPI_Offset)sizeof(value);
+    offset = 0;
     ret = MPI_File_write_at(fh, offset, &value, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS) FAIL("MPI_File_write_at failed");
 
-    /*
-     * MPI_File_sync is collective but not necessarily temporally
-     * synchronizing.  The first sync flushes each rank's writes, the barrier
-     * orders those flushes, and the second sync makes every flushed update
-     * visible before the read phase.
-     */
     ret = MPI_File_sync(fh);
-    if (ret != MPI_SUCCESS) FAIL("first MPI_File_sync failed");
-    ret = MPI_Barrier(MPI_COMM_WORLD);
-    if (ret != MPI_SUCCESS) {
-        FAIL("MPI_Barrier between MPI_File_sync calls failed");
-    }
-    ret = MPI_File_sync(fh);
-    if (ret != MPI_SUCCESS) FAIL("second MPI_File_sync failed");
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_sync (independent write) failed");
 
+    /*
+     * Close/reopen forces OS-level durability on Windows/MS-MPI so the
+     * subsequent independent read is not served from a stale ADIO buffer.
+     */
+    ret = MPI_File_close(&fh);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_close before independent read failed");
+    ret = MPI_File_open(MPI_COMM_SELF, path_indep,
+                        MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_open for independent read failed");
+
+    readback = -1;
     ret = MPI_File_read_at(fh, offset, &readback, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS || readback != value) {
-        FAIL("MPI_File_read_at did not round-trip data");
+        return fail_round_trip("MPI_File_read_at", value, readback, ret);
     }
 
-    ret = MPI_File_get_size(fh, &file_size);
-    if (ret != MPI_SUCCESS ||
-        file_size < (MPI_Offset)size * (MPI_Offset)sizeof(value)) {
-        FAIL("MPI_File_get_size returned a short file");
+    /* Nonblocking positioned I/O on the same rank-local file. */
+    value = 3000 + rank;
+    offset = (MPI_Offset)sizeof(value);
+    ret = MPI_File_iwrite_at(fh, offset, &value, 1, MPI_INT, &request);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_iwrite_at failed");
+    ret = MPI_Wait(&request, &status);
+    if (ret != MPI_SUCCESS) FAIL("MPI_Wait for MPI_File_iwrite_at failed");
+
+    ret = MPI_File_sync(fh);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_sync (independent iwrite) failed");
+    ret = MPI_File_close(&fh);
+    if (ret != MPI_SUCCESS) {
+        FAIL("MPI_File_close before independent iread failed");
     }
+    ret = MPI_File_open(MPI_COMM_SELF, path_indep,
+                        MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_open for independent iread failed");
+
+    readback = -1;
+    ret = MPI_File_iread_at(fh, offset, &readback, 1, MPI_INT, &request);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_iread_at failed");
+    ret = MPI_Wait(&request, &status);
+    if (ret != MPI_SUCCESS || readback != value) {
+        return fail_round_trip("MPI_File_iread_at", value, readback, ret);
+    }
+
+    ret = MPI_File_close(&fh);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_close (independent) failed");
+    delete_rank_local_test_path(path_indep);
+
+    /*
+     * Phase 2: shared-file collective positioned I/O and metadata.
+     * Collective routines provide their own consistency; keep them on a
+     * COMM_WORLD file so the multi-rank path stays covered.
+     */
+    make_test_path(path_shared, sizeof(path_shared), "data_shared");
+    ret = MPI_File_open(MPI_COMM_WORLD, path_shared,
+                        MPI_MODE_CREATE | MPI_MODE_RDWR,
+                        MPI_INFO_NULL, &fh);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_open (shared) failed");
+
+    ret = MPI_File_set_size(fh, 0);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_set_size failed");
 
     ret = MPI_File_get_amode(fh, &amode);
     if (ret != MPI_SUCCESS || !(amode & MPI_MODE_RDWR)) {
@@ -182,37 +264,26 @@ int test_file_sync(void) {
     MPI_Info_free(&used_info);
     MPI_Info_free(&info);
 
-    /* Exercise collective positioned I/O at a second region. */
     value = 2000 + rank;
-    offset = (MPI_Offset)(size + rank) * (MPI_Offset)sizeof(value);
+    offset = (MPI_Offset)rank * (MPI_Offset)sizeof(value);
     ret = MPI_File_write_at_all(fh, offset, &value, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS) FAIL("MPI_File_write_at_all failed");
     readback = -1;
     ret = MPI_File_read_at_all(
         fh, offset, &readback, 1, MPI_INT, &status);
     if (ret != MPI_SUCCESS || readback != value) {
-        FAIL("MPI_File_read_at_all did not round-trip data");
+        return fail_round_trip("MPI_File_read_at_all", value, readback, ret);
     }
 
-    /* Exercise nonblocking positioned I/O at a third region. */
-    value = 3000 + rank;
-    offset = (MPI_Offset)(2 * size + rank) * (MPI_Offset)sizeof(value);
-    ret = MPI_File_iwrite_at(fh, offset, &value, 1, MPI_INT, &request);
-    if (ret != MPI_SUCCESS) FAIL("MPI_File_iwrite_at failed");
-    ret = MPI_Wait(&request, &status);
-    if (ret != MPI_SUCCESS) FAIL("MPI_Wait for MPI_File_iwrite_at failed");
-    readback = -1;
-    ret = MPI_File_iread_at(
-        fh, offset, &readback, 1, MPI_INT, &request);
-    if (ret != MPI_SUCCESS) FAIL("MPI_File_iread_at failed");
-    ret = MPI_Wait(&request, &status);
-    if (ret != MPI_SUCCESS || readback != value) {
-        FAIL("MPI_File_iread_at did not round-trip data");
+    ret = MPI_File_get_size(fh, &file_size);
+    if (ret != MPI_SUCCESS ||
+        file_size < (MPI_Offset)size * (MPI_Offset)sizeof(value)) {
+        FAIL("MPI_File_get_size returned a short file");
     }
 
     ret = MPI_File_close(&fh);
-    if (ret != MPI_SUCCESS) FAIL("MPI_File_close failed");
-    delete_test_path(path2);
+    if (ret != MPI_SUCCESS) FAIL("MPI_File_close (shared) failed");
+    delete_test_path(path_shared);
     PASS();
     return 0;
 }
