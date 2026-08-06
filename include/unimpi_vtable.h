@@ -78,10 +78,12 @@ union unimpi_status_facade {
 typedef union unimpi_status_facade MPI_Status;
 
 /*
- * Stable facade sentinel for completion-array APIs.  Array wrappers translate
- * it to each backend's native MPI_STATUSES_IGNORE representation.
+ * Stable facade sentinels for status-bearing APIs. Wrappers translate them to
+ * each backend's native MPI_STATUS_IGNORE / MPI_STATUSES_IGNORE. Singular and
+ * plural share the same pointer value (standard vendor convention).
  */
-#define UNIMPI_STATUSES_IGNORE ((MPI_Status *)(intptr_t)1)
+#define UNIMPI_STATUS_IGNORE ((MPI_Status *)(intptr_t)1)
+#define UNIMPI_STATUSES_IGNORE UNIMPI_STATUS_IGNORE
 
 /* MPI predefined operations - will be resolved at runtime from backend */
 extern MPI_Op UNIMPI_MAX;

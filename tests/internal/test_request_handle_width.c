@@ -4,6 +4,7 @@
  * Paths exercised after each real MPICH / Intel / MS-MPI initializer against
  * a dedicated fake integer-handle DSO:
  *   Irecv -> Testall(false) -> Wait
+ *   Irecv -> Wait(STATUS_IGNORE)
  *   Send_init -> Startall -> Request_free
  *   Testall ERR_IN_STATUS status copyback
  *   Ibarrier / Rput / File_iread producers (valid buffers)
@@ -126,6 +127,22 @@ static void test_irecv_testall_wait(void) {
     assert(status.legacy.MPI_SOURCE == 3);
     assert(status.legacy.MPI_TAG == 7);
     printf("    Irecv/Testall/Wait path passed\n");
+}
+
+/* Single-status ignore sentinel: Wait must not write through the sentinel. */
+static void test_wait_status_ignore(void) {
+    MPI_Request request = 0;
+    char buffer[4] = {0};
+
+    assert(UNIMPI_STATUS_IGNORE == UNIMPI_STATUSES_IGNORE);
+    assert(unimpi.irecv(
+               buffer, 1, (MPI_Datatype)1, 0, 0, (MPI_Comm)1,
+               &request) == 0);
+    assert(request == facade_request(FAKE_NATIVE_REQUEST));
+    assert(unimpi.wait(&request, UNIMPI_STATUS_IGNORE) == 0);
+    assert(request == UNIMPI_REQUEST_NULL);
+    assert(request == facade_request(FAKE_NATIVE_NULL));
+    printf("    Wait(STATUS_IGNORE) path passed\n");
 }
 
 static void test_send_init_startall_free(void) {
@@ -314,6 +331,7 @@ static void test_backend_on_integer_api(
 
     printf("  %s production binder path checks...\n", backend_name);
     test_irecv_testall_wait();
+    test_wait_status_ignore();
     test_send_init_startall_free();
     test_err_in_status_copyback();
     test_representative_producers();

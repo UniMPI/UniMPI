@@ -403,11 +403,25 @@ static void test_statuses_ignore_translation(void) {
     MPI_Request legacy_requests[2] = {7, 8};
     MPI_Request openmpi_requests[2] = {9, 10};
     MPI_Status *statuses_ignore = UNIMPI_STATUSES_IGNORE;
+    MPI_Status *status_ignore = UNIMPI_STATUS_IGNORE;
     int indices[2] = {-1, -1};
     int outcount = 0;
     int flag = 0;
 
+    /* Singular and plural share the facade sentinel; std macros must resolve. */
+    assert(MPI_STATUS_IGNORE == UNIMPI_STATUS_IGNORE);
     assert(MPI_STATUSES_IGNORE == UNIMPI_STATUSES_IGNORE);
+    assert(MPI_STATUS_IGNORE == MPI_STATUSES_IGNORE);
+    assert(status_ignore == statuses_ignore);
+    assert(UNIMPI_STATUS_IGNORE == UNIMPI_STATUSES_IGNORE);
+
+    /* Compile regression: Wait-style singular form type-checks. */
+    {
+        MPI_Request request = 0;
+        MPI_Status *status = MPI_STATUS_IGNORE;
+        (void)request;
+        (void)status;
+    }
 
     unimpi_wrapper_set_waitall(fake_legacy_waitall_ignore);
     assert(unimpi_wrap_waitall(

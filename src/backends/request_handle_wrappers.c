@@ -108,7 +108,7 @@ static int call_succeeded(int result) {
 }
 
 static int status_is_ignored(const MPI_Status *status) {
-    return status == NULL || status == UNIMPI_STATUSES_IGNORE;
+    return status == NULL || status == UNIMPI_STATUS_IGNORE;
 }
 
 /* Five-int native status stride; never sizeof incomplete struct MPI_Status. */
@@ -117,7 +117,7 @@ enum {
 };
 
 static struct MPI_Status *native_status_ignore(void) {
-    return (struct MPI_Status *)UNIMPI_STATUSES_IGNORE;
+    return (struct MPI_Status *)UNIMPI_STATUS_IGNORE;
 }
 
 static struct MPI_Status *as_native_status(void *cell) {

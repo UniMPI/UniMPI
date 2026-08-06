@@ -48,7 +48,8 @@
 /* Predefined request constant */
 #define MPI_REQUEST_NULL UNIMPI_REQUEST_NULL
 
-/* Completion-array status sentinel */
+/* Status ignore sentinels (singular and plural; same facade pointer value) */
+#define MPI_STATUS_IGNORE UNIMPI_STATUS_IGNORE
 #define MPI_STATUSES_IGNORE UNIMPI_STATUSES_IGNORE
 
 /* Topology types */

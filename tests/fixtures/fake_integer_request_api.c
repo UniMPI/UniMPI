@@ -29,8 +29,9 @@ enum {
     FAKE_ERR_OTHER = 15
 };
 
-/* Same sentinel value as UNIMPI_STATUSES_IGNORE ((MPI_Status *)1). */
-#define FAKE_STATUSES_IGNORE ((MPI_Status *)(intptr_t)1)
+/* Same sentinel value as UNIMPI_STATUS_IGNORE / UNIMPI_STATUSES_IGNORE. */
+#define FAKE_STATUS_IGNORE ((MPI_Status *)(intptr_t)1)
+#define FAKE_STATUSES_IGNORE FAKE_STATUS_IGNORE
 
 static int g_started;
 static int g_message_live;
@@ -40,7 +41,7 @@ static int g_fail_next_improbe;
 static int g_fail_next_mrecv;
 
 static int status_is_ignored(const MPI_Status *status) {
-    return status == NULL || status == FAKE_STATUSES_IGNORE;
+    return status == NULL || status == FAKE_STATUS_IGNORE;
 }
 
 int UNIMPI_MPI_CALL unimpi_fake_set_fail_next_wait(int enable) {
