@@ -50,6 +50,84 @@ static void test_zero_count(void) {
     world_barrier();
 }
 
+static void test_single_status_ignore(int rank, int size) {
+    MPI_Request request = MPI_REQUEST_NULL;
+    int value = -1;
+    int local_ok = 1;
+    int all_ok = 0;
+
+    if (size >= 2 && rank == 0) {
+        TEST_CHECK_SUCCESS(MPI_Irecv(
+            &value, 1, MPI_INT, 1, TAG_BASE + 60, MPI_COMM_WORLD,
+            &request));
+        TEST_CHECK_SUCCESS(MPI_Wait(&request, MPI_STATUS_IGNORE));
+        local_ok = value == 70 && request == MPI_REQUEST_NULL;
+    } else if (size >= 2 && rank == 1) {
+        value = 70;
+        TEST_CHECK_SUCCESS(MPI_Isend(
+            &value, 1, MPI_INT, 0, TAG_BASE + 60, MPI_COMM_WORLD,
+            &request));
+        TEST_CHECK_SUCCESS(MPI_Wait(&request, MPI_STATUS_IGNORE));
+        local_ok = request == MPI_REQUEST_NULL;
+    }
+
+    TEST_CHECK_SUCCESS(MPI_Allreduce(
+        &local_ok, &all_ok, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD));
+    if (!all_ok) {
+        if (rank == 0) {
+            fprintf(stderr, "MPI_STATUS_IGNORE request path failed\n");
+        }
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    world_barrier();
+}
+
+static void test_array_statuses_ignore(int rank, int size) {
+    MPI_Request requests[REQUEST_COUNT] = {
+        MPI_REQUEST_NULL, MPI_REQUEST_NULL
+    };
+    int values[REQUEST_COUNT] = {-1, -1};
+    int local_ok = 1;
+    int all_ok = 0;
+
+    if (size >= 2 && rank == 0) {
+        TEST_CHECK_SUCCESS(MPI_Irecv(
+            &values[0], 1, MPI_INT, 1, TAG_BASE + 61, MPI_COMM_WORLD,
+            &requests[0]));
+        TEST_CHECK_SUCCESS(MPI_Irecv(
+            &values[1], 1, MPI_INT, 1, TAG_BASE + 62, MPI_COMM_WORLD,
+            &requests[1]));
+        TEST_CHECK_SUCCESS(MPI_Waitall(
+            REQUEST_COUNT, requests, MPI_STATUSES_IGNORE));
+        local_ok = values[0] == 71 && values[1] == 72 &&
+                   requests[0] == MPI_REQUEST_NULL &&
+                   requests[1] == MPI_REQUEST_NULL;
+    } else if (size >= 2 && rank == 1) {
+        values[0] = 71;
+        values[1] = 72;
+        TEST_CHECK_SUCCESS(MPI_Isend(
+            &values[0], 1, MPI_INT, 0, TAG_BASE + 61, MPI_COMM_WORLD,
+            &requests[0]));
+        TEST_CHECK_SUCCESS(MPI_Isend(
+            &values[1], 1, MPI_INT, 0, TAG_BASE + 62, MPI_COMM_WORLD,
+            &requests[1]));
+        TEST_CHECK_SUCCESS(MPI_Waitall(
+            REQUEST_COUNT, requests, MPI_STATUSES_IGNORE));
+        local_ok = requests[0] == MPI_REQUEST_NULL &&
+                   requests[1] == MPI_REQUEST_NULL;
+    }
+
+    TEST_CHECK_SUCCESS(MPI_Allreduce(
+        &local_ok, &all_ok, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD));
+    if (!all_ok) {
+        if (rank == 0) {
+            fprintf(stderr, "MPI_STATUSES_IGNORE request path failed\n");
+        }
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    world_barrier();
+}
+
 static void test_testall(int rank, int size) {
     MPI_Request requests[REQUEST_COUNT] = {
         MPI_REQUEST_NULL, MPI_REQUEST_NULL
@@ -317,6 +395,8 @@ int main(int argc, char **argv) {
     TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
     test_zero_count();
+    test_single_status_ignore(rank, size);
+    test_array_statuses_ignore(rank, size);
     test_testall(rank, size);
     test_testany(rank, size);
     test_testsome(rank, size);

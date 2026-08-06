@@ -673,6 +673,9 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
     /* MPICH uses 0x2c000000 as MPI_REQUEST_NULL */
     UNIMPI_REQUEST_NULL = (MPI_Request)0x2c000000;
 
+    /* MPICH defines both status-ignore sentinels as pointer value 1. */
+    UNIMPI_STATUS_IGNORE = (MPI_Status *)(intptr_t)1;
+
     /* MPICH uses 0x1c000000 as MPI_INFO_NULL */
     UNIMPI_INFO_NULL = (MPI_Info)0x1c000000;
 

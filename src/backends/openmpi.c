@@ -137,6 +137,9 @@ static int get_openmpi_comm_values(unimpi_lib_handle_t handle) {
     /* Get MPI_REQUEST_NULL - it's the address of ompi_request_null global */
     UNIMPI_REQUEST_NULL = get_ompi_symbol_addr(handle, "ompi_request_null");
 
+    /* Open MPI defines both status-ignore sentinels as NULL. */
+    UNIMPI_STATUS_IGNORE = NULL;
+
     /* Get MPI_INFO_NULL */
     UNIMPI_INFO_NULL = get_ompi_symbol_addr(handle, "ompi_mpi_info_null");
 

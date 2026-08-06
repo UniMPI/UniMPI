@@ -42,6 +42,7 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle);
 int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle);
 
 typedef int (UNIMPI_MPI_CALL *fake_set_fail_fn)(int);
+typedef int (UNIMPI_MPI_CALL *fake_query_fn)(void);
 
 static unimpi_lib_handle_t g_active_handle;
 
@@ -60,6 +61,15 @@ static void set_fail(const char *symbol, int enable) {
     fn = (fake_set_fail_fn)unimpi_platform_dlsym(g_active_handle, symbol);
     assert(fn != NULL);
     assert(fn(enable) == 0);
+}
+
+static int query_fake(const char *symbol) {
+    fake_query_fn fn;
+
+    assert(g_active_handle != NULL);
+    fn = (fake_query_fn)unimpi_platform_dlsym(g_active_handle, symbol);
+    assert(fn != NULL);
+    return fn();
 }
 
 static void assert_present_request_slots(const char *backend_name) {
@@ -140,6 +150,7 @@ static void test_wait_status_ignore(void) {
                &request) == 0);
     assert(request == facade_request(FAKE_NATIVE_REQUEST));
     assert(unimpi.wait(&request, UNIMPI_STATUS_IGNORE) == 0);
+    assert(query_fake("unimpi_fake_last_wait_used_status_ignore") == 1);
     assert(request == UNIMPI_REQUEST_NULL);
     assert(request == facade_request(FAKE_NATIVE_NULL));
     printf("    Wait(STATUS_IGNORE) path passed\n");
@@ -328,6 +339,8 @@ static void test_backend_on_integer_api(
     assert(MPI_ERR_REQUEST == 19);
     assert(MPI_ERR_NO_MEM == 34);
     assert(UNIMPI_REQUEST_NULL == facade_request(FAKE_NATIVE_NULL));
+    assert(UNIMPI_STATUS_IGNORE == (MPI_Status *)(intptr_t)1);
+    assert(UNIMPI_STATUS_IGNORE == UNIMPI_STATUSES_IGNORE);
 
     printf("  %s production binder path checks...\n", backend_name);
     test_irecv_testall_wait();

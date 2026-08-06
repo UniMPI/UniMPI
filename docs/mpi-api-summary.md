@@ -77,6 +77,18 @@ completion, zero-count request arrays, and a `Send_init`/`Recv_init` +
 `Startall` path. They do not cover matched probes, cancellation semantics,
 every send mode, wildcard behavior, or the full persistent-request lifecycle.
 
+Ignore a singular or array status output with the standard sentinels:
+
+```c
+MPI_Wait(&request, MPI_STATUS_IGNORE);
+MPI_Waitall(count, requests, MPI_STATUSES_IGNORE);
+```
+
+The sentinel value is selected during backend initialization: Open MPI uses
+`NULL`, while MPICH, Intel MPI, and MS-MPI use pointer value 1. Treat both
+sentinels as opaque, do not dereference them, and evaluate them only after a
+successful `MPI_Init`/`MPI_Init_thread`.
+
 ## Collectives
 
 Common aliases include:

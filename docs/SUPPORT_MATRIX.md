@@ -121,6 +121,9 @@ focused, cross-backend semantic coverage. Important examples include:
 - custom reduction operations, custom error handlers, and attribute corner
   cases;
 - multithreaded concurrent initialization, finalization, and MPI calls;
+- complete typed adaptation of non-request opaque-handle outputs and arrays on
+  integer-handle backends; known raw-binding debt includes `MPI_Comm_dup`,
+  `MPI_Type_get_contents`, `MPI_Comm_spawn_multiple`, and `MPI_Info_create`;
 - fault tolerance, GPU-aware behavior, and vendor-specific extensions.
 
 Add or tighten a row only when a focused test demonstrates the behavior. See

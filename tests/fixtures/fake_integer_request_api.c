@@ -39,6 +39,7 @@ static int g_fail_next_wait;
 static int g_fail_next_mprobe;
 static int g_fail_next_improbe;
 static int g_fail_next_mrecv;
+static int g_last_wait_used_status_ignore;
 
 static int status_is_ignored(const MPI_Status *status) {
     return status == NULL || status == FAKE_STATUS_IGNORE;
@@ -47,6 +48,10 @@ static int status_is_ignored(const MPI_Status *status) {
 int UNIMPI_MPI_CALL unimpi_fake_set_fail_next_wait(int enable) {
     g_fail_next_wait = enable ? 1 : 0;
     return 0;
+}
+
+int UNIMPI_MPI_CALL unimpi_fake_last_wait_used_status_ignore(void) {
+    return g_last_wait_used_status_ignore;
 }
 
 int UNIMPI_MPI_CALL unimpi_fake_set_fail_next_mprobe(int enable) {
@@ -153,6 +158,7 @@ int UNIMPI_MPI_CALL MPI_Request_free(int *request) {
 }
 
 int UNIMPI_MPI_CALL MPI_Wait(int *request, MPI_Status *status) {
+    g_last_wait_used_status_ignore = status == FAKE_STATUS_IGNORE;
     if (!request || *request != FAKE_NATIVE_REQUEST) {
         return 19;
     }

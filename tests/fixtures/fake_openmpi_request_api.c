@@ -77,6 +77,19 @@ int UNIMPI_MPI_CALL MPI_Error_class(int errorcode, int *error_class) {
     return 0;
 }
 
+int UNIMPI_MPI_CALL MPI_Wait(struct ompi_request_t **request,
+                             struct ompi_status_public_t *status) {
+    if (!request) {
+        return 7;
+    }
+    /* Open MPI's native MPI_STATUS_IGNORE is NULL. */
+    if (status != NULL) {
+        return 13;
+    }
+    *request = NULL;
+    return 0;
+}
+
 int UNIMPI_MPI_CALL MPI_Waitall(int count, struct ompi_request_t **requests,
                                 struct ompi_status_public_t *statuses) {
     int i;

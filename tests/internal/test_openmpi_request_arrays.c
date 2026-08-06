@@ -27,6 +27,7 @@ enum {
 int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle);
 
 static void assert_array_slots_present(void) {
+    assert(unimpi.wait != NULL);
     assert(unimpi.waitall != NULL);
     assert(unimpi.testall != NULL);
     assert(unimpi.testsome != NULL);
@@ -61,6 +62,12 @@ static void test_openmpi_array_paths(const char *path) {
     assert_array_slots_present();
 
     assert(MPI_ERR_IN_STATUS == 18);
+    assert(UNIMPI_STATUS_IGNORE == NULL);
+    assert(UNIMPI_STATUS_IGNORE == UNIMPI_STATUSES_IGNORE);
+
+    requests[0] = (MPI_Request)(intptr_t)0x51;
+    assert(unimpi.wait(&requests[0], UNIMPI_STATUS_IGNORE) == 0);
+    assert(requests[0] == 0);
 
     requests[0] = (MPI_Request)(intptr_t)0x51;
     requests[1] = (MPI_Request)(intptr_t)0x52;

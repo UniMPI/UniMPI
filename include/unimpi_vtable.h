@@ -78,11 +78,12 @@ union unimpi_status_facade {
 typedef union unimpi_status_facade MPI_Status;
 
 /*
- * Stable facade sentinels for status-bearing APIs. Wrappers translate them to
- * each backend's native MPI_STATUS_IGNORE / MPI_STATUSES_IGNORE. Singular and
- * plural share the same pointer value (standard vendor convention).
+ * Runtime-selected native status-ignore sentinel. Open MPI uses NULL while
+ * integer-handle backends use pointer value 1. As with other predefined MPI
+ * values, applications must evaluate it after successful initialization.
+ * Singular and plural share the selected backend value.
  */
-#define UNIMPI_STATUS_IGNORE ((MPI_Status *)(intptr_t)1)
+extern MPI_Status *UNIMPI_STATUS_IGNORE;
 #define UNIMPI_STATUSES_IGNORE UNIMPI_STATUS_IGNORE
 
 /* MPI predefined operations - will be resolved at runtime from backend */

@@ -303,6 +303,13 @@ int (*wait)(MPI_Request *request, UNIMPI_Status *status);
 
 Wait for non-blocking operation to complete.
 
+Pass `UNIMPI_STATUS_IGNORE` to ignore a singular status output and
+`UNIMPI_STATUSES_IGNORE` to ignore a status array. With standard names these
+are `MPI_STATUS_IGNORE` and `MPI_STATUSES_IGNORE`. Their opaque pointer value
+is selected during backend initialization, so evaluate and pass the named
+sentinel only after successful initialization; do not dereference, cache, or
+compare its numeric value.
+
 ---
 
 ## Collective Communication

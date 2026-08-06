@@ -33,9 +33,10 @@ The current test suite has focused cases for:
   collectives;
 - communicators, groups, intercommunicators, and selected topologies;
 - representative derived datatypes and pack/unpack;
-- MPI-2.2 resized/envelope/contents datatype operations;
-- environment/thread queries, Info CRUD, object names, memory allocation,
-  custom operations, and status helpers;
+- MPI-2.2 resized and envelope datatype operations;
+- environment/thread queries, selected Info operations other than
+  `MPI_Info_create` on integer-handle backends, object names, memory
+  allocation, custom operations, and status helpers;
 - fence-based RMA `Put`, `Get`, and `Accumulate` plus window lifecycle,
   attributes, and group plumbing;
 - positioned MPI I/O round trips in independent, collective, and nonblocking
@@ -45,6 +46,14 @@ These cases run across the platform/backend matrix described in
 [TESTING.md](TESTING.md).
 
 ## Important uncovered or partial categories
+
+### Integer-handle ABI boundaries
+
+- complete typed adaptation of non-request opaque-handle outputs and arrays;
+- known raw-binding debt includes `MPI_Comm_dup`, `MPI_Type_get_contents`,
+  `MPI_Comm_spawn_multiple`, and `MPI_Info_create`; these paths need
+  native-width temporary storage before they can be treated as fully
+  ABI-hardened on MPICH, Intel MPI, and MS-MPI.
 
 ### Point-to-point and requests
 
@@ -158,6 +167,8 @@ partial areas; they intentionally avoid "100% complete" language.
 
 ### Gaps and partial areas
 
+- Non-request opaque-handle output and array ABI hardening remains partial on
+  integer-handle backends.
 - Dynamic process management, ports, and name publishing remain partial and
   environment-dependent.
 - MPI I/O beyond the focused positioned/collective/nonblocking paths remains

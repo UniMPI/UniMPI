@@ -608,6 +608,8 @@ int main(void) {
     MPI_ERR_IN_STATUS = FAKE_ERR_IN_STATUS_CLASS;
     MPI_ERR_REQUEST = 19;
     MPI_ERR_NO_MEM = 34;
+    /* This standalone wrapper test models an integer-handle backend. */
+    UNIMPI_STATUS_IGNORE = (MPI_Status *)(intptr_t)1;
     unimpi_wrapper_set_error_class(fake_error_class);
 
     test_status_array_strides();
