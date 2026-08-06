@@ -10,6 +10,15 @@
 
 #include "unimpi_platform.h"
 
+/* MSVC does not export data symbols via WINDOWS_EXPORT_ALL_SYMBOLS alone;
+ * match fake_mpi_identity.c so GetProcAddress can resolve Open MPI globals.
+ */
+#ifdef _WIN32
+#define FAKE_MPI_EXPORT __declspec(dllexport)
+#else
+#define FAKE_MPI_EXPORT __attribute__((visibility("default")))
+#endif
+
 struct ompi_request_t {
     int id;
 };
@@ -30,9 +39,9 @@ enum {
     FAKE_ERR_IN_STATUS_CODE = 0x10000 | 18
 };
 
-/* Identity symbols for Open MPI backend detection. */
-int ompi_mpi_comm_world;
-int ompi_mpi_comm_self;
+/* Identity symbols for Open MPI backend detection / comm binding. */
+FAKE_MPI_EXPORT int ompi_mpi_comm_world;
+FAKE_MPI_EXPORT int ompi_mpi_comm_self;
 
 int UNIMPI_MPI_CALL MPI_Init(int *argc, char ***argv) {
     (void)argc;
