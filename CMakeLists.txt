@@ -58,6 +58,7 @@ set(UNIMPI_BACKEND_SOURCES
     src/backends/request_array_wrappers.c
     src/backends/request_handle_wrappers.c
     src/backends/datatype_array_wrappers.c
+    src/backends/opaque_handle_wrappers.c
 )
 
 # Create library

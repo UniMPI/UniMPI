@@ -5,6 +5,7 @@
 #include "request_array_wrappers.h"
 #include "request_handle_wrappers.h"
 #include "datatype_array_wrappers.h"
+#include "opaque_handle_wrappers.h"
 #include <string.h>
 
 /* Initialize the error classes published by Microsoft's mpi.h. */
@@ -90,6 +91,9 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Integer-handle request pointer width adapters (and array
      * completion adapters). Missing symbols stay NULL. */
     unimpi_bind_integer_request_apis(handle);
+    /* Integer-handle opaque OUT/INOUT/array adapters. PR1: empty ownership
+     * (no field installs); raw dlsym lines below remain until later PRs. */
+    unimpi_bind_integer_opaque_apis(handle);
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
         unimpi_platform_dlsym(handle, "MPI_Init");
