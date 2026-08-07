@@ -156,9 +156,10 @@ rather than being silently skipped.
 
 Integer opaque-handle width regressions use a fake integer DSO and
 `tests/internal/test_opaque_handle_width.c` (labels `unit;fake;internal;adapter`).
-They prove full-width facade stores for primary debt and Class C binder
-installs without a real MPI runtime; real communicator/Info/datatype/group/RMA
-integration tests remain necessary for semantic coverage.
+They prove full-width facade stores for primary debt paths and a Class C
+sample of OUT/INOUT installs without a real MPI runtime (not every Class C
+field); real communicator/Info/datatype/group/RMA integration tests remain
+necessary for semantic coverage.
 
 ## Sanitizers
 

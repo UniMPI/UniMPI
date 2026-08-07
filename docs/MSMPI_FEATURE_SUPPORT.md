@@ -6,15 +6,22 @@
 > width-adapted by `unimpi_bind_integer_opaque_apis`); missing exports leave
 > the slot NULL. Runtime dynamic-process support remains limited and
 > environment-dependent—do not treat a non-NULL slot as full MS-MPI spawn
-> certification. Sections below retain historical stub design notes.
+> certification.
 
-## 修改概述
+## Historical (pre-issue #2)
+
+The sections below describe an earlier stub/`unimpi_has_feature_*` design that
+is **not** present in the current tree. They are retained only as historical
+notes; prefer [MPI_SUPPORT_ANALYSIS.md](MPI_SUPPORT_ANALYSIS.md) and
+[MSMPI_LIMITATIONS.md](MSMPI_LIMITATIONS.md) for current behavior.
+
+### 修改概述
 
 通过宏和存 stub 函数，完善了 MS-MPI 对不支持功能的处理，确保程序能够优雅地降级而不是崩溃。
 
-## 实现的功能检测机制
+### 实现的功能检测机制
 
-### 1. 功能检测 API (src/core.c)
+#### 1. 功能检测 API (src/core.c)
 
 添加了三个功能检测函数：
 
@@ -31,7 +38,7 @@ int unimpi_has_feature_connect_accept(void);
 
 在 Windows/MS-MPI 下，这些函数返回 0（不可用）；在其他平台返回 1（可用）。
 
-### 2. 存 Stub 函数 (src/backends/msmpi.c)
+#### 2. 存 Stub 函数 (src/backends/msmpi.c)
 
 为 MS-MPI 中受限的功能添加了存 stub 实现，返回适当的错误码：
 
@@ -43,7 +50,7 @@ int unimpi_has_feature_connect_accept(void);
 | MPI_Unpublish_name | msmpi_stub_unpublish_name | MPI_ERR_SERVICE |
 | MPI_Lookup_name | msmpi_stub_lookup_name | MPI_ERR_NAME |
 
-### 3. 运行时替换
+#### 3. 运行时替换
 
 在 MS-MPI 初始化时，自动将受限功能的函数指针替换为存 stub 实现：
 
@@ -56,9 +63,9 @@ unimpi.unpublish_name = msmpi_stub_unpublish_name;
 unimpi.lookup_name = msmpi_stub_lookup_name;
 ```
 
-## 受限功能说明
+### 受限功能说明
 
-### 动态进程管理 (MPI_Comm_spawn)
+#### 动态进程管理 (MPI_Comm_spawn)
 
 **限制原因：**
 - Windows 没有 Unix 的 `fork()` 系统调用
@@ -67,7 +74,7 @@ unimpi.lookup_name = msmpi_stub_lookup_name;
 
 **返回值：** `MPI_ERR_SPAWN`
 
-### 名称服务 (MPI_Publish_name / MPI_Lookup_name)
+#### 名称服务 (MPI_Publish_name / MPI_Lookup_name)
 
 **限制原因：**
 - MS-MPI 没有实现名称服务守护进程
@@ -75,7 +82,7 @@ unimpi.lookup_name = msmpi_stub_lookup_name;
 
 **返回值：** `MPI_ERR_SERVICE` (publish/unpublish), `MPI_ERR_NAME` (lookup)
 
-### 连接/接受 (MPI_Comm_connect / MPI_Comm_accept)
+#### 连接/接受 (MPI_Comm_connect / MPI_Comm_accept)
 
 **限制原因：**
 - 依赖于工作端口和名称服务支持
@@ -83,7 +90,7 @@ unimpi.lookup_name = msmpi_stub_lookup_name;
 
 **状态：** 功能可用但受限（取决于网络配置）
 
-## 测试验证
+### 测试验证
 
 创建了功能检测测试 (tests/mpi/test_feature_detection.c)，验证：
 
@@ -101,9 +108,9 @@ unimpi.lookup_name = msmpi_stub_lookup_name;
 3. **其他功能正常工作**
    - 所有 21 个测试通过
 
-## 使用方法
+### 使用方法
 
-### 运行时检测
+#### 运行时检测
 
 ```c
 #include "unimpi.h"
@@ -125,7 +132,7 @@ int main(int argc, char **argv) {
 }
 ```
 
-### 编译时检测
+#### 编译时检测
 
 ```c
 #ifdef _WIN32
@@ -136,7 +143,7 @@ int main(int argc, char **argv) {
 #endif
 ```
 
-### 错误处理
+#### 错误处理
 
 ```c
 int ret = MPI_Comm_spawn(...);
@@ -148,14 +155,14 @@ if (ret != MPI_SUCCESS) {
 }
 ```
 
-## 向后兼容性
+### 向后兼容性
 
 这些更改完全向后兼容：
 - 现有代码无需修改即可继续工作
 - 新功能检测 API 是可选的
 - 存 stub 函数确保受限功能返回标准 MPI 错误码
 
-## 总结
+### 总结
 
 通过宏和存 stub 函数，unimpi 在 Windows/MS-MPI 上提供了：
 

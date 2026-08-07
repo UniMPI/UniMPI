@@ -124,8 +124,9 @@ focused, cross-backend semantic coverage. Important examples include:
 - full systematic adaptation of every non-request opaque-handle OUT/INOUT on
   integer-handle backends. Primary debt paths (`MPI_Comm_dup`,
   `MPI_Info_create`, `MPI_Type_get_contents`, `MPI_Comm_spawn_multiple`, plus
-  free companions) and the frozen matrix-exercised Class C create/OUT set are
-  width-adapted via `opaque_handle_wrappers` on MPICH, Intel MPI, and MS-MPI;
+  free companions) and the frozen matrix-exercised Class C create/OUT/INOUT set
+  are width-adapted via `opaque_handle_wrappers` on MPICH, Intel MPI, and
+  MS-MPI;
   Class D quarantine paths remain raw and are not ABI-certified for handle
   width; integer-handle `MPI_Ialltoallw` stays intentionally NULL until
   request-bound datatype-array storage exists (Open MPI uses its native
