@@ -77,6 +77,7 @@ Use labels to select the intended layer:
 |---|---|---:|
 | `unit` | Error, loader, platform, lifecycle, vtable, identity, backend-parity, and backend ABI-adapter tests | No |
 | `fake` | Unit tests that load generated fake MPI shared libraries | No |
+| `adapter` | Integer-handle ABI binder regressions (`test_request_handle_width`, `test_opaque_handle_width`, related request/status/datatype-array fakes) | No |
 | `integration` | Tests that initialize a real MPI runtime | Yes |
 | `mpi` | Real-MPI execution layer, including singleton lifecycle cases | Yes |
 | `example` | Example smoke tests | Yes |
@@ -147,9 +148,17 @@ differences in fixtures, backend adapters, or test expectations.
 Tests therefore require the nonblocking calls in Microsoft's
 [collective-function reference](https://learn.microsoft.com/en-us/message-passing-interface/mpi-collective-functions),
 execute additional MPI-3 symbols when the installed DLL exports them, and
-report an explicit skip otherwise. Outside the documented
-integer-handle/datatype-array adapter gap, missing MPI-3 symbols fail the Open
-MPI, MPICH, and Intel MPI jobs rather than being silently skipped.
+report an explicit skip otherwise. Outside the documented integer-handle
+adapter gaps (blocking `Alltoallw` datatype arrays are adapted;
+`Ialltoallw` stays NULL on integer backends; opaque Class D paths remain
+raw), missing MPI-3 symbols fail the Open MPI, MPICH, and Intel MPI jobs
+rather than being silently skipped.
+
+Integer opaque-handle width regressions use a fake integer DSO and
+`tests/internal/test_opaque_handle_width.c` (labels `unit;fake;internal;adapter`).
+They prove full-width facade stores for primary debt and Class C binder
+installs without a real MPI runtime; real communicator/Info/datatype/group/RMA
+integration tests remain necessary for semantic coverage.
 
 ## Sanitizers
 

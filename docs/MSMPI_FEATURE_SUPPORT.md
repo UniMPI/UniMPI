@@ -1,5 +1,13 @@
 # MS-MPI 功能支持完善总结
 
+> **Note (issue #2 / current tree):** UniMPI no longer installs permanent
+> `msmpi_stub_*` overrides for spawn/name-service symbols. When MS-MPI exports
+> them, slots are bound via `dlsym` (and `MPI_Comm_spawn_multiple` is
+> width-adapted by `unimpi_bind_integer_opaque_apis`); missing exports leave
+> the slot NULL. Runtime dynamic-process support remains limited and
+> environment-dependent—do not treat a non-NULL slot as full MS-MPI spawn
+> certification. Sections below retain historical stub design notes.
+
 ## 修改概述
 
 通过宏和存 stub 函数，完善了 MS-MPI 对不支持功能的处理，确保程序能够优雅地降级而不是崩溃。

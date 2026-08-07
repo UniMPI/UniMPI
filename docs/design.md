@@ -100,6 +100,16 @@ succeeded.
 MPI handles are represented with `intptr_t` so the facade can hold both
 pointer-style Open MPI objects and integer-style MPICH-derived handles.
 
+On MPICH, Intel MPI, and MS-MPI, native opaque handles are C `int`. Integer
+backends therefore install adapters for selected OUT/INOUT and handle-array
+paths (`request_handle_wrappers`, `datatype_array_wrappers`,
+`opaque_handle_wrappers`) so native width and array stride match the facade.
+Open MPI keeps direct pointer-handle binds. Adaptation is intentionally
+partial: primary debt and matrix-exercised Class C paths are width-safe;
+Class D quarantine remains raw; integer-handle `MPI_Ialltoallw` stays NULL.
+See [MPI_SUPPORT_ANALYSIS.md](MPI_SUPPORT_ANALYSIS.md) for the NULL-slot
+contract and quarantine list.
+
 `MPI_Status` uses a union with backend-oriented layouts and a 128-byte raw
 buffer. This is an internal compatibility strategy, not a portable serialization
 format. Applications must not persist or exchange its raw bytes.

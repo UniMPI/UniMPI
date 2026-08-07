@@ -10,6 +10,11 @@
 
 **限制状态**: ⚠️ 有限支持（测试中跳过）
 
+**Note:** UniMPI does not permanently stub spawn entry points. When exported,
+`MPI_Comm_spawn_multiple` is width-adapted on the integer-handle path;
+`MPI_Comm_spawn` remains a Class D raw bind. Vendor/runtime success still
+depends on MS-MPI and the environment—missing symbols leave vtable slots NULL.
+
 **原因**:
 - MS-MPI 基于 MPICH 的早期版本，动态进程实现不如 OpenMPI 完善
 - Windows 进程模型与 Unix 不同，缺乏 `fork()` 系统调用

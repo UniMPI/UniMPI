@@ -34,9 +34,10 @@ The current test suite has focused cases for:
 - communicators, groups, intercommunicators, and selected topologies;
 - representative derived datatypes and pack/unpack;
 - MPI-2.2 resized and envelope datatype operations;
-- environment/thread queries, selected Info operations other than
-  `MPI_Info_create` on integer-handle backends, object names, memory
-  allocation, custom operations, and status helpers;
+- environment/thread queries, selected Info operations (including
+  `MPI_Info_create` / `MPI_Info_free` width adaptation on integer-handle
+  backends), object names, memory allocation, custom operations, and status
+  helpers;
 - fence-based RMA `Put`, `Get`, and `Accumulate` plus window lifecycle,
   attributes, and group plumbing;
 - positioned MPI I/O round trips in independent, collective, and nonblocking
@@ -49,11 +50,83 @@ These cases run across the platform/backend matrix described in
 
 ### Integer-handle ABI boundaries
 
-- complete typed adaptation of non-request opaque-handle outputs and arrays;
-- known raw-binding debt includes `MPI_Comm_dup`, `MPI_Type_get_contents`,
-  `MPI_Comm_spawn_multiple`, and `MPI_Info_create`; these paths need
-  native-width temporary storage before they can be treated as fully
-  ABI-hardened on MPICH, Intel MPI, and MS-MPI.
+UniMPI facade handles are `intptr_t`. On MPICH, Intel MPI, and MS-MPI, native
+opaque handles are C `int`. Integer backends therefore need native-width
+temporaries (and packed native arrays) whenever a call writes a handle through
+a pointer or passes a handle array. Open MPI keeps direct pointer-handle binds
+and is out of scope for these adapters.
+
+**Width-adapted (issue #2 primary debt + companions):**
+
+- `MPI_Comm_dup` / `MPI_Comm_free`
+- `MPI_Info_create` / `MPI_Info_free`
+- `MPI_Type_get_contents` (OUT datatype array stride)
+- `MPI_Comm_spawn_multiple` (root Info input array + intercomm OUT; non-root
+  may pass a NULL info array)
+
+**Width-adapted (Class C — frozen matrix-exercised create/OUT/INOUT only):**
+
+- Communicators: `Comm_dup_with_info`, `Comm_split`, `Comm_split_type`,
+  `Comm_create`, `Comm_group`, `Intercomm_create`, `Intercomm_merge`
+- Datatypes: `Type_contiguous`, `Type_vector`, `Type_indexed`, `Type_dup`,
+  `Type_create_resized`, `Type_commit`, `Type_free`
+- Groups: `Group_incl`, `Group_excl`, `Group_free`
+- Ops: `Op_create`, `Op_free`
+- RMA: `Win_create`, `Win_free`
+
+These installs live in `unimpi_bind_integer_opaque_apis`
+(`src/backends/opaque_handle_wrappers.c`). That binder is the sole installer of
+every field it owns; Open MPI does not call it. This is **not** a claim that
+every opaque OUT on every integer backend is hardened.
+
+**Class D quarantine (raw bind may be non-NULL; not ABI-certified width):**
+
+- Dynamic process scalars beyond spawn_multiple: `Comm_spawn`, `Comm_accept`,
+  `Comm_connect`, `Comm_join`, `Comm_get_parent`, `Comm_disconnect`
+- Optional Info: `Comm_get_info`
+- Remaining `type_*` / `group_*` / `win_*` constructors not in the Class C
+  table (for example hvector/hindexed/subarray/darray, group set operations,
+  `Win_allocate` / `Win_allocate_shared` / `Win_create_dynamic`)
+- Errhandler create/OUT paths
+- File handles are pointer-width on the supported integer backends and are not
+  treated as int-handle conversion debt
+
+Quarantined scalar OUT slots may remain non-NULL via raw `dlsym`. Do not claim
+full-width facade safety for them. Handle-array OUT/IN that cannot ship raw
+safely must be wrapped or forced NULL; within issue #2 the array debts are
+`Type_get_contents` and spawn_multiple info (both adapted above).
+
+**Class E deferred NULL:**
+
+- Integer-handle `MPI_Ialltoallw` remains intentionally NULL until
+  request-bound datatype-array lifetime exists. Open MPI uses its native
+  pointer-handle path. Existing tests assert the integer NULL contract.
+
+**NULL-slot contract:**
+
+1. Missing optional symbol → binder sets `unimpi.<field> = NULL`.
+2. Intentionally deferred unsafe path → binder forces NULL even if the native
+   symbol exists (integer `ialltoallw` today).
+3. Raw-but-quarantined → slot may be non-NULL; documentation forbids treating
+   it as ABI-hardened; the support matrix does not claim width-safe coverage.
+4. Wrapped → slot is non-NULL only if the native symbol is present; the call is
+   handle-width safe for that path.
+
+A non-NULL vtable entry is therefore **not** equivalent to “safe to call for
+every opaque ABI property.” Callers and tests must null-check optional or
+deferred slots before use:
+
+```c
+if (unimpi.ialltoallw != NULL) {
+    unimpi.ialltoallw(...);
+} else {
+    /* expected on integer-handle backends until request-bound type arrays */
+}
+```
+
+Standard-name macros do not hide NULL: calling through a NULL function pointer
+is a bug. Fake binder regressions live in `tests/internal/test_opaque_handle_width.c`
+(and request-side `test_request_handle_width.c` for `ialltoallw`).
 
 ### Point-to-point and requests
 
@@ -143,9 +216,13 @@ partial areas; they intentionally avoid "100% complete" language.
 
 - Backends attempt to load spawn, connect/accept, port, name-service, and
   parent-query symbols where the vendor exports them.
+- On integer-handle backends, `MPI_Comm_spawn_multiple` is width-adapted when
+  the symbol is present; single `MPI_Comm_spawn` and other dynamic OUT paths
+  remain Class D quarantine (raw, not ABI-certified width).
 - Focused tests exist (`tests/mpi/test_dynamic.c`), but runtime availability
-  and correctness remain backend- and environment-dependent (for example,
-  MS-MPI stubs several process-management entry points).
+  and correctness remain backend- and environment-dependent (MS-MPI dynamic
+  process support is limited and environment-sensitive; missing symbols leave
+  the corresponding vtable slots NULL rather than inventing permanent stubs).
 - Dynamic process management remains listed under uncovered/partial categories
   above and must not be described as fully covered.
 
@@ -167,14 +244,16 @@ partial areas; they intentionally avoid "100% complete" language.
 
 ### Gaps and partial areas
 
-- Non-request opaque-handle output and array ABI hardening remains partial on
-  integer-handle backends.
+- Non-request opaque-handle ABI hardening on integer backends is **partial**:
+  primary debt paths and the frozen Class C matrix set are width-adapted;
+  Class D quarantine remains raw and uncertified; this is not full MPI-3
+  opaque-handle completeness.
 - Dynamic process management, ports, and name publishing remain partial and
   environment-dependent.
 - MPI I/O beyond the focused positioned/collective/nonblocking paths remains
   partial.
-- Nonblocking collectives and integer-handle `Ialltoallw` remain partial on
-  some backends (see the support matrix).
+- Nonblocking collectives and integer-handle `Ialltoallw` (intentionally NULL)
+  remain partial on some backends (see the support matrix).
 - Shared/dynamic windows, broader RMA epochs, and request-based RMA remain
   partial or uncovered.
 - MPI-4 sessions, partitioned communication, and tools interface are absent.
