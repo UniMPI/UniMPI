@@ -267,6 +267,30 @@ set_tests_properties(test_request_handle_width PROPERTIES
     TIMEOUT 30
 )
 
+# Production binder path for integer-handle opaque OUT/INOUT/array adapters.
+add_library(fake_integer_opaque_api SHARED
+    fixtures/fake_integer_opaque_api.c)
+target_include_directories(fake_integer_opaque_api PRIVATE
+    ${PROJECT_SOURCE_DIR}/include)
+set_target_properties(fake_integer_opaque_api PROPERTIES
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+add_executable(test_opaque_handle_width
+    internal/test_opaque_handle_width.c)
+target_link_libraries(test_opaque_handle_width unimpi)
+add_dependencies(test_opaque_handle_width
+    fake_integer_opaque_api fake_mpich_identity)
+add_test(NAME test_opaque_handle_width
+    COMMAND test_opaque_handle_width
+            $<TARGET_FILE:fake_integer_opaque_api>
+            $<TARGET_FILE:fake_mpich_identity>)
+set_tests_properties(test_opaque_handle_width PROPERTIES
+    LABELS "unit;fake;internal;adapter"
+    TIMEOUT 30
+)
+
 # Open MPI completion-array binders: real ompi request/status tags + missing
 # optional symbols remain NULL against the identity fixture.
 add_library(fake_openmpi_request_api SHARED
