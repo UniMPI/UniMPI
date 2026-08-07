@@ -3,6 +3,7 @@
 #include "unimpi_platform.h"
 #include "unimpi.h"
 #include "request_array_wrappers.h"
+#include "datatype_array_wrappers.h"
 #include <string.h>
 
 /* MS-MPI uses MPICH-compatible error codes */
@@ -218,9 +219,16 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     unimpi.alltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Alltoallv");
 
-    /* MPI-3 Alltoallw */
-    unimpi.alltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm))
-        unimpi_platform_dlsym(handle, "MPI_Alltoallw");
+    /* MPI-3 Alltoallw (wrapped: adapts 8-byte datatype arrays to the native
+     * 4-byte handle representation) */
+    unimpi_dt_wrapper_set_comm_size((int (*)(MPI_Comm, int*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_size"));
+    if (unimpi_dt_wrapper_set_alltoallw((int (*)(const void*, const int*,
+            const int*, const int*, void*, const int*, const int*, const int*,
+            MPI_Comm))
+            unimpi_platform_dlsym(handle, "MPI_Alltoallw"))) {
+        unimpi.alltoallw = unimpi_wrap_alltoallw;
+    }
 
     /* Collective - Reduce-scatter and scan */
     unimpi.reduce_scatter = (int (*)(const void*, void*, const int*, MPI_Datatype, MPI_Op, MPI_Comm))
@@ -254,9 +262,14 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     unimpi.ialltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ialltoallv");
 
-    /* MPI-3 Ialltoallw */
-    unimpi.ialltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Ialltoallw");
+    /* MPI-3 Ialltoallw (wrapped: adapts 8-byte datatype arrays to the native
+     * 4-byte handle representation) */
+    if (unimpi_dt_wrapper_set_ialltoallw((int (*)(const void*, const int*,
+            const int*, const int*, void*, const int*, const int*, const int*,
+            MPI_Comm, MPI_Request*))
+            unimpi_platform_dlsym(handle, "MPI_Ialltoallw"))) {
+        unimpi.ialltoallw = unimpi_wrap_ialltoallw;
+    }
     unimpi.ireduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, int, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ireduce");
     unimpi.iallreduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))

@@ -61,8 +61,6 @@ These cases run across the platform/backend matrix described in
 ### Collectives
 
 - remaining collective variants and full in-place/aliasing rules;
-- `Alltoallw` datatype arrays on integer-handle backends, pending a typed
-  array adapter;
 - noncommutative reductions and user-defined operations;
 - in-place and zero-count corner cases;
 - broad non-power-of-two and large-process testing.

@@ -335,7 +335,10 @@ int main(int argc, char **argv) {
     TEST_CHECK_SUCCESS(MPI_Comm_size(MPI_COMM_WORLD, &size));
     backend = unimpi_get_backend_type();
     require_optional = backend != UNIMPI_BACKEND_MSMPI;
-    datatype_arrays_compatible = backend == UNIMPI_BACKEND_OPENMPI;
+    /* Datatype-array collectives are now adapted for every backend through the
+     * in-place datatype-array wrappers; whether the operation actually runs is
+     * gated on the resolved symbol inside use_optional() below. */
+    datatype_arrays_compatible = 1;
 
     use_optional("MPI_Ibarrier", unimpi.ibarrier != NULL, 1, rank);
     use_optional("MPI_Ibcast", unimpi.ibcast != NULL, 1, rank);
