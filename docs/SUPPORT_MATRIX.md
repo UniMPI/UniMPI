@@ -121,9 +121,18 @@ focused, cross-backend semantic coverage. Important examples include:
 - custom reduction operations, custom error handlers, and attribute corner
   cases;
 - multithreaded concurrent initialization, finalization, and MPI calls;
-- complete typed adaptation of non-request opaque-handle outputs and arrays on
-  integer-handle backends; known raw-binding debt includes `MPI_Comm_dup`,
-  `MPI_Type_get_contents`, `MPI_Comm_spawn_multiple`, and `MPI_Info_create`;
+- full systematic adaptation of every non-request opaque-handle OUT/INOUT on
+  integer-handle backends. Primary debt paths (`MPI_Comm_dup`,
+  `MPI_Info_create`, `MPI_Type_get_contents`, `MPI_Comm_spawn_multiple`, plus
+  free companions) and the frozen matrix-exercised Class C create/OUT/INOUT set
+  are width-adapted via `opaque_handle_wrappers` on MPICH, Intel MPI, and
+  MS-MPI;
+  Class D quarantine paths remain raw and are not ABI-certified for handle
+  width; integer-handle `MPI_Ialltoallw` stays intentionally NULL until
+  request-bound datatype-array storage exists (Open MPI uses its native
+  pointer-handle path). A non-NULL vtable slot is not proof of width-safe
+  opaque ABI for quarantined raw binds—see
+  [MPI_SUPPORT_ANALYSIS.md](MPI_SUPPORT_ANALYSIS.md);
 - fault tolerance, GPU-aware behavior, and vendor-specific extensions.
 
 Add or tighten a row only when a focused test demonstrates the behavior. See
