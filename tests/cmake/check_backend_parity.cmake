@@ -96,6 +96,42 @@ foreach(backend IN LISTS backends)
             endif()
         endif()
     endif()
+
+    # Integer-handle backends bind opaque OUT/INOUT/array adapters through
+    # unimpi_bind_integer_opaque_apis(), which expands field names via macros
+    # rather than writing unimpi.<field> = in the backend file.
+    if(backend_source MATCHES "unimpi_bind_integer_opaque_apis")
+        set(opaque_bind_source_file
+            "${UNIMPI_SOURCE_DIR}/src/backends/opaque_handle_wrappers.c")
+        if(EXISTS "${opaque_bind_source_file}")
+            file(READ "${opaque_bind_source_file}" opaque_bind_source)
+            # Match only call sites: BIND_OPTIONAL(name,
+            # after stripping macro definitions so a parameter named "field"
+            # is never treated as an assigned vtable field.
+            string(REGEX REPLACE
+                "#[ \t]*define[ \t]+BIND_OPTIONAL\\([^\n]*\n"
+                ""
+                opaque_bind_calls
+                "${opaque_bind_source}"
+            )
+            string(REGEX MATCHALL
+                "BIND_OPTIONAL\\([A-Za-z0-9_]+,"
+                opaque_bind_calls_list
+                "${opaque_bind_calls}"
+            )
+            foreach(bind_call IN LISTS opaque_bind_calls_list)
+                string(REGEX REPLACE
+                    "BIND_OPTIONAL\\(([A-Za-z0-9_]+),.*"
+                    "\\1"
+                    field
+                    "${bind_call}"
+                )
+                if(NOT field STREQUAL "field")
+                    list(APPEND assigned_fields "${field}")
+                endif()
+            endforeach()
+        endif()
+    endif()
     list(REMOVE_DUPLICATES assigned_fields)
 
     set(missing_fields)

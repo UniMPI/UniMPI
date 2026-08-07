@@ -107,8 +107,8 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     /* Integer-handle request pointer width adapters (and array
      * completion adapters). Missing symbols stay NULL. */
     unimpi_bind_integer_request_apis(handle);
-    /* Integer-handle opaque OUT/INOUT/array adapters. PR1: empty ownership
-     * (no field installs); raw dlsym lines below remain until later PRs. */
+    /* Integer-handle opaque OUT/INOUT/array adapters. Sole installer of
+     * every field it BIND_OPTIONALs; raw assigns for those fields deleted. */
     unimpi_bind_integer_opaque_apis(handle);
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
@@ -214,16 +214,13 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_size");
     unimpi.comm_rank = (int (*)(MPI_Comm, int*))
         unimpi_platform_dlsym(handle, "MPI_Comm_rank");
-    unimpi.comm_dup = (int (*)(MPI_Comm, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_dup");
+    /* comm_dup / comm_free: owned by unimpi_bind_integer_opaque_apis */
     unimpi.comm_dup_with_info = (int (*)(MPI_Comm, MPI_Info, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_dup_with_info");
     unimpi.comm_split = (int (*)(MPI_Comm, int, int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_split");
     unimpi.comm_split_type = (int (*)(MPI_Comm, int, int, MPI_Info, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_split_type");
-    unimpi.comm_free = (int (*)(MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_free");
 
     /* Communicator extended */
     unimpi.comm_create = (int (*)(MPI_Comm, MPI_Group, MPI_Comm*))
@@ -348,8 +345,7 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Type_create_resized");
     unimpi.type_get_envelope = (int (*)(MPI_Datatype, int*, int*, int*, int*))
         unimpi_platform_dlsym(handle, "MPI_Type_get_envelope");
-    unimpi.type_get_contents = (int (*)(MPI_Datatype, int, int, int, int*, MPI_Aint*, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_get_contents");
+    /* type_get_contents: owned by unimpi_bind_integer_opaque_apis */
 
     /* Datatypes - Query */
     unimpi.type_get_extent = (int (*)(MPI_Datatype, MPI_Aint*, MPI_Aint*))
@@ -512,8 +508,7 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     /* Dynamic Process Management */
     unimpi.comm_spawn = (int (*)(const char*, char*[], int, MPI_Info, int, MPI_Comm, MPI_Comm*, int[]))
         unimpi_platform_dlsym(handle, "MPI_Comm_spawn");
-    unimpi.comm_spawn_multiple = (int (*)(int, char*[], char**[], const int[], const MPI_Info[], int, MPI_Comm, MPI_Comm*, int[]))
-        unimpi_platform_dlsym(handle, "MPI_Comm_spawn_multiple");
+    /* comm_spawn_multiple: owned by unimpi_bind_integer_opaque_apis */
     unimpi.comm_accept = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_accept");
     unimpi.comm_connect = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
@@ -538,10 +533,7 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Lookup_name");
 
     /* Info Operations */
-    unimpi.info_create = (int (*)(MPI_Info*))
-        unimpi_platform_dlsym(handle, "MPI_Info_create");
-    unimpi.info_free = (int (*)(MPI_Info*))
-        unimpi_platform_dlsym(handle, "MPI_Info_free");
+    /* info_create / info_free: owned by unimpi_bind_integer_opaque_apis */
     unimpi.info_set = (int (*)(MPI_Info, const char*, const char*))
         unimpi_platform_dlsym(handle, "MPI_Info_set");
     unimpi.info_get = (int (*)(MPI_Info, const char*, int, char*, int*))

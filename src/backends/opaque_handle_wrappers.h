@@ -22,9 +22,6 @@
 /* Bind opaque OUT/INOUT/array adapters for an integer-handle backend.
  * Sole installer of every field it BIND_OPTIONALs.  Missing symbols leave
  * the corresponding unimpi slot NULL.  Open MPI must not call this.
- *
- * PR1: empty body (zero field ownership).  Later PRs add BIND_OPTIONAL
- * installs and delete matching raw dlsym assigns in the same change.
  */
 void unimpi_bind_integer_opaque_apis(unimpi_lib_handle_t handle);
 
@@ -35,5 +32,19 @@ MPI_Info unimpi_info_from_native(int native);
 int unimpi_info_to_native(MPI_Info facade);
 MPI_Datatype unimpi_datatype_from_native(int native);
 int unimpi_datatype_to_native(MPI_Datatype facade);
+
+/* Wrappers installed by unimpi_bind_integer_opaque_apis. */
+int unimpi_wrap_comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
+int unimpi_wrap_comm_free(MPI_Comm *comm);
+int unimpi_wrap_info_create(MPI_Info *info);
+int unimpi_wrap_info_free(MPI_Info *info);
+int unimpi_wrap_type_get_contents(
+    MPI_Datatype datatype, int max_integers, int max_addresses,
+    int max_datatypes, int *array_of_integers,
+    MPI_Aint *array_of_addresses, MPI_Datatype *array_of_datatypes);
+int unimpi_wrap_comm_spawn_multiple(
+    int count, char *array_of_commands[], char **array_of_argv[],
+    const int array_of_maxprocs[], const MPI_Info array_of_info[],
+    int root, MPI_Comm comm, MPI_Comm *intercomm, int array_of_errcodes[]);
 
 #endif /* UNIMPI_OPAQUE_HANDLE_WRAPPERS_H */
