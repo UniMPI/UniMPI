@@ -1,10 +1,13 @@
 /* Fake integer-handle MPI DSO for opaque OUT/INOUT/array binder regressions.
  *
  * Exports real MPICH / Intel MPI / MS-MPI native C signatures (int handles)
- * for the PR2 debt symbols plus core symbols required by production inits:
+ * for the PR2 debt symbols, Class C sample shapes, plus core symbols required
+ * by production inits:
  *   MPI_Init, MPI_Finalize, MPI_Comm_size, MPI_Comm_rank, MPI_Error_class
  *   MPI_Comm_dup, MPI_Comm_free, MPI_Info_create, MPI_Info_free
  *   MPI_Type_get_contents, MPI_Comm_spawn_multiple
+ *   Class C sample: Comm_split, Type_contiguous, Type_free, Comm_group,
+ *                   Group_free, Op_create, Op_free, Win_create, Win_free
  *
  * High-nibble native constants prove full-width facade store (not 4-byte
  * truncation luck on little-endian).
@@ -22,6 +25,15 @@ enum {
     FAKE_NATIVE_TYPE0 = (int)0xc3000003,
     FAKE_NATIVE_TYPE1 = (int)0xc4000004,
     FAKE_NATIVE_INTERCOMM = (int)0xd5000005,
+    FAKE_NATIVE_SPLIT_COMM = (int)0xa6000006,
+    FAKE_NATIVE_CONTIG_TYPE = (int)0xc7000007,
+    FAKE_NATIVE_TYPE_NULL = (int)0x08000000,
+    FAKE_NATIVE_GROUP = (int)0xe8000008,
+    FAKE_NATIVE_GROUP_NULL = (int)0x08000001,
+    FAKE_NATIVE_OP = (int)0xf9000009,
+    FAKE_NATIVE_OP_NULL = (int)0x18000000,
+    FAKE_NATIVE_WIN = (int)0xaa00000a,
+    FAKE_NATIVE_WIN_NULL = (int)0x20000000,
     FAKE_ERR_OTHER = 15
 };
 
@@ -29,6 +41,7 @@ static int g_fail_next_comm_dup;
 static int g_fail_next_info_create;
 static int g_fail_next_type_get_contents;
 static int g_fail_next_spawn_multiple;
+static int g_fail_next_comm_split;
 static int g_last_spawn_info_was_null;
 static int g_last_spawn_info0;
 static int g_last_spawn_info1;
@@ -51,6 +64,11 @@ int UNIMPI_MPI_CALL unimpi_fake_set_fail_next_type_get_contents(int enable) {
 
 int UNIMPI_MPI_CALL unimpi_fake_set_fail_next_spawn_multiple(int enable) {
     g_fail_next_spawn_multiple = enable ? 1 : 0;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL unimpi_fake_set_fail_next_comm_split(int enable) {
+    g_fail_next_comm_split = enable ? 1 : 0;
     return 0;
 }
 
@@ -234,5 +252,101 @@ int UNIMPI_MPI_CALL MPI_Comm_spawn_multiple(
             array_of_errcodes[i] = 0;
         }
     }
+    return 0;
+}
+
+/* --- Class C sample shapes (native int handles) --- */
+
+int UNIMPI_MPI_CALL MPI_Comm_split(int comm, int color, int key, int *newcomm) {
+    (void)comm;
+    (void)color;
+    (void)key;
+    if (!newcomm) {
+        return 12;
+    }
+    if (g_fail_next_comm_split) {
+        g_fail_next_comm_split = 0;
+        *newcomm = (int)0xdeadbeef;
+        return FAKE_ERR_OTHER;
+    }
+    *newcomm = FAKE_NATIVE_SPLIT_COMM;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Type_contiguous(int count, int oldtype, int *newtype) {
+    (void)count;
+    (void)oldtype;
+    if (!newtype) {
+        return 12;
+    }
+    *newtype = FAKE_NATIVE_CONTIG_TYPE;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Type_free(int *datatype) {
+    if (!datatype) {
+        return 12;
+    }
+    *datatype = FAKE_NATIVE_TYPE_NULL;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Comm_group(int comm, int *group) {
+    (void)comm;
+    if (!group) {
+        return 12;
+    }
+    *group = FAKE_NATIVE_GROUP;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Group_free(int *group) {
+    if (!group) {
+        return 12;
+    }
+    *group = FAKE_NATIVE_GROUP_NULL;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Op_create(
+    void (*user_fn)(void *, void *, int *, int *), int commute, int *op)
+{
+    (void)user_fn;
+    (void)commute;
+    if (!op) {
+        return 12;
+    }
+    *op = FAKE_NATIVE_OP;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Op_free(int *op) {
+    if (!op) {
+        return 12;
+    }
+    *op = FAKE_NATIVE_OP_NULL;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Win_create(
+    void *base, intptr_t size, int disp_unit, int info, int comm, int *win)
+{
+    (void)base;
+    (void)size;
+    (void)disp_unit;
+    (void)info;
+    (void)comm;
+    if (!win) {
+        return 12;
+    }
+    *win = FAKE_NATIVE_WIN;
+    return 0;
+}
+
+int UNIMPI_MPI_CALL MPI_Win_free(int *win) {
+    if (!win) {
+        return 12;
+    }
+    *win = FAKE_NATIVE_WIN_NULL;
     return 0;
 }

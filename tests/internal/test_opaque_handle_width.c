@@ -11,6 +11,9 @@
  *   Type_get_contents N full-width datatype cells; neighbor poison untouched
  *   Comm_spawn_multiple root (info array converted; intercomm full-width)
  *   Comm_spawn_multiple non-root (count>0, array_of_info==NULL)
+ *   Class C sample: Comm_split OUT Comm, Type_contiguous OUT Datatype,
+ *                   Comm_group OUT Group, Op_create OUT Op, Win_create OUT Win,
+ *                   Type_free / Group_free / Op_free / Win_free INOUT free
  *   Missing symbols leave opaque slots NULL
  *   ialltoallw remains NULL on integer binders
  *
@@ -36,6 +39,15 @@ enum {
     FAKE_NATIVE_TYPE0 = (int)0xc3000003,
     FAKE_NATIVE_TYPE1 = (int)0xc4000004,
     FAKE_NATIVE_INTERCOMM = (int)0xd5000005,
+    FAKE_NATIVE_SPLIT_COMM = (int)0xa6000006,
+    FAKE_NATIVE_CONTIG_TYPE = (int)0xc7000007,
+    FAKE_NATIVE_TYPE_NULL = (int)0x08000000,
+    FAKE_NATIVE_GROUP = (int)0xe8000008,
+    FAKE_NATIVE_GROUP_NULL = (int)0x08000001,
+    FAKE_NATIVE_OP = (int)0xf9000009,
+    FAKE_NATIVE_OP_NULL = (int)0x18000000,
+    FAKE_NATIVE_WIN = (int)0xaa00000a,
+    FAKE_NATIVE_WIN_NULL = (int)0x20000000,
     FAKE_ERR_OTHER = 15,
     FAKE_NATIVE_INFO_IN0 = (int)0xe1000010,
     FAKE_NATIVE_INFO_IN1 = (int)0xe2000020
@@ -60,6 +72,18 @@ static MPI_Info facade_info(int native) {
 
 static MPI_Datatype facade_datatype(int native) {
     return (MPI_Datatype)(intptr_t)native;
+}
+
+static MPI_Group facade_group(int native) {
+    return (MPI_Group)(intptr_t)native;
+}
+
+static MPI_Op facade_op(int native) {
+    return (MPI_Op)(intptr_t)native;
+}
+
+static MPI_Win facade_win(int native) {
+    return (MPI_Win)(intptr_t)native;
 }
 
 static void set_fail(const char *symbol, int enable) {
@@ -87,6 +111,16 @@ static void assert_present_opaque_slots(const char *backend_name) {
     assert(unimpi.info_free != NULL);
     assert(unimpi.type_get_contents != NULL);
     assert(unimpi.comm_spawn_multiple != NULL);
+    /* Class C sample slots */
+    assert(unimpi.comm_split != NULL);
+    assert(unimpi.type_contiguous != NULL);
+    assert(unimpi.type_free != NULL);
+    assert(unimpi.comm_group != NULL);
+    assert(unimpi.group_free != NULL);
+    assert(unimpi.op_create != NULL);
+    assert(unimpi.op_free != NULL);
+    assert(unimpi.win_create != NULL);
+    assert(unimpi.win_free != NULL);
     assert(unimpi.ialltoallw == NULL);
     printf("  %s binder installed expected opaque slots (ialltoallw NULL)\n",
            backend_name);
@@ -99,6 +133,15 @@ static void assert_missing_opaque_slots_null(const char *backend_name) {
     assert(unimpi.info_free == NULL);
     assert(unimpi.type_get_contents == NULL);
     assert(unimpi.comm_spawn_multiple == NULL);
+    assert(unimpi.comm_split == NULL);
+    assert(unimpi.type_contiguous == NULL);
+    assert(unimpi.type_free == NULL);
+    assert(unimpi.comm_group == NULL);
+    assert(unimpi.group_free == NULL);
+    assert(unimpi.op_create == NULL);
+    assert(unimpi.op_free == NULL);
+    assert(unimpi.win_create == NULL);
+    assert(unimpi.win_free == NULL);
     assert(unimpi.ialltoallw == NULL);
     printf("  %s missing optional opaque symbols remain NULL\n",
            backend_name);
@@ -141,6 +184,12 @@ static void test_failure_does_not_clobber(void) {
     memcpy(&newcomm, poison, sizeof(newcomm));
     set_fail("unimpi_fake_set_fail_next_comm_dup", 1);
     assert(unimpi.comm_dup(facade_comm(1), &newcomm) == FAKE_ERR_OTHER);
+    assert(memcmp(&newcomm, poison, sizeof(newcomm)) == 0);
+
+    memset(poison, 0xff, sizeof(poison));
+    memcpy(&newcomm, poison, sizeof(newcomm));
+    set_fail("unimpi_fake_set_fail_next_comm_split", 1);
+    assert(unimpi.comm_split(facade_comm(1), 0, 0, &newcomm) == FAKE_ERR_OTHER);
     assert(memcmp(&newcomm, poison, sizeof(newcomm)) == 0);
 
     printf("    failure paths leave caller cells unclobbered passed\n");
@@ -248,6 +297,64 @@ static void test_spawn_multiple_nonroot_null_info(void) {
     printf("    Comm_spawn_multiple non-root NULL info array passed\n");
 }
 
+static void test_class_c_out_and_inout_sample(void) {
+    MPI_Comm split = 0;
+    MPI_Datatype dtype = 0;
+    MPI_Group group = 0;
+    MPI_Op op = 0;
+    MPI_Win win = 0;
+    int base = 0;
+
+    /* OUT Comm (Class C, distinct from PR2 Comm_dup) */
+    assert(unimpi.comm_split(facade_comm(1), 0, 0, &split) == 0);
+    assert(split == facade_comm(FAKE_NATIVE_SPLIT_COMM));
+    assert((int)(intptr_t)split == FAKE_NATIVE_SPLIT_COMM);
+
+    /* OUT Datatype */
+    assert(unimpi.type_contiguous(4, facade_datatype(1), &dtype) == 0);
+    assert(dtype == facade_datatype(FAKE_NATIVE_CONTIG_TYPE));
+    assert((int)(intptr_t)dtype == FAKE_NATIVE_CONTIG_TYPE);
+
+    /* INOUT free Datatype */
+    assert(unimpi.type_free(&dtype) == 0);
+    assert(dtype == facade_datatype(FAKE_NATIVE_TYPE_NULL));
+    assert((int)(intptr_t)dtype == FAKE_NATIVE_TYPE_NULL);
+
+    /* OUT Group */
+    assert(unimpi.comm_group(facade_comm(1), &group) == 0);
+    assert(group == facade_group(FAKE_NATIVE_GROUP));
+    assert((int)(intptr_t)group == FAKE_NATIVE_GROUP);
+
+    /* INOUT free Group */
+    assert(unimpi.group_free(&group) == 0);
+    assert(group == facade_group(FAKE_NATIVE_GROUP_NULL));
+    assert((int)(intptr_t)group == FAKE_NATIVE_GROUP_NULL);
+
+    /* OUT Op */
+    assert(unimpi.op_create(NULL, 1, &op) == 0);
+    assert(op == facade_op(FAKE_NATIVE_OP));
+    assert((int)(intptr_t)op == FAKE_NATIVE_OP);
+
+    /* INOUT free Op */
+    assert(unimpi.op_free(&op) == 0);
+    assert(op == facade_op(FAKE_NATIVE_OP_NULL));
+    assert((int)(intptr_t)op == FAKE_NATIVE_OP_NULL);
+
+    /* OUT Win */
+    assert(unimpi.win_create(&base, (MPI_Aint)sizeof(base), 1,
+                             facade_info(FAKE_NATIVE_INFO), facade_comm(1),
+                             &win) == 0);
+    assert(win == facade_win(FAKE_NATIVE_WIN));
+    assert((int)(intptr_t)win == FAKE_NATIVE_WIN);
+
+    /* INOUT free Win */
+    assert(unimpi.win_free(&win) == 0);
+    assert(win == facade_win(FAKE_NATIVE_WIN_NULL));
+    assert((int)(intptr_t)win == FAKE_NATIVE_WIN_NULL);
+
+    printf("    Class C OUT Comm/Datatype/Group/Op/Win + INOUT free passed\n");
+}
+
 static void test_backend_on_integer_api(
     const char *path,
     int (*init_fn)(unimpi_lib_handle_t),
@@ -272,6 +379,7 @@ static void test_backend_on_integer_api(
     test_type_get_contents_neighbor_poison();
     test_spawn_multiple_root_info_array();
     test_spawn_multiple_nonroot_null_info();
+    test_class_c_out_and_inout_sample();
 
     g_active_handle = NULL;
     unimpi_loader_unload(handle);

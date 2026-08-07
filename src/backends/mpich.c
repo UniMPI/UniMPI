@@ -228,34 +228,24 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
     unimpi.comm_rank = (int (*)(MPI_Comm, int*))
         unimpi_platform_dlsym(handle, "MPI_Comm_rank");
     /* comm_dup / comm_free: owned by unimpi_bind_integer_opaque_apis */
-    unimpi.comm_dup_with_info = (int (*)(MPI_Comm, MPI_Info, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_dup_with_info");
-    unimpi.comm_split = (int (*)(MPI_Comm, int, int, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_split");
-    unimpi.comm_split_type = (int (*)(MPI_Comm, int, int, MPI_Info, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_split_type");
+    /* comm_dup_with_info: owned by unimpi_bind_integer_opaque_apis */
+    /* comm_split: owned by unimpi_bind_integer_opaque_apis */
+    /* comm_split_type: owned by unimpi_bind_integer_opaque_apis */
 
     /* Datatypes - Creation */
-    unimpi.type_commit = (int (*)(MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_commit");
-    unimpi.type_free = (int (*)(MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_free");
-    unimpi.type_contiguous = (int (*)(int, MPI_Datatype, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_contiguous");
-    unimpi.type_vector = (int (*)(int, int, int, MPI_Datatype, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_vector");
-    unimpi.type_indexed = (int (*)(int, const int*, const int*, MPI_Datatype, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_indexed");
+    /* type_commit: owned by unimpi_bind_integer_opaque_apis */
+    /* type_free: owned by unimpi_bind_integer_opaque_apis */
+    /* type_contiguous: owned by unimpi_bind_integer_opaque_apis */
+    /* type_vector: owned by unimpi_bind_integer_opaque_apis */
+    /* type_indexed: owned by unimpi_bind_integer_opaque_apis */
     unimpi.type_create_indexed_block = (int (*)(int, int, const int*, MPI_Datatype, MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_create_indexed_block");
     unimpi.type_create_subarray = (int (*)(int, const int*, const int*, const int*, int, MPI_Datatype, MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_create_subarray");
-    unimpi.type_dup = (int (*)(MPI_Datatype, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_dup");
+    /* type_dup: owned by unimpi_bind_integer_opaque_apis */
 
     /* MPI-2.2 Extended datatypes */
-    unimpi.type_create_resized = (int (*)(MPI_Datatype, MPI_Aint, MPI_Aint, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_create_resized");
+    /* type_create_resized: owned by unimpi_bind_integer_opaque_apis */
     unimpi.type_get_envelope = (int (*)(MPI_Datatype, int*, int*, int*, int*))
         unimpi_platform_dlsym(handle, "MPI_Type_get_envelope");
     /* type_get_contents: owned by unimpi_bind_integer_opaque_apis */
@@ -323,22 +313,17 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Group_intersection");
     unimpi.group_difference = (int (*)(MPI_Group, MPI_Group, MPI_Group*))
         unimpi_platform_dlsym(handle, "MPI_Group_difference");
-    unimpi.group_incl = (int (*)(MPI_Group, int, const int*, MPI_Group*))
-        unimpi_platform_dlsym(handle, "MPI_Group_incl");
-    unimpi.group_excl = (int (*)(MPI_Group, int, const int*, MPI_Group*))
-        unimpi_platform_dlsym(handle, "MPI_Group_excl");
+    /* group_incl: owned by unimpi_bind_integer_opaque_apis */
+    /* group_excl: owned by unimpi_bind_integer_opaque_apis */
     unimpi.group_range_incl = (int (*)(MPI_Group, int, int[][3], MPI_Group*))
         unimpi_platform_dlsym(handle, "MPI_Group_range_incl");
     unimpi.group_range_excl = (int (*)(MPI_Group, int, int[][3], MPI_Group*))
         unimpi_platform_dlsym(handle, "MPI_Group_range_excl");
-    unimpi.group_free = (int (*)(MPI_Group*))
-        unimpi_platform_dlsym(handle, "MPI_Group_free");
+    /* group_free: owned by unimpi_bind_integer_opaque_apis */
 
     /* Communicator extended */
-    unimpi.comm_create = (int (*)(MPI_Comm, MPI_Group, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_create");
-    unimpi.comm_group = (int (*)(MPI_Comm, MPI_Group*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_group");
+    /* comm_create: owned by unimpi_bind_integer_opaque_apis */
+    /* comm_group: owned by unimpi_bind_integer_opaque_apis */
     unimpi.comm_set_name = (int (*)(MPI_Comm, const char*))
         unimpi_platform_dlsym(handle, "MPI_Comm_set_name");
     unimpi.comm_get_name = (int (*)(MPI_Comm, char*, int*))
@@ -355,10 +340,8 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_set_info");
 
     /* Intercommunicator Operations (MPI-2.2) */
-    unimpi.intercomm_create = (int (*)(MPI_Comm, int, MPI_Comm, int, int, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Intercomm_create");
-    unimpi.intercomm_merge = (int (*)(MPI_Comm, int, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Intercomm_merge");
+    /* intercomm_create: owned by unimpi_bind_integer_opaque_apis */
+    /* intercomm_merge: owned by unimpi_bind_integer_opaque_apis */
     unimpi.comm_remote_size = (int (*)(MPI_Comm, int*))
         unimpi_platform_dlsym(handle, "MPI_Comm_remote_size");
     unimpi.comm_remote_group = (int (*)(MPI_Comm, MPI_Comm*))
@@ -405,12 +388,10 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Topo_test");
 
     /* RMA - Window creation */
-    unimpi.win_create = (int (*)(void*, MPI_Aint, int, MPI_Info, MPI_Comm, MPI_Win*))
-        unimpi_platform_dlsym(handle, "MPI_Win_create");
+    /* win_create: owned by unimpi_bind_integer_opaque_apis */
     unimpi.win_allocate = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_allocate");
-    unimpi.win_free = (int (*)(MPI_Win*))
-        unimpi_platform_dlsym(handle, "MPI_Win_free");
+    /* win_free: owned by unimpi_bind_integer_opaque_apis */
 
     /* MPI-3 Extended RMA window */
     unimpi.win_allocate_shared = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
@@ -591,10 +572,8 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Free_mem");
 
     /* MPI-3 Reduction operations */
-    unimpi.op_create = (int (*)(void (*)(void*, void*, int*, MPI_Datatype*), int, MPI_Op*))
-        unimpi_platform_dlsym(handle, "MPI_Op_create");
-    unimpi.op_free = (int (*)(MPI_Op*))
-        unimpi_platform_dlsym(handle, "MPI_Op_free");
+    /* op_create: owned by unimpi_bind_integer_opaque_apis */
+    /* op_free: owned by unimpi_bind_integer_opaque_apis */
     unimpi.op_commutative = (int (*)(MPI_Op, int*))
         unimpi_platform_dlsym(handle, "MPI_Op_commutative");
 
