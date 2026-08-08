@@ -89,7 +89,7 @@ standard rule is covered.
 | Thread initialization | Yes | Yes | Yes | Yes | Yes | Negotiation only; concurrent MPI calls are not certified |
 | Vtable required-field validation | Yes | Yes | Yes | Yes | Yes | Required profile, not every optional MPI symbol |
 | Basic point-to-point | No | Yes | Yes | Yes | Yes | Blocking, nonblocking, probe and sendrecv subset |
-| Request completion and persistent setup | No | Partial | Partial | Partial | Partial | Request-handle arrays, payload completion, zero counts and `Startall` are exercised; native/facade multi-status array stride adaptation remains open |
+| Request completion and persistent setup | No | Yes | Yes | Yes | Yes | Request-handle arrays and per-element status arrays are adapted in place for the native stride; payload completion, zero counts and `Startall` are exercised |
 | Blocking collectives | No | Yes | Yes | Yes | Yes | Barrier, broadcast, gather/scatter, all-to-all and reductions subset |
 | Nonblocking collectives | No | Yes | Yes | Yes | Partial | Open MPI exercises all 17 calls; MPICH and Intel exercise the full set including `Ialltoallw`, adapted in memory for the native 4-byte datatype-handle stride; MS-MPI requires its documented nine-call subset |
 | Core datatypes and pack/unpack | No | Yes | Yes | Yes | Yes | Representative derived datatypes |
@@ -111,9 +111,6 @@ focused, cross-backend semantic coverage. Important examples include:
 - matched probes, ready/buffered sends, and cancellation semantics;
 - persistent collective requests and broader persistent point-to-point
   lifecycle/error cases;
-- per-element status results from multi-request completion arrays;
-- portable direct access to `MPI_Status` source/tag/error fields across native
-  status layouts;
 - remaining blocking and nonblocking collective variants and corner cases
   (in-place, zero-count and non-power-of-two behavior is not exhaustively
   certified on every backend);

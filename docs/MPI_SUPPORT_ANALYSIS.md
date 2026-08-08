@@ -52,11 +52,12 @@ These cases run across the platform/backend matrix described in
 - cancellation and cancelled-status semantics;
 - matched probe/receive semantics;
 - mixed completion errors and larger request-array stress;
-- per-element status results from multi-request completion arrays, pending a
-  native/facade status-array stride adapter;
-- portable direct access to source/tag/error fields across native status
-  layouts;
 - large counts, truncation, wildcard, and `MPI_PROC_NULL` corner cases.
+
+Per-element status arrays from multi-request completion calls are adapted in
+place to the native 20-byte record stride, and `MPI_Get_source`/`MPI_Get_tag`/
+`MPI_Get_error` are bound alongside `MPI_Get_count`/`MPI_Get_elements`, so
+portable status access through the standard accessors is covered.
 
 ### Collectives
 
