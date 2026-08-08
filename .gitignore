@@ -23,5 +23,6 @@ Thumbs.db
 *.dll
 *.exe
 *.gch
+*.pdf
 docs/superpowers/
 .codex-build/
