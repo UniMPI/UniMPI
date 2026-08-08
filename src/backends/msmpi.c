@@ -4,6 +4,7 @@
 #include "unimpi.h"
 #include "request_array_wrappers.h"
 #include "datatype_array_wrappers.h"
+#include "request_handle_wrappers.h"
 #include <string.h>
 
 /* MS-MPI uses MPICH-compatible error codes */
@@ -103,10 +104,16 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Send");
     unimpi.recv = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Recv");
-    unimpi.isend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Isend");
-    unimpi.irecv = (int (*)(void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Irecv");
+    /* Single-request isend/irecv wrapped for the native 32-bit request
+     * handle width (request-handle ABI adapter). */
+    if (unimpi_ih_set_isend((int (*)(const void*, int, int, int, int, int, int*))
+            unimpi_platform_dlsym(handle, "MPI_Isend"))) {
+        unimpi.isend = unimpi_wrap_isend;
+    }
+    if (unimpi_ih_set_irecv((int (*)(void*, int, int, int, int, int, int*))
+            unimpi_platform_dlsym(handle, "MPI_Irecv"))) {
+        unimpi.irecv = unimpi_wrap_irecv;
+    }
     unimpi.wait = (int (*)(MPI_Request*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Wait");
     unimpi_wrapper_set_waitall((int (*)(int, int*, MPI_Status*))
