@@ -80,7 +80,7 @@ int unimpi_wrap_alltoallw(const void *sendbuf, const int *sendcounts,
     if (real_comm_size) {
         real_comm_size(comm, &n);
     }
-    if (n <= 0 || !sendtypes || !recvtypes || !real_alltoallw) {
+    if (n <= 0 || !sendtypes || !recvtypes) {
         return real_alltoallw(sendbuf, sendcounts, sdispls,
             (const int *)sendtypes, recvbuf, recvcounts, rdispls,
             (const int *)recvtypes, comm);
@@ -103,7 +103,7 @@ int unimpi_wrap_ialltoallw(const void *sendbuf, const int *sendcounts,
     if (real_comm_size) {
         real_comm_size(comm, &n);
     }
-    if (n <= 0 || !sendtypes || !recvtypes || !real_ialltoallw) {
+    if (n <= 0 || !sendtypes || !recvtypes) {
         return real_ialltoallw(sendbuf, sendcounts, sdispls,
             (const int *)sendtypes, recvbuf, recvcounts, rdispls,
             (const int *)recvtypes, comm, request);
