@@ -16,7 +16,9 @@
  */
 
 #include "request_array_wrappers.h"
+#include "unimpi_errors.h"
 #include <stdint.h>
+#include <string.h>
 
 /* ---- Real backend function pointers (set during backend init) ---- */
 static int (*real_waitall)(int, int*, MPI_Status*);
@@ -74,6 +76,28 @@ static inline void reqs_expand_inplace(MPI_Request *reqs, int n) {
     }
 }
 
+/* Expand a contiguous native status block (20-byte stride) written by an
+ * integer-handle backend into the facade MPI_Status array (128-byte stride),
+ * in place. The backend writes count*20 bytes at the start of the buffer;
+ * each 20-byte native record is then copied to the front of its 128-byte
+ * facade slot. Backward scan keeps the write target (i*128) ahead of every
+ * not-yet-read source (k*20), so there is no read-after-write hazard.
+ * Status fields are only read through the MPI_Get_* accessors, which match
+ * the native legacy layout. */
+static inline void statuses_expand_inplace(MPI_Status *statuses, int n) {
+    for (int i = n - 1; i >= 0; i--) {
+        memcpy(&((char *)statuses)[i * (int)sizeof(union MPI_Status)],
+               &((char *)statuses)[i * (int)sizeof(struct unimpi_status_legacy)],
+               sizeof(struct unimpi_status_legacy));
+    }
+}
+
+/* True when the status array argument is an actual array to materialize,
+ * rather than the STATUS_IGNORE sentinel (which the backend never writes). */
+static inline int statuses_writable(MPI_Status *statuses) {
+    return statuses != NULL && statuses != UNIMPI_STATUSES_IGNORE;
+}
+
 /* ---- Wrapper implementations ---- */
 
 int unimpi_wrap_waitall(int count, MPI_Request *array_of_requests,
@@ -87,6 +111,9 @@ int unimpi_wrap_waitall(int count, MPI_Request *array_of_requests,
     int ret = real_waitall(count, (int*)array_of_requests, array_of_statuses);
     /* In-place expansion: restore 8-byte elements with sign extension */
     reqs_expand_inplace(array_of_requests, count);
+    if (ret == MPI_SUCCESS && statuses_writable(array_of_statuses)) {
+        statuses_expand_inplace(array_of_statuses, count);
+    }
     return ret;
 }
 
@@ -112,6 +139,10 @@ int unimpi_wrap_testsome(int incount, MPI_Request *array_of_requests,
     int ret = real_testsome(incount, (int*)array_of_requests, outcount,
                            array_of_indices, array_of_statuses);
     reqs_expand_inplace(array_of_requests, incount);
+    if (ret == MPI_SUCCESS && outcount && *outcount > 0 &&
+        statuses_writable(array_of_statuses)) {
+        statuses_expand_inplace(array_of_statuses, *outcount);
+    }
     return ret;
 }
 
@@ -124,6 +155,11 @@ int unimpi_wrap_testall(int count, MPI_Request *array_of_requests,
     reqs_compress_inplace(array_of_requests, count);
     int ret = real_testall(count, (int*)array_of_requests, flag, array_of_statuses);
     reqs_expand_inplace(array_of_requests, count);
+    /* Statuses are defined only when the test completed. */
+    if (ret == MPI_SUCCESS && flag && *flag &&
+        statuses_writable(array_of_statuses)) {
+        statuses_expand_inplace(array_of_statuses, count);
+    }
     return ret;
 }
 
@@ -149,6 +185,10 @@ int unimpi_wrap_waitsome(int incount, MPI_Request *array_of_requests,
     int ret = real_waitsome(incount, (int*)array_of_requests, outcount,
                            array_of_indices, array_of_statuses);
     reqs_expand_inplace(array_of_requests, incount);
+    if (ret == MPI_SUCCESS && outcount && *outcount > 0 &&
+        statuses_writable(array_of_statuses)) {
+        statuses_expand_inplace(array_of_statuses, *outcount);
+    }
     return ret;
 }
 

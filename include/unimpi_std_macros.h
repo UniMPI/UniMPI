@@ -142,6 +142,9 @@
 #define MPI_Test_cancelled unimpi.test_cancelled
 #define MPI_Get_count unimpi.get_count
 #define MPI_Get_elements unimpi.get_elements
+#define MPI_Get_source unimpi.get_source
+#define MPI_Get_tag unimpi.get_tag
+#define MPI_Get_error unimpi.get_error
 
 /* Collectives - Variable length */
 #define MPI_Gatherv unimpi.gatherv

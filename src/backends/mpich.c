@@ -215,6 +215,12 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get_count");
     unimpi.get_elements = (int (*)(const MPI_Status*, MPI_Datatype, int*))
         unimpi_platform_dlsym(handle, "MPI_Get_elements");
+    unimpi.get_source = (int (*)(const MPI_Status*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Get_source");
+    unimpi.get_tag = (int (*)(const MPI_Status*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Get_tag");
+    unimpi.get_error = (int (*)(const MPI_Status*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Get_error");
 
     /* Collective - Standard */
     unimpi.bcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm))

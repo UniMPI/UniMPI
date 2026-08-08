@@ -231,6 +231,9 @@ typedef struct {
     int (*test_cancelled)(const MPI_Status *status, int *flag);
     int (*get_count)(const MPI_Status *status, MPI_Datatype datatype, int *count);
     int (*get_elements)(const MPI_Status *status, MPI_Datatype datatype, int *count);
+    int (*get_source)(const MPI_Status *status, int *source);
+    int (*get_tag)(const MPI_Status *status, int *tag);
+    int (*get_error)(const MPI_Status *status, int *error);
 
     /* Collective */
     int (*bcast)(void *buffer, int count, MPI_Datatype datatype,
