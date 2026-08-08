@@ -61,6 +61,7 @@ static void assert_vtable_cleared(void) {
     assert(unimpi.get_library_version == NULL);
     assert(UNIMPI_COMM_WORLD == 0);
     assert(UNIMPI_COMM_SELF == 0);
+    assert(UNIMPI_STATUS_IGNORE == NULL);
 }
 
 static void assert_active_identity(const char *library_path) {

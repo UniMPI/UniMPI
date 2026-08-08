@@ -15,6 +15,7 @@ static void assert_core_vtable_cleared(void) {
     assert(unimpi.get_library_version == NULL);
     assert(UNIMPI_COMM_WORLD == 0);
     assert(UNIMPI_COMM_SELF == 0);
+    assert(UNIMPI_STATUS_IGNORE == NULL);
     assert(unimpi_get_backend_type() == UNIMPI_BACKEND_UNKNOWN);
 }
 

@@ -98,6 +98,13 @@ extern MPI_Info UNIMPI_INFO_NULL;
 /* MPI predefined request constant */
 extern MPI_Request UNIMPI_REQUEST_NULL;
 
+/* Runtime-selected native status-ignore sentinel. Open MPI uses NULL while
+ * integer-handle backends use pointer value 1. As with other predefined MPI
+ * values, applications must evaluate it after successful initialization.
+ * Singular and plural share the selected backend value. */
+extern MPI_Status *UNIMPI_STATUS_IGNORE;
+#define UNIMPI_STATUSES_IGNORE UNIMPI_STATUS_IGNORE
+
 /* MPI topology types - resolved at runtime from backend */
 extern int UNIMPI_CART;
 extern int UNIMPI_GRAPH;

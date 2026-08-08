@@ -754,6 +754,9 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* MS-MPI uses MPICH-compatible request null value */
     UNIMPI_REQUEST_NULL = (MPI_Request)0x2c000000;
 
+    /* MS-MPI defines both status-ignore sentinels as pointer value 1. */
+    UNIMPI_STATUS_IGNORE = (MPI_Status *)(intptr_t)1;
+
     /* MS-MPI uses MPICH-compatible info null value */
     UNIMPI_INFO_NULL = (MPI_Info)0x1c000000;
 

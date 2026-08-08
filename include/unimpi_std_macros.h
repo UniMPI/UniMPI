@@ -48,6 +48,10 @@
 /* Predefined request constant */
 #define MPI_REQUEST_NULL UNIMPI_REQUEST_NULL
 
+/* Status ignore sentinels (singular and plural; same facade pointer value) */
+#define MPI_STATUS_IGNORE UNIMPI_STATUS_IGNORE
+#define MPI_STATUSES_IGNORE UNIMPI_STATUSES_IGNORE
+
 /* Topology types */
 #define MPI_CART UNIMPI_CART
 #define MPI_GRAPH UNIMPI_GRAPH

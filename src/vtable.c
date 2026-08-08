@@ -13,6 +13,7 @@ MPI_Comm UNIMPI_COMM_WORLD = 0;
 MPI_Comm UNIMPI_COMM_SELF = 0;
 MPI_Info UNIMPI_INFO_NULL = 0;
 MPI_Request UNIMPI_REQUEST_NULL = 0;
+MPI_Status *UNIMPI_STATUS_IGNORE = NULL;
 
 /* MPI topology types - filled at runtime */
 int UNIMPI_CART = 0;
@@ -85,6 +86,9 @@ int unimpi_vtable_validate_core(unimpi_lib_handle_t handle) {
 int unimpi_vtable_init(unimpi_lib_handle_t handle) {
     int ret;
 
+    /* Keep failed or retried initialization attempts at the neutral value. */
+    UNIMPI_STATUS_IGNORE = NULL;
+
     /* Validate core symbols */
     ret = unimpi_vtable_validate_core(handle);
     if (ret != UNIMPI_OK) {
@@ -130,6 +134,7 @@ void unimpi_vtable_cleanup(void) {
     memset(&unimpi, 0, sizeof(unimpi_vtable_t));
     UNIMPI_COMM_WORLD = 0;
     UNIMPI_COMM_SELF = 0;
+    UNIMPI_STATUS_IGNORE = NULL;
     g_backend_type = UNIMPI_BACKEND_UNKNOWN;
     g_backend_handle = NULL;
 }
