@@ -71,6 +71,23 @@ static void init_msmpi_error_codes(void) {
 /* MS-MPI uses different predefined communicator values than MPICH */
 /* MPI_COMM_WORLD = 0x44000000, MPI_COMM_SELF = 0x44000001 */
 
+
+/* Legacy-layout status accessors (int unimpi).
+ * MPI_Get_source/tag/error are not exported by this backend, so read the
+ * fields directly from the legacy layout (MPI_SOURCE at offset 8). */
+static int msmpi_status_get_source(const MPI_Status *status, int *out) {
+    *out = status->legacy.MPI_SOURCE;
+    return MPI_SUCCESS;
+}
+static int msmpi_status_get_tag(const MPI_Status *status, int *out) {
+    *out = status->legacy.MPI_TAG;
+    return MPI_SUCCESS;
+}
+static int msmpi_status_get_error(const MPI_Status *status, int *out) {
+    *out = status->legacy.MPI_ERROR;
+    return MPI_SUCCESS;
+}
+
 int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
@@ -192,12 +209,12 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get_count");
     unimpi.get_elements = (int (*)(const MPI_Status*, MPI_Datatype, int*))
         unimpi_platform_dlsym(handle, "MPI_Get_elements");
-    unimpi.get_source = (int (*)(const MPI_Status*, int*))
-        unimpi_platform_dlsym(handle, "MPI_Get_source");
-    unimpi.get_tag = (int (*)(const MPI_Status*, int*))
-        unimpi_platform_dlsym(handle, "MPI_Get_tag");
-    unimpi.get_error = (int (*)(const MPI_Status*, int*))
-        unimpi_platform_dlsym(handle, "MPI_Get_error");
+    /* MPI_Get_source/tag/error are MPI-4 convenience accessors not exported
+     * by this backend; bind legacy-layout readers instead (MPI_SOURCE at
+     * offset 8 on integer-handle backends). */
+    unimpi.get_source = msmpi_status_get_source;
+    unimpi.get_tag = msmpi_status_get_tag;
+    unimpi.get_error = msmpi_status_get_error;
 
     /* Collective - Standard */
     unimpi.bcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm))

@@ -232,6 +232,22 @@ static int get_openmpi_op_values(unimpi_lib_handle_t handle) {
     return UNIMPI_OK;
 }
 
+
+/* OpenMPI-layout status accessors (MPI_SOURCE at offset 0).
+ * MPI_Get_source/tag/error are not exported by OpenMPI's C library. */
+static int openmpi_status_get_source(const MPI_Status *status, int *out) {
+    *out = status->openmpi.MPI_SOURCE;
+    return MPI_SUCCESS;
+}
+static int openmpi_status_get_tag(const MPI_Status *status, int *out) {
+    *out = status->openmpi.MPI_TAG;
+    return MPI_SUCCESS;
+}
+static int openmpi_status_get_error(const MPI_Status *status, int *out) {
+    *out = status->openmpi.MPI_ERROR;
+    return MPI_SUCCESS;
+}
+
 int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     /* Environment Management */
     unimpi.init = (int (*)(int*, char***))
@@ -344,12 +360,12 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get_count");
     unimpi.get_elements = (int (*)(const MPI_Status*, MPI_Datatype, int*))
         unimpi_platform_dlsym(handle, "MPI_Get_elements");
-    unimpi.get_source = (int (*)(const MPI_Status*, int*))
-        unimpi_platform_dlsym(handle, "MPI_Get_source");
-    unimpi.get_tag = (int (*)(const MPI_Status*, int*))
-        unimpi_platform_dlsym(handle, "MPI_Get_tag");
-    unimpi.get_error = (int (*)(const MPI_Status*, int*))
-        unimpi_platform_dlsym(handle, "MPI_Get_error");
+    /* MPI_Get_source/tag/error are MPI-4 convenience accessors not exported
+     * by this backend; bind OpenMPI-layout readers instead (MPI_SOURCE at
+     * offset 0). */
+    unimpi.get_source = openmpi_status_get_source;
+    unimpi.get_tag = openmpi_status_get_tag;
+    unimpi.get_error = openmpi_status_get_error;
 
     /* Collective - Standard */
     unimpi.bcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm))
