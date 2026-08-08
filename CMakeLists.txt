@@ -53,10 +53,11 @@ endif()
 set(UNIMPI_BACKEND_SOURCES
     src/backends/openmpi.c
     src/backends/mpich.c
+    src/backends/mpich_wrappers.c
     src/backends/intelmpi.c
+    src/backends/intelmpi_wrappers.c
     src/backends/msmpi.c
-    src/backends/request_array_wrappers.c
-    src/backends/datatype_array_wrappers.c
+    src/backends/msmpi_wrappers.c
 )
 
 # Create library

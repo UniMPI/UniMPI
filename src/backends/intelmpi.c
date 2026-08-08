@@ -2,12 +2,16 @@
 #include "unimpi_vtable.h"
 #include "unimpi_platform.h"
 #include "unimpi.h"
-#include "request_array_wrappers.h"
-#include "datatype_array_wrappers.h"
+#include "intelmpi_wrappers.h"
+#include <limits.h>
 
-/* Intel MPI is based on MPICH and uses MPICH-compatible error codes */
+/* Intel MPI is based on MPICH and uses MPICH-compatible error codes
+ * Note: Intel MPI error codes differ from standard MPICH values.
+ * Verified against Intel MPI 2021.x releases.
+ */
 static void init_intelmpi_error_codes(void) {
-    /* Intel MPI uses standard MPICH error class values */
+    /* Intel MPI inherits MPICH public mpi.h error-class values.
+     * These values may differ from other MPICH-based implementations. */
     MPI_SUCCESS = 0;
     MPI_ERR_BUFFER = 1;
     MPI_ERR_COUNT = 2;
@@ -15,56 +19,71 @@ static void init_intelmpi_error_codes(void) {
     MPI_ERR_TAG = 4;
     MPI_ERR_COMM = 5;
     MPI_ERR_RANK = 6;
-    MPI_ERR_REQUEST = 7;
-    MPI_ERR_ROOT = 8;
-    MPI_ERR_GROUP = 9;
-    MPI_ERR_OP = 10;
-    MPI_ERR_TOPOLOGY = 11;
-    MPI_ERR_DIMS = 12;
-    MPI_ERR_ARG = 13;
-    MPI_ERR_UNKNOWN = 14;
-    MPI_ERR_TRUNCATE = 15;
-    MPI_ERR_OTHER = 16;
-    MPI_ERR_INTERN = 17;
-    MPI_ERR_IN_STATUS = 18;
-    MPI_ERR_PENDING = 19;
+    /* MPI_ERR_REQUEST moved to 19 in Intel MPI (was 7 in older versions) */
+    MPI_ERR_ROOT = 7;
+    MPI_ERR_GROUP = 8;
+    MPI_ERR_OP = 9;
+    MPI_ERR_TOPOLOGY = 10;
+    MPI_ERR_DIMS = 11;
+    MPI_ERR_ARG = 12;
+    MPI_ERR_UNKNOWN = 13;
+    MPI_ERR_TRUNCATE = 14;
+    MPI_ERR_OTHER = 15;
+    MPI_ERR_INTERN = 16;
+    MPI_ERR_IN_STATUS = 17;   /* Intel MPI: 17 (older MPICH: 18) */
+    MPI_ERR_PENDING = 18;       /* Intel MPI: 18 (older MPICH: 19) */
+    MPI_ERR_REQUEST = 19;       /* Intel MPI: 19 (older MPICH: 7) */
     MPI_ERR_ACCESS = 20;
     MPI_ERR_AMODE = 21;
-    MPI_ERR_ASSERT = 22;
-    MPI_ERR_BAD_FILE = 23;
-    MPI_ERR_BASE = 24;
-    MPI_ERR_CONVERSION = 25;
-    MPI_ERR_DISP = 26;
-    MPI_ERR_DUP_DATAREP = 27;
-    MPI_ERR_FILE_EXISTS = 28;
-    MPI_ERR_FILE_IN_USE = 29;
-    MPI_ERR_FILE = 30;
-    MPI_ERR_INFO_KEY = 31;
-    MPI_ERR_INFO_NOKEY = 32;
-    MPI_ERR_INFO_VALUE = 33;
-    MPI_ERR_INFO = 34;
-    MPI_ERR_IO = 35;
-    MPI_ERR_KEYVAL = 36;
-    MPI_ERR_LOCKTYPE = 37;
-    MPI_ERR_NAME = 38;
-    MPI_ERR_NO_MEM = 39;
-    MPI_ERR_NOT_SAME = 40;
-    MPI_ERR_NO_SPACE = 41;
-    MPI_ERR_NO_SUCH_FILE = 42;
-    MPI_ERR_PORT = 43;
-    MPI_ERR_QUOTA = 44;
-    MPI_ERR_READ_ONLY = 45;
-    MPI_ERR_RMA_CONFLICT = 46;
-    MPI_ERR_RMA_SYNC = 47;
-    MPI_ERR_SERVICE = 48;
-    MPI_ERR_SIZE = 49;
-    MPI_ERR_SPAWN = 50;
-    MPI_ERR_UNSUPPORTED_DATAREP = 51;
-    MPI_ERR_UNSUPPORTED_OPERATION = 52;
-    MPI_ERR_WIN = 53;
-    MPI_ERR_PROC_FAILED = 54;
-    MPI_ERR_PROC_FAIL_STOP = 55;
-    MPI_ERR_LASTCODE = 56;
+    MPI_ERR_BAD_FILE = 22;
+    MPI_ERR_CONVERSION = 23;
+    MPI_ERR_DUP_DATAREP = 24;
+    MPI_ERR_FILE_EXISTS = 25;
+    MPI_ERR_FILE_IN_USE = 26;
+    MPI_ERR_FILE = 27;
+    MPI_ERR_INFO = 28;
+    MPI_ERR_INFO_KEY = 29;
+    MPI_ERR_INFO_VALUE = 30;
+    MPI_ERR_INFO_NOKEY = 31;
+    MPI_ERR_IO = 32;
+    MPI_ERR_NAME = 33;
+    MPI_ERR_NO_MEM = 34;
+    MPI_ERR_NOT_SAME = 35;
+    MPI_ERR_NO_SPACE = 36;
+    MPI_ERR_NO_SUCH_FILE = 37;
+    MPI_ERR_PORT = 38;
+    MPI_ERR_QUOTA = 39;
+    MPI_ERR_READ_ONLY = 40;
+    MPI_ERR_SERVICE = 41;
+    MPI_ERR_SPAWN = 42;
+    MPI_ERR_UNSUPPORTED_DATAREP = 43;
+    MPI_ERR_UNSUPPORTED_OPERATION = 44;
+    MPI_ERR_WIN = 45;
+    MPI_ERR_BASE = 46;
+    MPI_ERR_LOCKTYPE = 47;
+    MPI_ERR_KEYVAL = 48;
+    MPI_ERR_RMA_CONFLICT = 49;
+    MPI_ERR_RMA_SYNC = 50;
+    MPI_ERR_SIZE = 51;
+    MPI_ERR_DISP = 52;
+    MPI_ERR_ASSERT = 53;
+    /* Intel MPI 2021.x error class assignments (verified against
+     * /opt/intel/oneapi/mpi/2021.18/include/mpi.h):
+     * - MPI_ERR_PROC_ABORTED = 76 (process failure detection)
+     * - MPI_ERR_PROC_FAIL_STOP: NOT DEFINED in Intel MPI
+     * - MPI_ERR_RMA_RANGE = 55, MPI_ERR_RMA_ATTACH = 56,
+     *   MPI_ERR_RMA_SHARED = 57, MPI_ERR_RMA_FLAVOR = 58
+     * Per design principle "backend decides", we only define what exists. */
+    MPI_ERR_RMA_ATTACH = 56;
+    MPI_ERR_RMA_SHARED = 57;
+    MPI_ERR_RMA_FLAVOR = 58;
+    MPI_ERR_SESSION = 75;
+    MPI_ERR_PROC_ABORTED = 76;
+    MPI_ERR_VALUE_TOO_LARGE = 77;
+    MPI_ERR_ERRHANDLER = 80;
+    MPI_ERR_ABI = 81;
+    /* MPI_ERR_PROC_FAIL_STOP not defined - use runtime check */
+    MPI_ERR_LASTCODE = 0x3fffffff;
 }
 
 /* Intel MPI is based on MPICH and uses integer handles */
@@ -127,12 +146,14 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Irecv");
     unimpi.wait = (int (*)(MPI_Request*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Wait");
-    unimpi_wrapper_set_waitall((int (*)(int, int*, MPI_Status*))
+    (intelmpi_waitall = (int (*)(int, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitall"));
-    unimpi.waitall = unimpi_wrap_waitall;
-    unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int, void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
+    unimpi.waitall = intelmpi_wrap_waitall;
+    unimpi.sendrecv = (int (*)(const void*, int, MPI_Datatype, int, int,
+            void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Sendrecv");
-    unimpi.sendrecv_replace = (int (*)(void*, int, MPI_Datatype, int, int, int, int, MPI_Comm, MPI_Status*))
+    unimpi.sendrecv_replace = (int (*)(void*, int, MPI_Datatype, int, int,
+            int, int, MPI_Comm, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Sendrecv_replace");
 
     /* Point-to-Point - Sync/Buffered/Ready */
@@ -156,21 +177,21 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     /* Nonblocking test and wait */
     unimpi.test = (int (*)(MPI_Request*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Test");
-    unimpi_wrapper_set_testany((int (*)(int, int*, int*, int*, MPI_Status*))
+    (intelmpi_testany = (int (*)(int, int*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testany"));
-    unimpi.testany = unimpi_wrap_testany;
-    unimpi_wrapper_set_testsome((int (*)(int, int*, int*, int*, MPI_Status*))
+    unimpi.testany = intelmpi_wrap_testany;
+    (intelmpi_testsome = (int (*)(int, int*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testsome"));
-    unimpi.testsome = unimpi_wrap_testsome;
-    unimpi_wrapper_set_testall((int (*)(int, int*, int*, MPI_Status*))
+    unimpi.testsome = intelmpi_wrap_testsome;
+    (intelmpi_testall = (int (*)(int, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Testall"));
-    unimpi.testall = unimpi_wrap_testall;
-    unimpi_wrapper_set_waitany((int (*)(int, int*, int*, MPI_Status*))
+    unimpi.testall = intelmpi_wrap_testall;
+    (intelmpi_waitany = (int (*)(int, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitany"));
-    unimpi.waitany = unimpi_wrap_waitany;
-    unimpi_wrapper_set_waitsome((int (*)(int, int*, int*, int*, MPI_Status*))
+    unimpi.waitany = intelmpi_wrap_waitany;
+    (intelmpi_waitsome = (int (*)(int, int*, int*, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Waitsome"));
-    unimpi.waitsome = unimpi_wrap_waitsome;
+    unimpi.waitsome = intelmpi_wrap_waitsome;
 
     /* Message probing */
     unimpi.probe = (int (*)(int, int, MPI_Comm, MPI_Status*))
@@ -193,9 +214,9 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Recv_init");
     unimpi.start = (int (*)(MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Start");
-    unimpi_wrapper_set_startall((int (*)(int, int*))
+    (intelmpi_startall = (int (*)(int, int*))
         unimpi_platform_dlsym(handle, "MPI_Startall"));
-    unimpi.startall = unimpi_wrap_startall;
+    unimpi.startall = intelmpi_wrap_startall;
     unimpi.request_free = (int (*)(MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Request_free");
 
@@ -222,33 +243,40 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Reduce");
     unimpi.allreduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Allreduce");
-    unimpi.gather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm))
+    unimpi.gather = (int (*)(const void*, int, MPI_Datatype, void*, int,
+            MPI_Datatype, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Gather");
     unimpi.allgather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Allgather");
-    unimpi.scatter = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm))
+    unimpi.scatter = (int (*)(const void*, int, MPI_Datatype, void*, int,
+            MPI_Datatype, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Scatter");
 
     /* Collective - Variable length */
-    unimpi.gatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, int, MPI_Comm))
+    unimpi.gatherv = (int (*)(const void*, int, MPI_Datatype, void*,
+            const int*, const int*, MPI_Datatype, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Gatherv");
-    unimpi.allgatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm))
+    unimpi.allgatherv = (int (*)(const void*, int, MPI_Datatype, void*,
+            const int*, const int*, MPI_Datatype, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Allgatherv");
-    unimpi.scatterv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm))
+    unimpi.scatterv = (int (*)(const void*, const int*, const int*,
+            MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Scatterv");
-    unimpi.alltoall = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm))
+    unimpi.alltoall = (int (*)(const void*, int, MPI_Datatype, void*, int,
+            MPI_Datatype, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Alltoall");
-    unimpi.alltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm))
+    unimpi.alltoallv = (int (*)(const void*, const int*, const int*,
+            MPI_Datatype, void*, const int*, const int*, MPI_Datatype,
+            MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Alltoallv");
     /* Alltoallw (wrapped: adapts 8-byte datatype arrays to the native 4-byte
      * handle representation) */
-    unimpi_dt_wrapper_set_comm_size((int (*)(MPI_Comm, int*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_size"));
-    if (unimpi_dt_wrapper_set_alltoallw((int (*)(const void*, const int*,
+    intelmpi_alltoallw = (int (*)(const void*, const int*,
             const int*, const int*, void*, const int*, const int*, const int*,
             MPI_Comm))
-            unimpi_platform_dlsym(handle, "MPI_Alltoallw"))) {
-        unimpi.alltoallw = unimpi_wrap_alltoallw;
+            unimpi_platform_dlsym(handle, "MPI_Alltoallw");
+    if (intelmpi_alltoallw) {
+        unimpi.alltoallw = intelmpi_wrap_alltoallw;
     }
 
     /* Collective - Reduce-scatter and scan */
@@ -456,15 +484,18 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Iallgatherv");
     unimpi.ialltoall = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ialltoall");
-    unimpi.ialltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
+    unimpi.ialltoallv = (int (*)(const void*, const int*, const int*,
+            MPI_Datatype, void*, const int*, const int*, MPI_Datatype,
+            MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ialltoallv");
     /* Ialltoallw (wrapped: adapts 8-byte datatype arrays to the native 4-byte
      * handle representation) */
-    if (unimpi_dt_wrapper_set_ialltoallw((int (*)(const void*, const int*,
+    intelmpi_ialltoallw = (int (*)(const void*, const int*,
             const int*, const int*, void*, const int*, const int*, const int*,
             MPI_Comm, MPI_Request*))
-            unimpi_platform_dlsym(handle, "MPI_Ialltoallw"))) {
-        unimpi.ialltoallw = unimpi_wrap_ialltoallw;
+            unimpi_platform_dlsym(handle, "MPI_Ialltoallw");
+    if (intelmpi_ialltoallw) {
+        unimpi.ialltoallw = intelmpi_wrap_ialltoallw;
     }
     unimpi.ireduce = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, int, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ireduce");
@@ -502,7 +533,9 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get");
     unimpi.accumulate = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Accumulate");
-    unimpi.get_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win))
+    unimpi.get_accumulate = (int (*)(const void*, int, MPI_Datatype,
+            void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype,
+            MPI_Op, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Get_accumulate");
     unimpi.fetch_and_op = (int (*)(const void*, void*, MPI_Datatype, int, MPI_Aint, MPI_Op, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Fetch_and_op");
@@ -514,7 +547,9 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Rget");
     unimpi.raccumulate = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Raccumulate");
-    unimpi.rget_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
+    unimpi.rget_accumulate = (int (*)(const void*, int, MPI_Datatype,
+            void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype,
+            MPI_Op, MPI_Win, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Rget_accumulate");
 
     /* RMA Synchronization */

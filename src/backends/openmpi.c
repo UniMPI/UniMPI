@@ -35,8 +35,8 @@ static void init_openmpi_error_codes(void) {
     MPI_ERR_TRUNCATE = 15;
     MPI_ERR_OTHER = 16;
     MPI_ERR_INTERN = 17;
-    MPI_ERR_IN_STATUS = 17;    /* OpenMPI: 17 (MPICH: 18) */
-    MPI_ERR_PENDING = 18;      /* OpenMPI: 18 (MPICH: 19) */
+    MPI_ERR_IN_STATUS = 18;    /* OpenMPI: 18 */
+    MPI_ERR_PENDING = 19;      /* OpenMPI: 19 */
     MPI_ERR_ACCESS = 20;
     MPI_ERR_AMODE = 21;
     MPI_ERR_ASSERT = 22;
@@ -71,9 +71,9 @@ static void init_openmpi_error_codes(void) {
     MPI_ERR_UNSUPPORTED_DATAREP = 51;      /* OpenMPI specific */
     MPI_ERR_UNSUPPORTED_OPERATION = 52;  /* OpenMPI specific */
     MPI_ERR_WIN = 53;           /* OpenMPI specific */
-    MPI_ERR_PROC_FAILED = 74;   /* OpenMPI: MPI_ERR_PROC_ABORTED */
-    MPI_ERR_PROC_FAIL_STOP = 75;
-    MPI_ERR_LASTCODE = 76;
+    /* MPI_ERR_PROC_FAILED not defined in OpenMPI system headers */
+    /* MPI_ERR_PROC_FAIL_STOP not defined in OpenMPI */
+    MPI_ERR_LASTCODE = 92;      /* OpenMPI 4.x defines 92 */
 }
 
 /* Helper: Get the address of an OpenMPI global symbol (for datatypes/ops)

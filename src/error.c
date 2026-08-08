@@ -62,8 +62,15 @@ int MPI_ERR_SPAWN = 0;
 int MPI_ERR_UNSUPPORTED_DATAREP = 0;
 int MPI_ERR_UNSUPPORTED_OPERATION = 0;
 int MPI_ERR_WIN = 0;
-int MPI_ERR_PROC_FAILED = 0;
-int MPI_ERR_PROC_FAIL_STOP = 0;
+int MPI_ERR_RMA_RANGE = 0;
+int MPI_ERR_RMA_ATTACH = 0;
+int MPI_ERR_RMA_SHARED = 0;
+int MPI_ERR_RMA_FLAVOR = 0;
+int MPI_ERR_SESSION = 0;
+int MPI_ERR_PROC_ABORTED = 0;
+int MPI_ERR_VALUE_TOO_LARGE = 0;
+int MPI_ERR_ERRHANDLER = 0;
+int MPI_ERR_ABI = 0;
 int MPI_ERR_LASTCODE = 0;
 
 /* Thread levels */
@@ -209,8 +216,15 @@ const char* unimpi_mpi_error_string(int error_code) {
     if (error_code == MPI_ERR_UNSUPPORTED_DATAREP) return "MPI_ERR_UNSUPPORTED_DATAREP";
     if (error_code == MPI_ERR_UNSUPPORTED_OPERATION) return "MPI_ERR_UNSUPPORTED_OPERATION";
     if (error_code == MPI_ERR_WIN) return "MPI_ERR_WIN";
-    if (error_code == MPI_ERR_PROC_FAILED) return "MPI_ERR_PROC_FAILED";
-    if (error_code == MPI_ERR_PROC_FAIL_STOP) return "MPI_ERR_PROC_FAIL_STOP";
+    if (error_code == MPI_ERR_RMA_RANGE) return "MPI_ERR_RMA_RANGE";
+    if (error_code == MPI_ERR_RMA_ATTACH) return "MPI_ERR_RMA_ATTACH";
+    if (error_code == MPI_ERR_RMA_SHARED) return "MPI_ERR_RMA_SHARED";
+    if (error_code == MPI_ERR_RMA_FLAVOR) return "MPI_ERR_RMA_FLAVOR";
+    if (error_code == MPI_ERR_SESSION) return "MPI_ERR_SESSION";
+    if (error_code == MPI_ERR_PROC_ABORTED) return "MPI_ERR_PROC_ABORTED";
+    if (error_code == MPI_ERR_VALUE_TOO_LARGE) return "MPI_ERR_VALUE_TOO_LARGE";
+    if (error_code == MPI_ERR_ERRHANDLER) return "MPI_ERR_ERRHANDLER";
+    if (error_code == MPI_ERR_ABI) return "MPI_ERR_ABI";
     if (error_code == MPI_ERR_LASTCODE) return "MPI_ERR_LASTCODE";
     return "Unknown MPI error";
 }

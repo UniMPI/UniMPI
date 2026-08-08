@@ -53,14 +53,21 @@ extern int MPI_ERR_QUOTA;
 extern int MPI_ERR_READ_ONLY;
 extern int MPI_ERR_RMA_CONFLICT;
 extern int MPI_ERR_RMA_SYNC;
+extern int MPI_ERR_RMA_RANGE;
 extern int MPI_ERR_SERVICE;
 extern int MPI_ERR_SIZE;
 extern int MPI_ERR_SPAWN;
 extern int MPI_ERR_UNSUPPORTED_DATAREP;
 extern int MPI_ERR_UNSUPPORTED_OPERATION;
 extern int MPI_ERR_WIN;
-extern int MPI_ERR_PROC_FAILED;
-extern int MPI_ERR_PROC_FAIL_STOP;
+extern int MPI_ERR_RMA_ATTACH;
+extern int MPI_ERR_RMA_SHARED;
+extern int MPI_ERR_RMA_FLAVOR;
+extern int MPI_ERR_SESSION;
+extern int MPI_ERR_PROC_ABORTED;
+extern int MPI_ERR_VALUE_TOO_LARGE;
+extern int MPI_ERR_ERRHANDLER;
+extern int MPI_ERR_ABI;
 extern int MPI_ERR_LASTCODE;
 
 /* Thread levels */
