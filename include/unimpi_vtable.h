@@ -30,30 +30,36 @@ typedef int (MPI_Win_delete_attr_function)(MPI_Win win, int win_keyval, void *at
                                            void *extra_state);
 
 /* Status struct - must be defined before MPI_Status
- * Union to accommodate different backend layouts:
- * - Legacy (MPICH/MS-MPI): 20 bytes with internal count fields
- * - OpenMPI: 96+ bytes with different layout
+ * Union accommodating the real backend status layouts (verified against
+ * system mpi.h headers):
+ * - Legacy (MPICH/Intel MPI/MS-MPI): {count_lo, count_hi_and_cancelled,
+ *   MPI_SOURCE@8, MPI_TAG@12, MPI_ERROR@16} = 20 bytes
+ * - OpenMPI: {MPI_SOURCE@0, MPI_TAG, MPI_ERROR, _cancelled, size_t _ucount}
+ *   = 24 bytes
+ * The union is 24 bytes (max of the two row layouts). Single status values
+ * are treated as opaque 24-byte containers read through the accessor
+ * functions (MPI_Get_source/tag/error); only status *arrays* need
+ * compress/expand because the native stride (20 vs 24) differs from the
+ * union stride (24).
  */
 
-/* Legacy backend status layout (MPICH/Intel MPI/MS-MPI) */
+/* Legacy backend status layout (MPICH/Intel MPI/MS-MPI) - 20 bytes */
 struct unimpi_status_legacy {
     int count_lo;                /* Lower 32-bits of count */
     int count_hi_and_cancelled;  /* Upper 32-bits and cancelled flag */
     int MPI_SOURCE;
     int MPI_TAG;
     int MPI_ERROR;
-};  /* 20 bytes total */
+};
 
-/* OpenMPI status layout (larger, different field order) */
+/* OpenMPI status layout (ompi_status_public_t) - 24 bytes */
 struct unimpi_status_openmpi {
     int MPI_SOURCE;
     int MPI_TAG;
     int MPI_ERROR;
     int _cancelled;
     size_t _ucount;              /* Actual count as size_t */
-    /* OpenMPI may have additional internal fields */
-    char _padding[80];           /* Ensure at least 96 bytes total */
-};  /* ~96-100 bytes */
+};
 
 /* Union accommodating all backend status layouts */
 union MPI_Status {
@@ -62,17 +68,16 @@ union MPI_Status {
         int MPI_SOURCE;
         int MPI_TAG;
         int MPI_ERROR;
-        int _internal[5];        /* Reserved for internal use */
+        int _internal[3];        /* Reserved for internal use */
     } base;
 
     /* Backend-specific layouts */
     struct unimpi_status_legacy legacy;
     struct unimpi_status_openmpi openmpi;
-
-    /* Raw buffer for maximum size */
-    char _raw[128];
 };
 typedef union MPI_Status MPI_Status;
+/* Verify union is exactly 24 bytes (offset/size of largest member) */
+typedef char unimpi_status_union_size_is_24[(sizeof(union MPI_Status) == 24) ? 1 : -1];
 
 /* MPI predefined operations - will be resolved at runtime from backend */
 extern MPI_Op UNIMPI_MAX;
