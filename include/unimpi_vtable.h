@@ -37,10 +37,9 @@ typedef int (MPI_Win_delete_attr_function)(MPI_Win win, int win_keyval, void *at
  * - OpenMPI: {MPI_SOURCE@0, MPI_TAG, MPI_ERROR, _cancelled, size_t _ucount}
  *   = 24 bytes
  * The union is 24 bytes (max of the two row layouts). Single status values
- * are treated as opaque 24-byte containers read through the accessor
- * functions (MPI_Get_source/tag/error); only status *arrays* need
- * compress/expand because the native stride (20 vs 24) differs from the
- * union stride (24).
+ * are treated as opaque 24-byte containers whose fields are read directly
+ * (status.MPI_SOURCE etc.); only status *arrays* need compress/expand
+ * because the native stride (20 vs 24) differs from the union stride (24).
  */
 
 /* Legacy backend status layout (MPICH/Intel MPI/MS-MPI) - 20 bytes */
@@ -236,9 +235,6 @@ typedef struct {
     int (*test_cancelled)(const MPI_Status *status, int *flag);
     int (*get_count)(const MPI_Status *status, MPI_Datatype datatype, int *count);
     int (*get_elements)(const MPI_Status *status, MPI_Datatype datatype, int *count);
-    int (*get_source)(const MPI_Status *status, int *source);
-    int (*get_tag)(const MPI_Status *status, int *tag);
-    int (*get_error)(const MPI_Status *status, int *error);
 
     /* Collective */
     int (*bcast)(void *buffer, int count, MPI_Datatype datatype,

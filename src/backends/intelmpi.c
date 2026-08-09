@@ -105,21 +105,6 @@ static int get_intelmpi_comm_world(unimpi_lib_handle_t handle, MPI_Comm *comm) {
 }
 
 
-/* Legacy-layout status accessors (int unimpi).
- * MPI_Get_source/tag/error are not exported by this backend, so read the
- * fields directly from the legacy layout (MPI_SOURCE at offset 8). */
-static int intelmpi_status_get_source(const MPI_Status *status, int *out) {
-    *out = status->legacy.MPI_SOURCE;
-    return MPI_SUCCESS;
-}
-static int intelmpi_status_get_tag(const MPI_Status *status, int *out) {
-    *out = status->legacy.MPI_TAG;
-    return MPI_SUCCESS;
-}
-static int intelmpi_status_get_error(const MPI_Status *status, int *out) {
-    *out = status->legacy.MPI_ERROR;
-    return MPI_SUCCESS;
-}
 
 int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     /* Note: UnimPI intentionally does not set I_MPI_SPAWN here. Applications
@@ -246,12 +231,6 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get_count");
     unimpi.get_elements = (int (*)(const MPI_Status*, MPI_Datatype, int*))
         unimpi_platform_dlsym(handle, "MPI_Get_elements");
-    /* MPI_Get_source/tag/error are MPI-4 convenience accessors not exported
-     * by this backend; bind legacy-layout readers instead (MPI_SOURCE at
-     * offset 8 on integer-handle backends). */
-    unimpi.get_source = intelmpi_status_get_source;
-    unimpi.get_tag = intelmpi_status_get_tag;
-    unimpi.get_error = intelmpi_status_get_error;
 
     /* Collective - Standard */
     unimpi.bcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm))
