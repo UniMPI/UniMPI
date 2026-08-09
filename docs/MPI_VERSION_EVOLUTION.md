@@ -1,20 +1,24 @@
-# MPI 函数清单与版本演进参考文档
+# MPI 函数与类型清单、版本演进参考文档
 
-> 本清单通过 `pdftotext` 从 MPI 官方标准报告（mpi22/mpi30/mpi31/mpi40-report.pdf）提取 C 绑定函数原型，过滤内部 `_c` 变体与回调类型后生成。用作 UniMPI 后续 API 对齐的权威参照。
-> 提取脚本：`tools/mpi_spec_extract.py`。
+> 通过 `pdftotext` 从 MPI 官方标准报告（mpi22/mpi30/mpi31/mpi40-report.pdf）提取。
+> - 函数：提取 C 绑定原型，过滤内部 `_c` 变体与回调类型（`tools/mpi_spec_extract.py`）。
+> - 类型：提取句柄类型与预定义数据类型（`tools/mpi_types_22.py`），标注引入版本。
+> 用作 UniMPI 后续 API 对齐的权威参照（例如：MPI 标准**没有** `MPI_Get_source/tag/error`）。
 
-## 各版本函数总数
+## 各版本函数 / 类型总数
 
-| MPI 版本 | C 公开函数数 |
-|---------|-------------|
-| 2.2 | 306 |
-| 3.0 | 395 |
-| 3.1 | 404 |
-| 4.0 | 470 |
+| MPI 版本 | C 公开函数 | 句柄+预定义类型 |
+|---------|-----------|----------------|
+| 2.2 | 306 | 61 |
+| 3.0 | 395 | 63 |
+| 3.1 | 404 | 63 |
+| 4.0 | 470 | 63 |
+
+---
 
 ## 2.2 → 3.0 演进
 
-**新增（99）**
+**新增函数（99）**
 
 - MPI_Comm_create_group
 - MPI_Comm_dup_with_info
@@ -116,7 +120,7 @@
 - MPI_Win_sync
 - MPI_Win_unlock_all
 
-**移除/废弃（10）**
+**移除/废弃函数（10）**
 
 - MPI_Address
 - MPI_Errhandler_create
@@ -129,9 +133,13 @@
 - MPI_Type_struct
 - MPI_Type_ub
 
+**新增类型（2）**：MPI_Count, MPI_Message
+
+---
+
 ## 3.0 → 3.1 演进
 
-**新增（9）**
+**新增函数（9）**
 
 - MPI_Aint_add
 - MPI_Aint_diff
@@ -143,13 +151,17 @@
 - MPI_T_cvar_get_index
 - MPI_T_pvar_get_index
 
-**移除/废弃（0）**
+**移除/废弃函数（0）**
 
 _无_
 
+**新增类型（0）**：_无_
+
+---
+
 ## 3.1 → 4.0 演进
 
-**新增（66）**
+**新增函数（66）**
 
 - MPI_Allgather_init
 - MPI_Allgatherv_init
@@ -218,9 +230,13 @@ _无_
 - MPI_T_source_get_num
 - MPI_T_source_get_timestamp
 
-**移除/废弃（0）**
+**移除/废弃函数（0）**
 
 _无_
+
+**新增类型（0）**：_无_
+
+---
 
 ## MPI 2.2 完整函数清单（基准）
 
@@ -530,3 +546,72 @@ _无_
 - MPI_Wtick
 - MPI_Wtime
 - MPI_X_TYPE_COMMIT
+
+## MPI 2.2 完整类型清单（基准）
+
+### 句柄 / opaque 类型
+
+- MPI_Aint
+- MPI_Comm
+- MPI_Datatype
+- MPI_Errhandler
+- MPI_File
+- MPI_Group
+- MPI_Info
+- MPI_Offset
+- MPI_Op
+- MPI_Request
+- MPI_Status
+- MPI_Win
+
+### C 预定义数据类型
+
+- MPI_2COMPLEX
+- MPI_2DOUBLE_COMPLEX
+- MPI_2DOUBLE_PRECISION
+- MPI_2FLOAT
+- MPI_2INT
+- MPI_2REAL
+- MPI_AINT
+- MPI_BYTE
+- MPI_CHAR
+- MPI_COMPLEX
+- MPI_C_BOOL
+- MPI_C_COMPLEX
+- MPI_C_DOUBLE_COMPLEX
+- MPI_C_FLOAT_COMPLEX
+- MPI_C_LONG_DOUBLE_COMPLEX
+- MPI_DOUBLE
+- MPI_DOUBLE_COMPLEX
+- MPI_DOUBLE_INT
+- MPI_FLOAT
+- MPI_FLOAT_INT
+- MPI_INT
+- MPI_INT16_T
+- MPI_INT32_T
+- MPI_INT64_T
+- MPI_INT8_T
+- MPI_LB
+- MPI_LONG
+- MPI_LONG_DOUBLE
+- MPI_LONG_DOUBLE_COMPLEX
+- MPI_LONG_DOUBLE_INT
+- MPI_LONG_INT
+- MPI_LONG_LONG
+- MPI_LONG_LONG_INT
+- MPI_OFFSET
+- MPI_PACKED
+- MPI_SHORT
+- MPI_SHORT_INT
+- MPI_SIGNED_CHAR
+- MPI_UB
+- MPI_UINT16_T
+- MPI_UINT32_T
+- MPI_UINT64_T
+- MPI_UINT8_T
+- MPI_UNSIGNED
+- MPI_UNSIGNED_CHAR
+- MPI_UNSIGNED_LONG
+- MPI_UNSIGNED_LONG_LONG
+- MPI_UNSIGNED_SHORT
+- MPI_WCHAR
