@@ -142,6 +142,34 @@ The GitHub Actions matrix exercises:
 Do not remove a backend to make a test portable. Isolate implementation
 differences in fixtures, backend adapters, or test expectations.
 
+## Version-gated builds
+
+The exposed MPI surface narrows with the target version chosen at build time:
+`UNIMPI_MPI_TARGET_VERSION`/`UNIMPI_MPI_TARGET_SUBVERSION` (default 3/1)
+physically remove everything above the target from vtable fields, standard
+macros, and backend bindings. The library and any consumer must be compiled
+with the same macros; CMake's `PUBLIC` propagation makes this automatic. See
+[VERSION_GATING.md](VERSION_GATING.md) for the full mechanism, the gated
+clusters, and the ABI consistency requirement.
+
+Add the artifact-audit check to the validation matrix when a target-version
+build is under test:
+
+```bash
+# 3.1 (default) build
+strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_join|MPI_Iallreduce'   # -> 12
+./build/tests/test_vtable_layout                                           # 2208 / 276
+
+# 2.2 build (-DUNIMPI_MPI_TARGET_VERSION=2 -DUNIMPI_MPI_TARGET_SUBVERSION=2)
+strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_join|MPI_Iallreduce'   # -> 0
+./build22/tests/test_vtable_layout                                         # 1856 / 232
+```
+
+At target 2.2 the whole-tree build is validated on the library and unit tests;
+`examples/nonblocking.c`, `tests/mpi/test_collective_nonblocking.c`, and
+`tests/mpi/test_environment_info.c` use MPI-3.0-only API and do not compile at a
+2.2 target (`-DUNIMPI_BUILD_EXAMPLES=OFF`, and exclude those MPI tests).
+
 [MS-MPI is MPI 2.2 compliant and implements a subset of MPI
 3.1](https://github.com/microsoft/Microsoft-MPI#version-of-mpi-standard).
 Tests therefore require the nonblocking calls in Microsoft's

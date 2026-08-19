@@ -20,6 +20,16 @@ Backend adapters attempt to resolve a broad MPI-2.2/MPI-3-era surface. A symbol
 may be absent in a particular vendor/version, so required-field validation and
 focused integration tests determine the supported runtime subset.
 
+The counts above are for the **default target (3.1)**. The exposed surface
+narrows with the target version selected at build time
+(`UNIMPI_MPI_TARGET_VERSION`/`UNIMPI_MPI_TARGET_SUBVERSION`): the 9 MPI-3.0
+clusters (matched probe, alltoallw, nonblocking collectives, comm info, shared
+windows, RMA atomics, RMA sync, `Comm_join`, `Op_commutative`) are physically
+removed below a 3.0 target, so a 2.2 build has 232 vtable fields and a matching
+alias surface. The MPI-2 base is always present. Runtime capability is still
+decided by the dlopen'd backend, independent of the compile-time target. See
+[VERSION_GATING.md](VERSION_GATING.md).
+
 ## Focused real-backend coverage
 
 The current test suite has focused cases for:
