@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "unimpi_version.h"
 #include "unimpi_platform.h"
 #include "unimpi_loader.h"
 
@@ -211,11 +212,13 @@ typedef struct {
     int (*waitsome)(int incount, MPI_Request *array_of_requests, int *outcount,
                     int *array_of_indices, MPI_Status *array_of_statuses);
 
-    /* Message probing - MPI-3 matched probes */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 matched_probe */
     int (*mprobe)(int source, int tag, MPI_Comm comm, MPI_Message *message, MPI_Status *status);
     int (*improbe)(int source, int tag, MPI_Comm comm, int *flag, MPI_Message *message, MPI_Status *status);
     int (*mrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, MPI_Status *status);
     int (*imrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, MPI_Request *request);
+#endif
 
     /* Message probing */
     int (*probe)(int source, int tag, MPI_Comm comm, MPI_Status *status);
@@ -268,9 +271,12 @@ typedef struct {
     int (*alltoallv)(const void *sendbuf, const int *sendcounts, const int *sdispls, MPI_Datatype sendtype,
                      void *recvbuf, const int *recvcounts, const int *rdispls, MPI_Datatype recvtype,
                      MPI_Comm comm);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 alltoallw */
     int (*alltoallw)(const void *sendbuf, const int *sendcounts, const int *sdispls, const MPI_Datatype *sendtypes,
                      void *recvbuf, const int *recvcounts, const int *rdispls, const MPI_Datatype *recvtypes,
                      MPI_Comm comm);
+#endif
 
     /* Reduce-scatter and scan */
     int (*reduce_scatter)(const void *sendbuf, void *recvbuf, const int *recvcounts,
@@ -282,7 +288,8 @@ typedef struct {
     int (*exscan)(const void *sendbuf, void *recvbuf, int count,
                   MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 
-    /* MPI-3 Non-blocking Collectives */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 nonblocking_collectives */
     int (*ibarrier)(MPI_Comm comm, MPI_Request *request);
     int (*ibcast)(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm, MPI_Request *request);
     int (*igather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
@@ -324,6 +331,7 @@ typedef struct {
                  MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
     int (*iexscan)(const void *sendbuf, void *recvbuf, int count,
                    MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
+#endif
 
     /* Group operations */
     int (*group_size)(MPI_Group group, int *size);
@@ -343,18 +351,21 @@ typedef struct {
     int (*comm_size)(MPI_Comm comm, int *size);
     int (*comm_rank)(MPI_Comm comm, int *rank);
     int (*comm_dup)(MPI_Comm comm, MPI_Comm *newcomm);
-    int (*comm_dup_with_info)(MPI_Comm comm, MPI_Info info, MPI_Comm *newcomm);
     int (*comm_split)(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
-    int (*comm_split_type)(MPI_Comm comm, int split_type, int key, MPI_Info info, MPI_Comm *newcomm);
     int (*comm_free)(MPI_Comm *comm);
     int (*comm_create)(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm);
-    int (*comm_create_group)(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm);
     int (*comm_group)(MPI_Comm comm, MPI_Group *group);
     int (*comm_compare)(MPI_Comm comm1, MPI_Comm comm2, int *result);
     int (*comm_set_name)(MPI_Comm comm, const char *comm_name);
     int (*comm_get_name)(MPI_Comm comm, char *comm_name, int *resultlen);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 comm_3x */
+    int (*comm_dup_with_info)(MPI_Comm comm, MPI_Info info, MPI_Comm *newcomm);
+    int (*comm_split_type)(MPI_Comm comm, int split_type, int key, MPI_Info info, MPI_Comm *newcomm);
+    int (*comm_create_group)(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm);
     int (*comm_get_info)(MPI_Comm comm, MPI_Info *info_used);
     int (*comm_set_info)(MPI_Comm comm, MPI_Info info);
+#endif
 
     /* Intercommunicator Operations (MPI-2.2) */
     int (*intercomm_create)(MPI_Comm local_comm, int local_leader,
@@ -397,8 +408,11 @@ typedef struct {
     /* RMA/One-Sided - Window creation */
     int (*win_create)(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win);
     int (*win_allocate)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 win_alloc_shared */
     int (*win_allocate_shared)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
     int (*win_create_dynamic)(MPI_Info info, MPI_Comm comm, MPI_Win *win);
+#endif
     int (*win_free)(MPI_Win *win);
     int (*win_set_name)(MPI_Win win, const char *win_name);
     int (*win_get_name)(MPI_Win win, char *win_name, int *resultlen);
@@ -411,6 +425,8 @@ typedef struct {
     int (*accumulate)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
                       int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
                       MPI_Op op, MPI_Win win);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 rma_atomics */
     int (*get_accumulate)(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
                           void *result_addr, int result_count, MPI_Datatype result_datatype,
                           int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
@@ -432,6 +448,7 @@ typedef struct {
                            void *result_addr, int result_count, MPI_Datatype result_datatype,
                            int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
                            MPI_Op op, MPI_Win win, MPI_Request *request);
+#endif
 
     /* RMA Synchronization */
     int (*win_fence)(int assert, MPI_Win win);
@@ -442,12 +459,15 @@ typedef struct {
     int (*win_test)(MPI_Win win, int *flag);
     int (*win_lock)(int lock_type, int rank, int assert, MPI_Win win);
     int (*win_unlock)(int rank, MPI_Win win);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 rma_sync_3x */
     int (*win_lock_all)(int assert, MPI_Win win);
     int (*win_unlock_all)(MPI_Win win);
     int (*win_flush)(int rank, MPI_Win win);
     int (*win_flush_all)(MPI_Win win);
     int (*win_flush_local)(int rank, MPI_Win win);
     int (*win_sync)(MPI_Win win);
+#endif
 
     /* Parallel I/O - File operations */
     int (*file_open)(MPI_Comm comm, const char *filename, int amode, MPI_Info info, MPI_File *fh);
@@ -494,7 +514,10 @@ typedef struct {
     int (*comm_accept)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
     int (*comm_connect)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
     int (*comm_disconnect)(MPI_Comm *comm);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 comm_join */
     int (*comm_join)(int fd, MPI_Comm *intercomm);
+#endif
     int (*comm_get_parent)(MPI_Comm *parent);
 
     /* Dynamic Process - Port and Name Service */
@@ -525,7 +548,10 @@ typedef struct {
     /* Reduction operations */
     int (*op_create)(void (*user_fn)(void *, void *, int *, MPI_Datatype *), int commute, MPI_Op *op);
     int (*op_free)(MPI_Op *op);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 op_commutative */
     int (*op_commutative)(MPI_Op op, int *commute);
+#endif
 
     /* Status manipulation */
     int (*status_set_elements)(MPI_Status *status, MPI_Datatype datatype, int count);

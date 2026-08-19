@@ -99,6 +99,30 @@ set_tests_properties(test_version_gate PROPERTIES
     TIMEOUT 30
 )
 
+# Default-target vtable layout smoke test. At the default target all MPI-3.0
+# fields are present and the struct must compile and size out unchanged.
+add_executable(test_vtable_layout internal/test_vtable_layout.c)
+target_link_libraries(test_vtable_layout unimpi)
+add_test(NAME test_vtable_layout COMMAND test_vtable_layout)
+set_tests_properties(test_vtable_layout PROPERTIES
+    LABELS "unit;internal;vtable"
+    TIMEOUT 30
+)
+
+# Negative-compile gate check: at a 2.2 target the MPI-3.0 vtable fields are
+# physically removed, so referencing them must FAIL to compile. The cmake script
+# compiles test_vtable_strict.c with -DUNIMPI_MPI_TARGET_VERSION=2 and inverts
+# the compiler exit code (compile failure = pass; clean compile = broken gate).
+add_test(NAME test_vtable_strict
+    COMMAND ${CMAKE_COMMAND}
+            -DUNIMPI_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+            -DUNIMPI_C_COMPILER=${CMAKE_C_COMPILER}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_vtable_strict.cmake)
+set_tests_properties(test_vtable_strict PROPERTIES
+    LABELS "unit;internal;vtable"
+    TIMEOUT 30
+)
+
 # Fake MPI libraries for lifecycle and vtable validation.  Each missing-symbol
 # variant is a separate DSO so symbol presence is tested through the real
 # platform loader rather than by mocking dlsym/GetProcAddress.
