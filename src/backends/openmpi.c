@@ -315,6 +315,8 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Probe");
     unimpi.iprobe = (int (*)(int, int, MPI_Comm, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Iprobe");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 matched_probe */
     unimpi.mprobe = (int (*)(int, int, MPI_Comm, MPI_Message*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Mprobe");
     unimpi.improbe = (int (*)(int, int, MPI_Comm, int*, MPI_Message*, MPI_Status*))
@@ -323,6 +325,7 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Mrecv");
     unimpi.imrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Imrecv");
+#endif
 
     /* Persistent communication */
     unimpi.send_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
@@ -371,8 +374,11 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Alltoall");
     unimpi.alltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Alltoallv");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 alltoallw */
     unimpi.alltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Alltoallw");
+#endif
 
     /* Collective - Reduce-scatter and scan */
     unimpi.reduce_scatter = (int (*)(const void*, void*, const int*, MPI_Datatype, MPI_Op, MPI_Comm))
@@ -391,12 +397,8 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_rank");
     unimpi.comm_dup = (int (*)(MPI_Comm, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_dup");
-    unimpi.comm_dup_with_info = (int (*)(MPI_Comm, MPI_Info, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_dup_with_info");
     unimpi.comm_split = (int (*)(MPI_Comm, int, int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_split");
-    unimpi.comm_split_type = (int (*)(MPI_Comm, int, int, MPI_Info, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_split_type");
     unimpi.comm_free = (int (*)(MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_free");
 
@@ -466,7 +468,8 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     unimpi.pack_external_size = (int (*)(const char*, int, MPI_Datatype, MPI_Aint*))
         unimpi_platform_dlsym(handle, "MPI_Pack_external_size");
 
-    /* MPI-3 Non-blocking Collectives */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 nonblocking_collectives */
     unimpi.ibarrier = (int (*)(MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Ibarrier");
     unimpi.ibcast = (int (*)(void*, int, MPI_Datatype, int, MPI_Comm, MPI_Request*))
@@ -503,6 +506,7 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Iscan");
     unimpi.iexscan = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Iexscan");
+#endif
 
     /* Group operations */
     unimpi.group_size = (int (*)(MPI_Group, int*))
@@ -533,8 +537,6 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     /* Communicator extended */
     unimpi.comm_create = (int (*)(MPI_Comm, MPI_Group, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_create");
-    unimpi.comm_create_group = (int (*)(MPI_Comm, MPI_Group, int, MPI_Comm*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_create_group");
     unimpi.comm_group = (int (*)(MPI_Comm, MPI_Group*))
         unimpi_platform_dlsym(handle, "MPI_Comm_group");
     unimpi.comm_compare = (int (*)(MPI_Comm, MPI_Comm, int*))
@@ -543,10 +545,19 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_set_name");
     unimpi.comm_get_name = (int (*)(MPI_Comm, char*, int*))
         unimpi_platform_dlsym(handle, "MPI_Comm_get_name");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 comm_3x */
+    unimpi.comm_dup_with_info = (int (*)(MPI_Comm, MPI_Info, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_dup_with_info");
+    unimpi.comm_split_type = (int (*)(MPI_Comm, int, int, MPI_Info, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_split_type");
+    unimpi.comm_create_group = (int (*)(MPI_Comm, MPI_Group, int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_create_group");
     unimpi.comm_get_info = (int (*)(MPI_Comm, MPI_Info*))
         unimpi_platform_dlsym(handle, "MPI_Comm_get_info");
     unimpi.comm_set_info = (int (*)(MPI_Comm, MPI_Info))
         unimpi_platform_dlsym(handle, "MPI_Comm_set_info");
+#endif
 
     /* Intercommunicator Operations (MPI-2.2) */
     unimpi.intercomm_create = (int (*)(MPI_Comm, int, MPI_Comm, int, int, MPI_Comm*))
@@ -603,10 +614,13 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_create");
     unimpi.win_allocate = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_allocate");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 win_alloc_shared */
     unimpi.win_allocate_shared = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_allocate_shared");
     unimpi.win_create_dynamic = (int (*)(MPI_Info, MPI_Comm, MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_create_dynamic");
+#endif
     unimpi.win_free = (int (*)(MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_free");
     unimpi.win_set_name = (int (*)(MPI_Win, const char*))
@@ -621,6 +635,8 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get");
     unimpi.accumulate = (int (*)(const void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Accumulate");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 rma_atomics */
     unimpi.get_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Get_accumulate");
     unimpi.fetch_and_op = (int (*)(const void*, void*, MPI_Datatype, int, MPI_Aint, MPI_Op, MPI_Win))
@@ -635,6 +651,7 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Raccumulate");
     unimpi.rget_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Rget_accumulate");
+#endif
 
     /* RMA Synchronization */
     unimpi.win_fence = (int (*)(int, MPI_Win))
@@ -653,6 +670,8 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_lock");
     unimpi.win_unlock = (int (*)(int, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_unlock");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 rma_sync_3x */
     unimpi.win_lock_all = (int (*)(int, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_lock_all");
     unimpi.win_unlock_all = (int (*)(MPI_Win))
@@ -665,6 +684,7 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_flush_local");
     unimpi.win_sync = (int (*)(MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_sync");
+#endif
 
     /* Parallel I/O - File Operations */
     unimpi.file_open = (int (*)(MPI_Comm, const char*, int, MPI_Info, MPI_File*))
@@ -747,8 +767,11 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_connect");
     unimpi.comm_disconnect = (int (*)(MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_disconnect");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 comm_join */
     unimpi.comm_join = (int (*)(int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_join");
+#endif
     unimpi.comm_get_parent = (int (*)(MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_get_parent");
 
@@ -805,8 +828,11 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Op_create");
     unimpi.op_free = (int (*)(MPI_Op*))
         unimpi_platform_dlsym(handle, "MPI_Op_free");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 op_commutative */
     unimpi.op_commutative = (int (*)(MPI_Op, int*))
         unimpi_platform_dlsym(handle, "MPI_Op_commutative");
+#endif
 
     /* Status manipulation */
     unimpi.status_set_elements = (int (*)(MPI_Status*, MPI_Datatype, int))
