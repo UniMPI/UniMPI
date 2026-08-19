@@ -91,10 +91,30 @@ set_tests_properties(test_loader PROPERTIES
 )
 
 # Compile-time MPI version gating macro test
+# UNIMPI_USE_STD_NAMES is required so the #ifdef MPI_Ibcast branch in
+# test_version_gate.c resolves against the real std macros (not a placeholder).
 add_executable(test_version_gate internal/test_version_gate.c)
 target_link_libraries(test_version_gate unimpi)
+target_compile_definitions(test_version_gate PRIVATE UNIMPI_USE_STD_NAMES)
 add_test(NAME test_version_gate COMMAND test_version_gate)
 set_tests_properties(test_version_gate PROPERTIES
+    LABELS "unit;internal;version"
+    TIMEOUT 30
+)
+
+# Negative proof: at a 2.2 target every MPI-3.0 std macro must be ABSENT.
+# Compiled with the target pinned to 2.2; each #ifdef MPI_<3.0 macro> below
+# would trigger a #error and fail this TU's build. The executable only runs
+# after the file compiles, so a green binary proves the 3.0 macros are gone.
+add_executable(test_version_gate_strict internal/test_version_gate_strict.c)
+target_link_libraries(test_version_gate_strict unimpi)
+target_compile_definitions(test_version_gate_strict PRIVATE
+    UNIMPI_USE_STD_NAMES
+    UNIMPI_MPI_TARGET_VERSION=2
+    UNIMPI_MPI_TARGET_SUBVERSION=2
+)
+add_test(NAME test_version_gate_strict COMMAND test_version_gate_strict)
+set_tests_properties(test_version_gate_strict PROPERTIES
     LABELS "unit;internal;version"
     TIMEOUT 30
 )

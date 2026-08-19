@@ -93,9 +93,7 @@
 #define MPI_Comm_size unimpi.comm_size
 #define MPI_Comm_rank unimpi.comm_rank
 #define MPI_Comm_dup unimpi.comm_dup
-#define MPI_Comm_dup_with_info unimpi.comm_dup_with_info
 #define MPI_Comm_split unimpi.comm_split
-#define MPI_Comm_split_type unimpi.comm_split_type
 #define MPI_Comm_free unimpi.comm_free
 
 /* Predefined values */
@@ -125,10 +123,13 @@
 #define MPI_Iprobe unimpi.iprobe
 
 /* MPI-3 Matched probe operations */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 matched_probe */
 #define MPI_Mprobe unimpi.mprobe
 #define MPI_Improbe unimpi.improbe
 #define MPI_Mrecv unimpi.mrecv
 #define MPI_Imrecv unimpi.imrecv
+#endif
 
 /* Persistent communication */
 #define MPI_Send_init unimpi.send_init
@@ -151,7 +152,10 @@
 #define MPI_Alltoallv unimpi.alltoallv
 
 /* MPI-3 Alltoallw */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 alltoallw */
 #define MPI_Alltoallw unimpi.alltoallw
+#endif
 
 /* Collectives - Reduce-scatter and scan */
 #define MPI_Reduce_scatter unimpi.reduce_scatter
@@ -206,6 +210,8 @@
 #define MPI_Pack_external_size unimpi.pack_external_size
 
 /* MPI-3 Non-blocking Collectives */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 nonblocking_collectives */
 #define MPI_Ibarrier unimpi.ibarrier
 #define MPI_Ibcast unimpi.ibcast
 #define MPI_Igather unimpi.igather
@@ -223,6 +229,7 @@
 #define MPI_Ireduce_scatter_block unimpi.ireduce_scatter_block
 #define MPI_Iscan unimpi.iscan
 #define MPI_Iexscan unimpi.iexscan
+#endif
 
 /* Group operations */
 #define MPI_Group_size unimpi.group_size
@@ -245,10 +252,15 @@
 #define MPI_Comm_get_name unimpi.comm_get_name
 
 /* MPI-3 Extended communicator */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 comm_3x */
+#define MPI_Comm_dup_with_info unimpi.comm_dup_with_info
+#define MPI_Comm_split_type unimpi.comm_split_type
 #define MPI_Comm_create_group unimpi.comm_create_group
-#define MPI_Comm_compare unimpi.comm_compare
 #define MPI_Comm_get_info unimpi.comm_get_info
 #define MPI_Comm_set_info unimpi.comm_set_info
+#endif
+#define MPI_Comm_compare unimpi.comm_compare
 
 /* Intercommunicator Operations (MPI-2.2) */
 #define MPI_Intercomm_create(local_comm, local_leader, peer_comm, remote_leader, tag, newintercomm) \
@@ -305,9 +317,11 @@
 #define MPI_Win_allocate unimpi.win_allocate
 #define MPI_Win_free unimpi.win_free
 
-/* MPI-3 Extended RMA window */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 win_alloc_shared */
 #define MPI_Win_allocate_shared unimpi.win_allocate_shared
 #define MPI_Win_create_dynamic unimpi.win_create_dynamic
+#endif
 #define MPI_Win_set_name unimpi.win_set_name
 #define MPI_Win_get_name unimpi.win_get_name
 
@@ -315,33 +329,39 @@
 #define MPI_Put unimpi.put
 #define MPI_Get unimpi.get
 #define MPI_Accumulate unimpi.accumulate
+
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 rma_atomics */
 #define MPI_Get_accumulate unimpi.get_accumulate
 #define MPI_Fetch_and_op unimpi.fetch_and_op
 #define MPI_Compare_and_swap unimpi.compare_and_swap
 #define MPI_Rput unimpi.rput
 #define MPI_Rget unimpi.rget
-
-/* MPI-3 Extended RMA operations */
 #define MPI_Raccumulate unimpi.raccumulate
 #define MPI_Rget_accumulate unimpi.rget_accumulate
+#endif
 
 /* RMA Synchronization */
 #define MPI_Win_fence unimpi.win_fence
 #define MPI_Win_lock unimpi.win_lock
 #define MPI_Win_unlock unimpi.win_unlock
+
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 rma_sync_3x */
 #define MPI_Win_lock_all unimpi.win_lock_all
 #define MPI_Win_unlock_all unimpi.win_unlock_all
 #define MPI_Win_flush unimpi.win_flush
 #define MPI_Win_flush_all unimpi.win_flush_all
 #define MPI_Win_sync unimpi.win_sync
+#define MPI_Win_flush_local unimpi.win_flush_local
+#endif
 
-/* MPI-3 Extended RMA synchronization */
+/* RMA one-sided synchronization (MPI-2 base) */
 #define MPI_Win_start unimpi.win_start
 #define MPI_Win_complete unimpi.win_complete
 #define MPI_Win_post unimpi.win_post
 #define MPI_Win_wait unimpi.win_wait
 #define MPI_Win_test unimpi.win_test
-#define MPI_Win_flush_local unimpi.win_flush_local
 
 /* Parallel I/O - File Operations */
 #define MPI_File_open unimpi.file_open
@@ -393,8 +413,10 @@
 #define MPI_Comm_connect unimpi.comm_connect
 #define MPI_Comm_disconnect unimpi.comm_disconnect
 
-/* MPI-3 Comm join */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 comm_join */
 #define MPI_Comm_join unimpi.comm_join
+#endif
 
 /* MPI_Comm_get_parent for spawned processes */
 #define MPI_Comm_get_parent unimpi.comm_get_parent
@@ -427,10 +449,14 @@
 #define MPI_Alloc_mem unimpi.alloc_mem
 #define MPI_Free_mem unimpi.free_mem
 
-/* MPI-3 Reduction operations */
+/* Reduction operations */
 #define MPI_Op_create unimpi.op_create
 #define MPI_Op_free unimpi.op_free
+
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 op_commutative */
 #define MPI_Op_commutative unimpi.op_commutative
+#endif
 
 /* MPI-3 Status manipulation */
 #define MPI_Status_set_elements unimpi.status_set_elements
