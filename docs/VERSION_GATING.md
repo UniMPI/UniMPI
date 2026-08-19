@@ -118,6 +118,16 @@ same macros. When compiling by hand, you are responsible for keeping them in
 sync. This is the fundamental ABI rationale behind the whole feature — the
 gating is not cosmetic, it changes the struct.
 
+> **Default (3.1) field offsets are not guaranteed stable across this feature.**
+> To keep each gated cluster a single contiguous block, a few MPI-3.0 fields
+> (mainly in `comm_3x`) were regrouped relative to the pre-gating layout, so
+> the 3.1 struct is not bit-identical to the older gating-free header — the
+> total field count and `sizeof` are unchanged, but some offsets moved. Always
+> fully recompile the library and every consumer against the same header; do
+> not hard-code or persist a field offset from before this feature. All
+> bindings are by field name (`unimpi.<field>`), so this is transparent to
+> application code under a fresh, consistent build.
+
 ## The gated clusters
 
 Gating is organized in **9 clusters**, all introduced by MPI-3.0, applied
@@ -132,9 +142,9 @@ tool derives it from `tools/api_versions.csv`.
 | `alltoallw` | `MPI_Alltoallw` |
 | `nonblocking_collectives` | `MPI_Ibarrier`, `MPI_Ibcast`, `MPI_Igather(v)`, `MPI_Iscatter(v)`, `MPI_Iallgather(v)`/`MPI_Ialltoall(v/w)`, `MPI_Ireduce`, `MPI_Iallreduce`, `MPI_Iscan`, `MPI_Iexscan`, `MPI_Ireduce_scatter*` |
 | `comm_3x` | `MPI_Comm_dup_with_info`, `MPI_Comm_split_type`, `MPI_Comm_create_group`, `MPI_Comm_get_info`, `MPI_Comm_set_info` |
-| `win_alloc_shared` | `MPI_Win_allocate_shared`, `MPI_Win_shared_query` |
-| `rma_atomics` | `MPI_Win_fetch_and_op`, `MPI_Win_compare_and_swap`, `MPI_Win_get_accumulate`, `MPI_Rput`, `MPI_Rget` |
-| `rma_sync_3x` | `MPI_Win_lock_all`, `MPI_Win_unlock_all`, `MPI_Win_flush`, `MPI_Win_flush_local`, `MPI_Win_sync` |
+| `win_alloc_shared` | `MPI_Win_allocate_shared`, `MPI_Win_create_dynamic` |
+| `rma_atomics` | `MPI_Get_accumulate`, `MPI_Fetch_and_op`, `MPI_Compare_and_swap`, `MPI_Rput`, `MPI_Rget`, `MPI_Raccumulate`, `MPI_Rget_accumulate` |
+| `rma_sync_3x` | `MPI_Win_lock_all`, `MPI_Win_unlock_all`, `MPI_Win_flush`, `MPI_Win_flush_all`, `MPI_Win_flush_local`, `MPI_Win_sync` |
 | `comm_join` | `MPI_Comm_join` |
 | `op_commutative` | `MPI_Op_commutative` |
 
@@ -158,6 +168,9 @@ MPI-3.0-only API, which is intentionally absent):
   the `nonblocking_collectives` cluster), the only MPI-3 call in the file; its
   other calls (`MPI_Isend`/`MPI_Irecv`, `MPI_Test`/`MPI_Wait`, `MPI_Sendrecv`)
   are all MPI-2.
+- `examples/collective.c` — calls `MPI_Alltoallw` (the `alltoallw` cluster);
+  `tests/benchmark/bench_collective.c` likewise uses `MPI_Alltoallw`
+  (benchmarks are default-off, lower impact).
 - `tests/mpi/test_collective_nonblocking.c` — uses the full MPI-3 nonblocking
   collective set (`MPI_Ibcast`, `MPI_Igather`, `MPI_Iallreduce`, …). Fails with
   `implicit declaration of function 'MPI_*'` and `'unimpi_vtable_t' has no member
@@ -166,7 +179,7 @@ MPI-3.0-only API, which is intentionally absent):
   `MPI_Comm_get_info`, `MPI_Comm_set_info` (the `comm_3x` cluster).
 
 A **2.2 build is validated on the library and the unit-test executables**, not
-on these three files. For a clean full-tree 2.2 build:
+on these example/integration files. For a clean full-tree 2.2 build:
 
 ```bash
 cmake -B build22 . \
