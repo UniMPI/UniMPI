@@ -28,6 +28,11 @@ option(UNIMPI_BUILD_BENCHMARKS "Build MPI benchmark programs" OFF)
 option(UNIMPI_ENABLE_STD_MACROS "Enable standard MPI naming macros" OFF)
 option(UNIMPI_INSTALL_DOCS "Install documentation files" ON)
 
+# MPI facade target version (single source of truth, propagated PUBLICly so the
+# library and all consumers compile with the same macros).
+set(UNIMPI_MPI_TARGET_VERSION 3 CACHE STRING "Min MPI major version to build the facade for")
+set(UNIMPI_MPI_TARGET_SUBVERSION 1 CACHE STRING "Min MPI minor version to build the facade for")
+
 # Platform detection
 if(WIN32)
     set(UNIMPI_PLATFORM_WINDOWS TRUE)
@@ -84,6 +89,13 @@ endif()
 if(UNIMPI_ENABLE_STD_MACROS)
     target_compile_definitions(unimpi PUBLIC UNIMPI_USE_STD_NAMES)
 endif()
+
+# MPI target-version macros: unconditional PUBLIC propagation so that the
+# library and unimpi::unimpi consumers are always built with identical macros
+# (the vtable layout is target-version-dependent).
+target_compile_definitions(unimpi PUBLIC
+    UNIMPI_MPI_TARGET_VERSION=${UNIMPI_MPI_TARGET_VERSION}
+    UNIMPI_MPI_TARGET_SUBVERSION=${UNIMPI_MPI_TARGET_SUBVERSION})
 
 # Examples
 if(UNIMPI_BUILD_EXAMPLES)

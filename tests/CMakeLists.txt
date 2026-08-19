@@ -107,7 +107,12 @@ set_tests_properties(test_version_gate PROPERTIES
 # would trigger a #error and fail this TU's build. The executable only runs
 # after the file compiles, so a green binary proves the 3.0 macros are gone.
 add_executable(test_version_gate_strict internal/test_version_gate_strict.c)
-target_link_libraries(test_version_gate_strict unimpi)
+# This is a pure compile-time gate: it deliberately compiles its TU at a 2.2
+# target to prove the MPI-3.0 std macros are absent. It must NOT link the
+# library, because unimpi now PUBLICly propagates the (3/1 by default)
+# UNIMPI_MPI_TARGET_* macros, which would otherwise override this TU's 2.2 pin.
+target_include_directories(test_version_gate_strict PRIVATE
+    ${PROJECT_SOURCE_DIR}/include)
 target_compile_definitions(test_version_gate_strict PRIVATE
     UNIMPI_USE_STD_NAMES
     UNIMPI_MPI_TARGET_VERSION=2
