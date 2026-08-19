@@ -90,6 +90,15 @@ set_tests_properties(test_loader PROPERTIES
     TIMEOUT 30
 )
 
+# Compile-time MPI version gating macro test
+add_executable(test_version_gate internal/test_version_gate.c)
+target_link_libraries(test_version_gate unimpi)
+add_test(NAME test_version_gate COMMAND test_version_gate)
+set_tests_properties(test_version_gate PROPERTIES
+    LABELS "unit;internal;version"
+    TIMEOUT 30
+)
+
 # Fake MPI libraries for lifecycle and vtable validation.  Each missing-symbol
 # variant is a separate DSO so symbol presence is tested through the real
 # platform loader rather than by mocking dlsym/GetProcAddress.

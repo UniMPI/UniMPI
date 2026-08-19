@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "unimpi_export.h"
+#include "unimpi_version.h"
 #include "unimpi_vtable.h"
 #include "unimpi_loader.h"
 #include "unimpi_errors.h"
