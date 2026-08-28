@@ -25,11 +25,28 @@ narrows with the target version selected at build time
 (`UNIMPI_MPI_TARGET_VERSION`/`UNIMPI_MPI_TARGET_SUBVERSION`): the 6 MPI-3.0
 clusters (matched probe, nonblocking collectives, comm info, shared windows,
 RMA atomics, RMA sync) are physically
-removed below a 3.0 target, so a 2.2 build has 235 vtable fields and a matching
+removed below a 3.0 target, so a 2.2 build has 252 vtable fields and a matching
 alias surface. The MPI-2 base (including `Alltoallw`, `Comm_join`,
 `Op_commutative`) is always present. Runtime capability is still
 decided by the dlopen'd backend, independent of the compile-time target. See
 [VERSION_GATING.md](VERSION_GATING.md).
+
+### MPI-2 base completeness
+
+The always-present 2.2 surface is mechanically audited by
+`tools/mpi_version_gate.py base`, which (a) fails if any gated field is
+actually a 2.2 canonical function and (b) reports how many of the ~305
+canonical 2.2 functions are exposed. Currently **248/305 (81.3%)** of the
+MPI-2.2 canonical functions are bound in the always-present vtable. The
+remaining gaps are largely niche / callback-heavy APIs (attribute keyval and
+errhandler infrastructure, `*_begin`/`*_end` and `*_shared`/`*_ordered` file
+I/O, `MPI_Grequest_*`, `MPI_Register_datarep`, `MPI_Status_f2c`/`c2f`,
+`MPI_Error_class`/`MPI_Error_string`, `MPI_Dist_graph_*`, `MPI_Pcontrol`,
+`MPI_Type_get_attr`/`set_attr` family) and are tracked as a follow-up; the
+newly added common subset (`MPI_Type_create_hvector`/`hindexed`/`struct`,
+`MPI_Get_address`, `MPI_Type_create_f90_*`, `MPI_Ibsend`/`Irsend`/`Issend`,
+`MPI_Info_dup`/`get_valuelen`, `MPI_Request_get_status`, `MPI_Reduce_local`)
+is validated against real OpenMPI and MPICH in `tests/mpi/test_base_completeness.c`.
 
 ## Focused real-backend coverage
 

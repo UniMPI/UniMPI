@@ -171,6 +171,12 @@ typedef struct {
                  int dest, int tag, MPI_Comm comm, MPI_Request *request);
     int (*irecv)(void *buf, int count, MPI_Datatype datatype,
                  int source, int tag, MPI_Comm comm, MPI_Request *request);
+    int (*ibsend)(const void *buf, int count, MPI_Datatype datatype,
+                  int dest, int tag, MPI_Comm comm, MPI_Request *request);
+    int (*irsend)(const void *buf, int count, MPI_Datatype datatype,
+                  int dest, int tag, MPI_Comm comm, MPI_Request *request);
+    int (*issend)(const void *buf, int count, MPI_Datatype datatype,
+                  int dest, int tag, MPI_Comm comm, MPI_Request *request);
     int (*wait)(MPI_Request *request, MPI_Status *status);
     int (*waitall)(int count, MPI_Request *array_of_requests,
                    MPI_Status *array_of_statuses);
@@ -232,6 +238,7 @@ typedef struct {
     int (*start)(MPI_Request *request);
     int (*startall)(int count, MPI_Request *array_of_requests);
     int (*request_free)(MPI_Request *request);
+    int (*request_get_status)(MPI_Request request, int *flag, MPI_Status *status);
 
     /* Cancel and status query */
     int (*cancel)(MPI_Request *request);
@@ -244,6 +251,8 @@ typedef struct {
                  int root, MPI_Comm comm);
     int (*reduce)(const void *sendbuf, void *recvbuf, int count,
                   MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
+    int (*reduce_local)(const void *inbuf, void *inoutbuf, int count,
+                        MPI_Datatype datatype, MPI_Op op);
     int (*allreduce)(const void *sendbuf, void *recvbuf, int count,
                      MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
     int (*gather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
@@ -529,6 +538,8 @@ typedef struct {
     int (*info_delete)(MPI_Info info, const char *key);
     int (*info_get_nkeys)(MPI_Info info, int *nkeys);
     int (*info_get_nthkey)(MPI_Info info, int n, char *key);
+    int (*info_dup)(MPI_Info info, MPI_Info *newinfo);
+    int (*info_get_valuelen)(MPI_Info info, const char *key, int *valuelen, int *flag);
 
     /* Thread support */
     int (*init_thread)(int *argc, char ***argv, int required, int *provided);
@@ -601,6 +612,25 @@ typedef struct {
     int (*type_dup)(MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*type_create_resized)(MPI_Datatype oldtype, MPI_Aint lb, MPI_Aint extent,
                                MPI_Datatype *newtype);
+    int (*type_create_hvector)(int count, int blocklength, MPI_Aint stride,
+                               MPI_Datatype oldtype, MPI_Datatype *newtype);
+    int (*type_create_hindexed)(int count, const int *array_of_blocklengths,
+                                const MPI_Aint *array_of_displacements,
+                                MPI_Datatype oldtype, MPI_Datatype *newtype);
+    int (*type_create_struct)(int count, const int *array_of_blocklengths,
+                              const MPI_Aint *array_of_displacements,
+                              const MPI_Datatype *array_of_types, MPI_Datatype *newtype);
+    int (*type_struct)(int count, const int *array_of_blocklengths,
+                       const MPI_Aint *array_of_displacements,
+                       const MPI_Datatype *array_of_types, MPI_Datatype *newtype);
+    int (*type_match_size)(MPI_Datatype typeclass, int size, MPI_Datatype *datatype);
+    int (*type_create_f90_integer)(int range, MPI_Datatype *newtype);
+    int (*type_create_f90_real)(int precision, int range, MPI_Datatype *newtype);
+    int (*type_create_f90_complex)(int precision, int range, MPI_Datatype *newtype);
+
+    /* Address arithmetic */
+    int (*get_address)(const void *location, MPI_Aint *address);
+    int (*address)(void *location, MPI_Aint *address);
 
     /* Datatypes - query */
     int (*type_get_extent)(MPI_Datatype datatype, MPI_Aint *lb, MPI_Aint *extent);

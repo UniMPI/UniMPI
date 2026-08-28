@@ -76,6 +76,9 @@
 #define MPI_Recv unimpi.recv
 #define MPI_Isend unimpi.isend
 #define MPI_Irecv unimpi.irecv
+#define MPI_Ibsend unimpi.ibsend
+#define MPI_Irsend unimpi.irsend
+#define MPI_Issend unimpi.issend
 #define MPI_Wait unimpi.wait
 #define MPI_Waitall unimpi.waitall
 #define MPI_Sendrecv unimpi.sendrecv
@@ -84,6 +87,7 @@
 /* Collectives */
 #define MPI_Bcast unimpi.bcast
 #define MPI_Reduce unimpi.reduce
+#define MPI_Reduce_local unimpi.reduce_local
 #define MPI_Allreduce unimpi.allreduce
 #define MPI_Gather unimpi.gather
 #define MPI_Allgather unimpi.allgather
@@ -137,6 +141,7 @@
 #define MPI_Start unimpi.start
 #define MPI_Startall unimpi.startall
 #define MPI_Request_free unimpi.request_free
+#define MPI_Request_get_status unimpi.request_get_status
 
 /* Cancel and status */
 #define MPI_Cancel unimpi.cancel
@@ -171,6 +176,14 @@
 #define MPI_Type_dup unimpi.type_dup
 #define MPI_Type_create_resized(oldtype, lb, extent, newtype) \
     unimpi.type_create_resized(oldtype, lb, extent, newtype)
+#define MPI_Type_create_hvector unimpi.type_create_hvector
+#define MPI_Type_create_hindexed unimpi.type_create_hindexed
+#define MPI_Type_create_struct unimpi.type_create_struct
+#define MPI_Type_struct unimpi.type_struct
+#define MPI_Type_match_size unimpi.type_match_size
+#define MPI_Type_create_f90_integer unimpi.type_create_f90_integer
+#define MPI_Type_create_f90_real unimpi.type_create_f90_real
+#define MPI_Type_create_f90_complex unimpi.type_create_f90_complex
 
 /* MPI-3 Extended datatypes */
 #define MPI_Type_hvector unimpi.type_hvector
@@ -195,6 +208,10 @@
 #define MPI_Type_extent unimpi.type_extent
 #define MPI_Type_lb unimpi.type_lb
 #define MPI_Type_ub unimpi.type_ub
+
+/* Address arithmetic */
+#define MPI_Get_address unimpi.get_address
+#define MPI_Address unimpi.address
 
 /* Pack/Unpack */
 #define MPI_Pack unimpi.pack
@@ -430,6 +447,8 @@
 #define MPI_Info_delete unimpi.info_delete
 #define MPI_Info_get_nkeys unimpi.info_get_nkeys
 #define MPI_Info_get_nthkey unimpi.info_get_nthkey
+#define MPI_Info_dup unimpi.info_dup
+#define MPI_Info_get_valuelen unimpi.info_get_valuelen
 
 /* Thread Support */
 #define MPI_THREAD_SINGLE UNIMPI_THREAD_SINGLE

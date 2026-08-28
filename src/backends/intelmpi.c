@@ -710,6 +710,43 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     unimpi.info_get_nthkey = (int (*)(MPI_Info, int, char*))
         unimpi_platform_dlsym(handle, "MPI_Info_get_nthkey");
 
+    /* MPI-2 base completeness additions (datatypes, address, p2p, info, etc.) */
+    unimpi.ibsend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Ibsend");
+    unimpi.irsend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Irsend");
+    unimpi.issend = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Issend");
+    unimpi.request_get_status = (int (*)(MPI_Request, int*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_Request_get_status");
+    unimpi.reduce_local = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op))
+        unimpi_platform_dlsym(handle, "MPI_Reduce_local");
+    unimpi.info_dup = (int (*)(MPI_Info, MPI_Info*))
+        unimpi_platform_dlsym(handle, "MPI_Info_dup");
+    unimpi.info_get_valuelen = (int (*)(MPI_Info, const char*, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Info_get_valuelen");
+    unimpi.type_create_hvector = (int (*)(int, int, MPI_Aint, MPI_Datatype, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_hvector");
+    unimpi.type_create_hindexed = (int (*)(int, const int*, const MPI_Aint*, MPI_Datatype, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_hindexed");
+    unimpi.type_create_struct = (int (*)(int, const int*, const MPI_Aint*, const MPI_Datatype*, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_struct");
+    unimpi.type_struct = (int (*)(int, const int*, const MPI_Aint*, const MPI_Datatype*, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_struct");
+    unimpi.type_match_size = (int (*)(MPI_Datatype, int, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_match_size");
+    unimpi.type_create_f90_integer = (int (*)(int, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_f90_integer");
+    unimpi.type_create_f90_real = (int (*)(int, int, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_f90_real");
+    unimpi.type_create_f90_complex = (int (*)(int, int, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_f90_complex");
+    unimpi.get_address = (int (*)(const void*, MPI_Aint*))
+        unimpi_platform_dlsym(handle, "MPI_Get_address");
+    unimpi.address = (int (*)(void*, MPI_Aint*))
+        unimpi_platform_dlsym(handle, "MPI_Address");
+
+
     /* Thread Support */
     unimpi.init_thread = (int (*)(int*, char***, int, int*))
         unimpi_platform_dlsym(handle, "MPI_Init_thread");

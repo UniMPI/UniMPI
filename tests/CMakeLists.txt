@@ -407,6 +407,14 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_datatype_extended2 test_datatype_extended2 2)
 endif()
 
+# MPI-2 base-completeness smoke test (validates the added base-surface
+# bindings against a real backend). Requires >=2 ranks for the P2P portion.
+add_executable(test_base_completeness mpi/test_base_completeness.c)
+target_link_libraries(test_base_completeness unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_base_completeness test_base_completeness 2)
+endif()
+
 # RMA extension tests (MPI-2.2)
 add_executable(test_rma_extended mpi/test_rma_extended.c)
 target_link_libraries(test_rma_extended unimpi)
