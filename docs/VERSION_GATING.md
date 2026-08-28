@@ -101,7 +101,7 @@ Both definitions must be given together; they are a matched pair.
 ## Single-source consistency requirement (CRITICAL)
 
 The vtable struct layout — the **set and offsets of its fields** — depends on
-the target version. A 2.2 build has a smaller struct (232 fields) than a 3.1
+the target version. A 2.2 build has a smaller struct (235 fields) than a 3.1
 build (276 fields). If you compile the library at one target and a consumer at
 another, the consumer will read the vtable at the wrong offsets and crash or
 misbehave.
@@ -130,7 +130,7 @@ gating is not cosmetic, it changes the struct.
 
 ## The gated clusters
 
-Gating is organized in **9 clusters**, all introduced by MPI-3.0, applied
+Gating is organized in **6 clusters**, all introduced by MPI-3.0, applied
 identically across `include/unimpi_vtable.h`, `include/unimpi_std_macros.h`, and
 each backend adapter (`src/backends/openmpi.c`, `mpich.c`, `intelmpi.c`,
 `msmpi.c`). The authoritative list is `tools/versioned_clusters.csv`; the check
@@ -139,14 +139,11 @@ tool derives it from `tools/api_versions.csv`.
 | Cluster | Representative MPI-3.0 API (removed below target) |
 |---|---|
 | `matched_probe` | `MPI_Mprobe`, `MPI_Improbe`, `MPI_Mrecv`, `MPI_Imrecv` |
-| `alltoallw` | `MPI_Alltoallw` |
 | `nonblocking_collectives` | `MPI_Ibarrier`, `MPI_Ibcast`, `MPI_Igather(v)`, `MPI_Iscatter(v)`, `MPI_Iallgather(v)`/`MPI_Ialltoall(v/w)`, `MPI_Ireduce`, `MPI_Iallreduce`, `MPI_Iscan`, `MPI_Iexscan`, `MPI_Ireduce_scatter*` |
 | `comm_3x` | `MPI_Comm_dup_with_info`, `MPI_Comm_split_type`, `MPI_Comm_create_group`, `MPI_Comm_get_info`, `MPI_Comm_set_info` |
 | `win_alloc_shared` | `MPI_Win_allocate_shared`, `MPI_Win_create_dynamic` |
 | `rma_atomics` | `MPI_Get_accumulate`, `MPI_Fetch_and_op`, `MPI_Compare_and_swap`, `MPI_Rput`, `MPI_Rget`, `MPI_Raccumulate`, `MPI_Rget_accumulate` |
 | `rma_sync_3x` | `MPI_Win_lock_all`, `MPI_Win_unlock_all`, `MPI_Win_flush`, `MPI_Win_flush_all`, `MPI_Win_flush_local`, `MPI_Win_sync` |
-| `comm_join` | `MPI_Comm_join` |
-| `op_commutative` | `MPI_Op_commutative` |
 
 Everything else — the MPI-2 base (point-to-point, collectives, datatypes,
 fence-based RMA, communicators/topology, dynamic-process management, MPI-2.2 I/O,
@@ -168,9 +165,6 @@ MPI-3.0-only API, which is intentionally absent):
   the `nonblocking_collectives` cluster), the only MPI-3 call in the file; its
   other calls (`MPI_Isend`/`MPI_Irecv`, `MPI_Test`/`MPI_Wait`, `MPI_Sendrecv`)
   are all MPI-2.
-- `examples/collective.c` — calls `MPI_Alltoallw` (the `alltoallw` cluster);
-  `tests/benchmark/bench_collective.c` likewise uses `MPI_Alltoallw`
-  (benchmarks are default-off, lower impact).
 - `tests/mpi/test_collective_nonblocking.c` — uses the full MPI-3 nonblocking
   collective set (`MPI_Ibcast`, `MPI_Igather`, `MPI_Iallreduce`, …). Fails with
   `implicit declaration of function 'MPI_*'` and `'unimpi_vtable_t' has no member
@@ -199,7 +193,7 @@ build vs 2.2 build):
 ### String scan of the static library
 
 ```bash
-strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_join|MPI_Iallreduce'
+strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_create_group|MPI_Win_sync'
 ```
 
 - Default (3.1): `12`
@@ -215,7 +209,7 @@ and run at the target under test:
 ```
 
 - Default (3.1): `VTABLE_SIZE=2208`, `VTABLE_COUNT=276`
-- Target 2.2: `VTABLE_SIZE=1856`, `VTABLE_COUNT=232`
+- Target 2.2: `VTABLE_SIZE=1880`, `VTABLE_COUNT=235`
 
 ### Gate checker
 
@@ -227,7 +221,7 @@ python3 tools/mpi_version_gate.py check --clusters tools/versioned_clusters.csv
 python3 tools/mpi_version_gate.py check --clusters tools/versioned_clusters.csv --require-guards
 ```
 
-Both should report `gate check passed (9 clusters, 44 entities)`. This runs in
+Both should report `gate check passed (6 clusters, 41 entities)`. This runs in
 the final whole-branch verification below.
 
 ## Real-backend 2.2 integration
@@ -260,7 +254,7 @@ it back only re-exposes the same `≤ target` surface. It never adds runtime
 capability. Concretely:
 
 - `target 3.1 → 2.2`: MPI-3.0 clusters disappear; the MPI-2 base is unchanged.
-- `target 2.2 → 3.1`: the 9 clusters come back; the MPI-2 base is still the
+- `target 2.2 → 3.1`: the 6 clusters come back; the MPI-2 base is still the
   same.
 
 There is no "one-way downgrade": rebuilding at a higher target restores the

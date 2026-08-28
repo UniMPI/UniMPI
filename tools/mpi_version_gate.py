@@ -58,7 +58,6 @@ REGISTRY = {
         "ireduce", "iallreduce", "ireduce_scatter", "ireduce_scatter_block",
         "iscan", "iexscan",
     ],
-    "alltoallw": ["alltoallw"],
     "comm_3x": [
         "comm_dup_with_info", "comm_split_type", "comm_create_group",
         "comm_get_info", "comm_set_info",
@@ -72,8 +71,6 @@ REGISTRY = {
         "win_lock_all", "win_unlock_all", "win_flush", "win_flush_all",
         "win_flush_local", "win_sync",
     ],
-    "comm_join": ["comm_join"],
-    "op_commutative": ["op_commutative"],
 }
 
 FAILURES = []

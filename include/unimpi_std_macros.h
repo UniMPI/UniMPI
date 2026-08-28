@@ -152,10 +152,7 @@
 #define MPI_Alltoallv unimpi.alltoallv
 
 /* MPI-3 Alltoallw */
-#if UNIMPI_MPI_AT_LEAST(3,0)
-/* MPI-3.0 alltoallw */
 #define MPI_Alltoallw unimpi.alltoallw
-#endif
 
 /* Collectives - Reduce-scatter and scan */
 #define MPI_Reduce_scatter unimpi.reduce_scatter
@@ -413,10 +410,7 @@
 #define MPI_Comm_connect unimpi.comm_connect
 #define MPI_Comm_disconnect unimpi.comm_disconnect
 
-#if UNIMPI_MPI_AT_LEAST(3,0)
-/* MPI-3.0 comm_join */
 #define MPI_Comm_join unimpi.comm_join
-#endif
 
 /* MPI_Comm_get_parent for spawned processes */
 #define MPI_Comm_get_parent unimpi.comm_get_parent
@@ -453,10 +447,7 @@
 #define MPI_Op_create unimpi.op_create
 #define MPI_Op_free unimpi.op_free
 
-#if UNIMPI_MPI_AT_LEAST(3,0)
-/* MPI-3.0 op_commutative */
 #define MPI_Op_commutative unimpi.op_commutative
-#endif
 
 /* MPI-3 Status manipulation */
 #define MPI_Status_set_elements unimpi.status_set_elements

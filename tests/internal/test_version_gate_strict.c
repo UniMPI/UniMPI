@@ -18,9 +18,6 @@
 #ifdef MPI_Ibcast
 #error "MPI_Ibcast must be absent at target 2.2"
 #endif
-#ifdef MPI_Alltoallw
-#error "MPI_Alltoallw must be absent at target 2.2"
-#endif
 #ifdef MPI_Comm_create_group
 #error "MPI_Comm_create_group must be absent at target 2.2"
 #endif
@@ -32,12 +29,6 @@
 #endif
 #ifdef MPI_Win_sync
 #error "MPI_Win_sync must be absent at target 2.2"
-#endif
-#ifdef MPI_Comm_join
-#error "MPI_Comm_join must be absent at target 2.2"
-#endif
-#ifdef MPI_Op_commutative
-#error "MPI_Op_commutative must be absent at target 2.2"
 #endif
 
 int main(void) {

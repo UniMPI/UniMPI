@@ -1,9 +1,14 @@
 # Build directories
 build/
 build-*/
+build*/
 cmake-build-*/
 out/
 Testing/
+
+# Python
+__pycache__/
+*.pyc
 
 # IDE
 .vscode/

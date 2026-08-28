@@ -271,12 +271,9 @@ typedef struct {
     int (*alltoallv)(const void *sendbuf, const int *sendcounts, const int *sdispls, MPI_Datatype sendtype,
                      void *recvbuf, const int *recvcounts, const int *rdispls, MPI_Datatype recvtype,
                      MPI_Comm comm);
-#if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-3.0 alltoallw */
     int (*alltoallw)(const void *sendbuf, const int *sendcounts, const int *sdispls, const MPI_Datatype *sendtypes,
                      void *recvbuf, const int *recvcounts, const int *rdispls, const MPI_Datatype *recvtypes,
                      MPI_Comm comm);
-#endif
 
     /* Reduce-scatter and scan */
     int (*reduce_scatter)(const void *sendbuf, void *recvbuf, const int *recvcounts,
@@ -514,10 +511,7 @@ typedef struct {
     int (*comm_accept)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
     int (*comm_connect)(const char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm);
     int (*comm_disconnect)(MPI_Comm *comm);
-#if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-3.0 comm_join */
     int (*comm_join)(int fd, MPI_Comm *intercomm);
-#endif
     int (*comm_get_parent)(MPI_Comm *parent);
 
     /* Dynamic Process - Port and Name Service */
@@ -548,10 +542,7 @@ typedef struct {
     /* Reduction operations */
     int (*op_create)(void (*user_fn)(void *, void *, int *, MPI_Datatype *), int commute, MPI_Op *op);
     int (*op_free)(MPI_Op *op);
-#if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-3.0 op_commutative */
     int (*op_commutative)(MPI_Op op, int *commute);
-#endif
 
     /* Status manipulation */
     int (*status_set_elements)(MPI_Status *status, MPI_Datatype datatype, int count);

@@ -374,11 +374,9 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Alltoall");
     unimpi.alltoallv = (int (*)(const void*, const int*, const int*, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Alltoallv");
-#if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-3.0 alltoallw */
+    /* alltoallw */
     unimpi.alltoallw = (int (*)(const void*, const int*, const int*, const MPI_Datatype*, void*, const int*, const int*, const MPI_Datatype*, MPI_Comm))
         unimpi_platform_dlsym(handle, "MPI_Alltoallw");
-#endif
 
     /* Collective - Reduce-scatter and scan */
     unimpi.reduce_scatter = (int (*)(const void*, void*, const int*, MPI_Datatype, MPI_Op, MPI_Comm))
@@ -767,11 +765,9 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_connect");
     unimpi.comm_disconnect = (int (*)(MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_disconnect");
-#if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-3.0 comm_join */
+    /* comm_join */
     unimpi.comm_join = (int (*)(int, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_join");
-#endif
     unimpi.comm_get_parent = (int (*)(MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_get_parent");
 
@@ -828,11 +824,9 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Op_create");
     unimpi.op_free = (int (*)(MPI_Op*))
         unimpi_platform_dlsym(handle, "MPI_Op_free");
-#if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-3.0 op_commutative */
+    /* op_commutative */
     unimpi.op_commutative = (int (*)(MPI_Op, int*))
         unimpi_platform_dlsym(handle, "MPI_Op_commutative");
-#endif
 
     /* Status manipulation */
     unimpi.status_set_elements = (int (*)(MPI_Status*, MPI_Datatype, int))

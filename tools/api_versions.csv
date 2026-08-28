@@ -20,7 +20,6 @@ ireduce_scatter,3,0
 ireduce_scatter_block,3,0
 iscan,3,0
 iexscan,3,0
-alltoallw,3,0
 comm_dup_with_info,3,0
 comm_split_type,3,0
 comm_create_group,3,0
@@ -41,5 +40,3 @@ win_flush,3,0
 win_flush_all,3,0
 win_flush_local,3,0
 win_sync,3,0
-comm_join,3,0
-op_commutative,3,0

@@ -352,20 +352,29 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_collective_extended test_collective_extended 4)
 endif()
 
-# MPI-3 nonblocking collective coverage
-add_executable(test_collective_nonblocking
-    mpi/test_collective_nonblocking.c)
-target_link_libraries(test_collective_nonblocking unimpi)
-if(UNIMPI_REAL_MPI_TESTS_ENABLED)
-    add_mpi_test(
-        test_collective_nonblocking test_collective_nonblocking 4)
+# MPI-3 nonblocking collective coverage.
+# These tests call MPI-3.0 nonblocking-collective API that `#if` removes
+# below a 3.0 target, so they cannot compile at a 2.2 baseline — gate them on
+# the target version rather than the real-MPI flag.
+if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
+    add_executable(test_collective_nonblocking
+        mpi/test_collective_nonblocking.c)
+    target_link_libraries(test_collective_nonblocking unimpi)
+    if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+        add_mpi_test(
+            test_collective_nonblocking test_collective_nonblocking 4)
+    endif()
 endif()
 
-# Environment, Info, thread, memory, op and status coverage
-add_executable(test_environment_info mpi/test_environment_info.c)
-target_link_libraries(test_environment_info unimpi)
-if(UNIMPI_REAL_MPI_TESTS_ENABLED)
-    add_mpi_test(test_environment_info test_environment_info 2)
+# Environment, Info, thread, memory, op and status coverage.
+# Uses MPI_Comm_dup_with_info / _get_info / _set_info (the comm_3x cluster),
+# also MPI-3.0-only: excluded below a 3.0 target for the same reason.
+if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
+    add_executable(test_environment_info mpi/test_environment_info.c)
+    target_link_libraries(test_environment_info unimpi)
+    if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+        add_mpi_test(test_environment_info test_environment_info 2)
+    endif()
 endif()
 
 # Request-array operations exercise the MPICH/Intel/MS-MPI 32-bit handle
