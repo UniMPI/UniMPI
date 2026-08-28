@@ -25,7 +25,7 @@ narrows with the target version selected at build time
 (`UNIMPI_MPI_TARGET_VERSION`/`UNIMPI_MPI_TARGET_SUBVERSION`): the 6 MPI-3.0
 clusters (matched probe, nonblocking collectives, comm info, shared windows,
 RMA atomics, RMA sync) are physically
-removed below a 3.0 target, so a 2.2 build has 252 vtable fields and a matching
+removed below a 3.0 target, so a 2.2 build has 256 vtable fields and a matching
 alias surface. The MPI-2 base (including `Alltoallw`, `Comm_join`,
 `Op_commutative`) is always present. Runtime capability is still
 decided by the dlopen'd backend, independent of the compile-time target. See

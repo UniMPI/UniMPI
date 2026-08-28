@@ -209,7 +209,7 @@ and run at the target under test:
 ```
 
 - Default (3.1): `VTABLE_SIZE=2208`, `VTABLE_COUNT=276`
-- Target 2.2: `VTABLE_SIZE=1880`, `VTABLE_COUNT=235`
+- Target 2.2: `VTABLE_SIZE=2048`, `VTABLE_COUNT=256`
 
 ### Gate checker
 

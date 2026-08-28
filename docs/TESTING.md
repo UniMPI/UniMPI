@@ -163,7 +163,7 @@ strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_join|MPI_Iallreduce'   # -> 
 # 2.2 build (-DUNIMPI_MPI_TARGET_VERSION=2 -DUNIMPI_MPI_TARGET_SUBVERSION=2)
 strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_create_group|MPI_Win_sync'   # -> 0
 strings build22/libunimpi.a | grep -cE 'MPI_Alltoallw|MPI_Comm_join|MPI_Op_commutative'  # -> 12 (always present)
-./build22/tests/test_vtable_layout                                         # 2016 / 252
+./build22/tests/test_vtable_layout                                         # 2048 / 256
 ```
 
 At target 2.2 the whole-tree build is validated on the library and unit tests;
