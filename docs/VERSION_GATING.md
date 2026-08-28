@@ -224,6 +224,20 @@ python3 tools/mpi_version_gate.py check --clusters tools/versioned_clusters.csv 
 Both should report `gate check passed (6 clusters, 41 entities)`. This runs in
 the final whole-branch verification below.
 
+`base` verifies the MPI-2.2 canonical function list (from
+`docs/MPI_VERSION_EVOLUTION.md`) never overlaps the gated surface, and reports
+always-present 2.2 coverage — it is the mechanical anti-regression guard that
+would have caught the alltoallw/comm_join/op_commutative misclassification:
+
+```bash
+python3 tools/mpi_version_gate.py base
+```
+
+It hard-fails if any gated field is a 2.2 canonical function (a 2.2 baseline
+would silently lose it), and prints how many of the ~305 2.2 functions are
+exposed in the always-present vtable. It executes in the final whole-branch
+verification below.
+
 ## Real-backend 2.2 integration
 
 When a real MPI runtime is installed, build the library + a base MPI test at 2.2
@@ -277,9 +291,11 @@ phase.
 ```bash
 python3 tools/mpi_version_gate.py check --clusters tools/versioned_clusters.csv
 python3 tools/mpi_version_gate.py check --clusters tools/versioned_clusters.csv --require-guards
+python3 tools/mpi_version_gate.py base
 cmake -B build .
 cmake --build build
 ctest --output-on-failure
 ```
 
-Both checker invocations pass, and the default build + test suite is green.
+Both `check` invocations pass, `base` reports the gated surface disjoint from
+the 2.2 canonical list, and the default build + test suite is green.

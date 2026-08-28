@@ -233,6 +233,126 @@ def check_guards(cluster_rows):
     # start/end are 0-based and exclusive; members must sit strictly between them.
 
 
+# ---------------------------------------------------------------------------
+# 2.2-base anti-drift verification.
+#
+# The gated (MPI-3.0) clusters must be DISJOINT from the MPI-2.2 canonical
+# function list -- otherwise a 2.2 baseline silently loses a function it is
+# required to expose. This is the mechanical guard for the alltoallw /
+# comm_join / op_commutative misclassification that was fixed once in Task 47.
+#
+# The MPI-2.2 canonical list lives in docs/MPI_VERSION_EVOLUTION.md under
+# "## MPI 2.2 完整函数清单（基准）" as "- MPI_Xxx" bullets. It is the project's
+# declared version truth for the 2.2 base, kept in sync manually; this check
+# mechanically enforces that the gated surface never overlaps it.
+# ---------------------------------------------------------------------------
+DEF_EVO = os.path.join(REPO_ROOT, "docs", "MPI_VERSION_EVOLUTION.md")
+
+
+def load_base_22(evo_path=DEF_EVO):
+    """Return ({field_name}, count) for the MPI-2.2 canonical function list.
+
+    field_name is the vtable member-equivalent: the doc bullet 'MPI_Comm_dup'
+    becomes 'comm_dup' (MPI_ prefix stripped, lowercased).
+    """
+    with open(evo_path, "r", encoding="utf-8-sig") as fh:
+        lines = fh.readlines()
+
+    heading = "## MPI 2.2 完整函数清单（基准）"
+    start = next((i for i, l in enumerate(lines) if l.strip() == heading), None)
+    if start is None:
+        fail("base: heading '%s' not found in %s" % (heading, evo_path))
+        return set(), 0
+
+    fields = set()
+    for l in lines[start + 1:]:
+        if re.match(r"^##\s", l.strip()):
+            break  # next heading ends the 2.2 list
+        m = re.match(r"^\s*-\s+MPI_(\w+)", l)
+        if m:
+            fields.add(m.group(1).lower())
+    return fields, len(fields)
+
+
+def extract_always_present_fields(vtable_path):
+    """Return fields NOT wrapped in an `#if UNIMPI_MPI_AT_LEAST` guard.
+
+    A field at AT_LEAST-depth 0 is part of the always-present base surface,
+    regardless of any other (platform / feature) preprocessor guard around it.
+    """
+    with open(vtable_path, "r", encoding="utf-8-sig") as fh:
+        lines = fh.readlines()
+
+    field_rx = re.compile(r"\(\*\s*(\w+)\s*\)")
+    guard_rx = re.compile(r"#\s*if\s+UNIMPI_MPI_AT_LEAST")
+    present = set()
+    depth = 0
+    for l in lines:
+        if guard_rx.search(l):
+            depth += 1
+            continue
+        if re.match(r"^\s*#endif\b", l.strip()):
+            depth = max(0, depth - 1)
+            continue
+        if depth > 0:
+            continue
+        m = field_rx.search(l)
+        if m:
+            present.add(m.group(1))
+    return present
+
+
+def run_check_base(args):
+    evo = os.path.abspath(args.evolution)
+    if not os.path.isfile(evo):
+        fail("base: evolution doc not found: %s" % evo)
+        return
+    base, base_count = load_base_22(evo)
+    vtable_path = resolve_file_path(args.vtable)
+    if not os.path.isfile(vtable_path):
+        fail("base: vtable header not found: %s" % vtable_path)
+        return
+
+    present = extract_always_present_fields(vtable_path)
+
+    # Gated = every vtable field that is at_least-present. Derive it from the
+    # registry clusters (the gated set is exactly the cluster members).
+    gated = set()
+    for members in REGISTRY.values():
+        gated.update(members)
+
+    # (a) HARD: no gated field may be a 2.2 canonical function.
+    overlap = gated & base
+    if overlap:
+        for f in sorted(overlap):
+            fail("base: '%s' is gated as >=MPI-3.0 but is in the MPI-2.2 "
+                 "canonical list -- a 2.2 baseline would silently lose it "
+                 "(misclassification regression)" % f)
+    else:
+        print("base: gated(3.0) surface and 2.2 canonical list are disjoint OK")
+
+    # (b) INFO: how much of the 2.2 base is exposed (always-present fields).
+    covered = base & present
+    missing = base - present
+    print("base: 2.2 canonical functions: %d" % base_count)
+    print("base: exposed in always-present vtable: %d (%.1f%%)"
+          % (len(covered), 100.0 * len(covered) / base_count))
+    # Fields the 2.2 list names but the vtable nowhere declares (not just
+    # gated) are pre-existing base gaps -- reported, not fatal (see Task 49).
+    absent = missing - gated
+    if absent:
+        print("base: %d 2.2 functions absent from the whole vtable (pre-existing "
+              "coverage gap, not a gating regression):" % len(absent))
+        for f in sorted(absent):
+            print("   - %s" % f)
+
+    if FAILURES:
+        print("base check FAILED: %d problem(s)" % len(FAILURES))
+        sys.exit(1)
+    print("base check passed (%d/%d 2.2 functions exposed; %d absent)"
+          % (len(covered), base_count, len(absent)))
+
+
 def run_check(args):
     entities = load_api_versions(args.api)
     cluster_rows = load_clusters(args.clusters)
@@ -263,6 +383,14 @@ def main(argv=None):
     check.add_argument("--require-guards", action="store_true",
                        help="also verify #if guards in the listed source files")
     check.set_defaults(func=run_check)
+
+    base = sub.add_parser("base", help="verify the MPI-2.2 base never overlaps "
+                                       "the gated surface (and report coverage)")
+    base.add_argument("--evolution", default=DEF_EVO,
+                      help="path to docs/MPI_VERSION_EVOLUTION.md (2.2 canonical list)")
+    base.add_argument("--vtable", default=os.path.join("include", "unimpi_vtable.h"),
+                      help="path to include/unimpi_vtable.h")
+    base.set_defaults(func=run_check_base)
 
     args = parser.parse_args(argv)
     if not hasattr(args, "func"):
