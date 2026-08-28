@@ -169,6 +169,19 @@ static int test_nb_send_variants(void) {
     return 0;
 }
 
+static int test_comm_errhandler(void) {
+    MPI_Errhandler eh;
+    TEST("Comm_get_errhandler + Comm_set_errhandler");
+    if (MPI_Comm_get_errhandler(MPI_COMM_WORLD, &eh) != MPI_SUCCESS)
+        FAIL("MPI_Comm_get_errhandler failed");
+    /* Round-trip: set the same valid handler back (MPI_ERRORS_RETURN is not
+     * exposed as a std macro, so reuse what we read). */
+    if (MPI_Comm_set_errhandler(MPI_COMM_WORLD, eh) != MPI_SUCCESS)
+        FAIL("MPI_Comm_set_errhandler failed");
+    PASS();
+    return 0;
+}
+
 int main(int argc, char **argv) {
     int ret, rank;
 
@@ -182,6 +195,7 @@ int main(int argc, char **argv) {
     if ((ret = test_type_f90()) != 0) goto cleanup;
     if ((ret = test_info_valuelen_dup()) != 0) goto cleanup;
     if ((ret = test_reduce_local()) != 0) goto cleanup;
+    if ((ret = test_comm_errhandler()) != 0) goto cleanup;
     if ((ret = test_request_get_status()) != 0) goto cleanup;
     if ((ret = test_nb_send_variants()) != 0) goto cleanup;
     (void)rank;

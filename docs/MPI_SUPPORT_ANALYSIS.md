@@ -36,17 +36,18 @@ decided by the dlopen'd backend, independent of the compile-time target. See
 The always-present 2.2 surface is mechanically audited by
 `tools/mpi_version_gate.py base`, which (a) fails if any gated field is
 actually a 2.2 canonical function and (b) reports how many of the ~305
-canonical 2.2 functions are exposed. Currently **248/305 (81.3%)** of the
+canonical 2.2 functions are exposed. Currently **252/305 (82.6%)** of the
 MPI-2.2 canonical functions are bound in the always-present vtable. The
-remaining gaps are largely niche / callback-heavy APIs (attribute keyval and
-errhandler infrastructure, `*_begin`/`*_end` and `*_shared`/`*_ordered` file
-I/O, `MPI_Grequest_*`, `MPI_Register_datarep`, `MPI_Status_f2c`/`c2f`,
-`MPI_Error_class`/`MPI_Error_string`, `MPI_Dist_graph_*`, `MPI_Pcontrol`,
-`MPI_Type_get_attr`/`set_attr` family) and are tracked as a follow-up; the
-newly added common subset (`MPI_Type_create_hvector`/`hindexed`/`struct`,
+remaining gaps are niche / callback-heavy APIs (attribute keyval and
+`*_copy_attr`/`*_delete_attr` infrastructure, `*_begin`/`*_end` and
+`*_shared`/`*_ordered` file I/O, `MPI_Grequest_*`, `MPI_Register_datarep`,
+`MPI_Status_f2c`/`c2f`, `MPI_Error_class`/`MPI_Error_string`,
+`MPI_Dist_graph_*`, `MPI_Pcontrol`) and are tracked as a follow-up. The common
+subset already added (`MPI_Type_create_hvector`/`hindexed`/`struct`,
 `MPI_Get_address`, `MPI_Type_create_f90_*`, `MPI_Ibsend`/`Irsend`/`Issend`,
-`MPI_Info_dup`/`get_valuelen`, `MPI_Request_get_status`, `MPI_Reduce_local`)
-is validated against real OpenMPI and MPICH in `tests/mpi/test_base_completeness.c`.
+`MPI_Info_dup`/`get_valuelen`, `MPI_Request_get_status`, `MPI_Reduce_local`,
+`MPI_Comm`/`Win`/`File_get|set_errhandler`) is validated against real OpenMPI
+and MPICH in `tests/mpi/test_base_completeness.c`.
 
 ## Focused real-backend coverage
 

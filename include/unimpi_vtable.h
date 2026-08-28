@@ -564,6 +564,10 @@ typedef struct {
     int (*errhandler_free)(MPI_Errhandler *errhandler);
     int (*errhandler_set)(MPI_Comm comm, MPI_Errhandler errhandler);
     int (*errhandler_get)(MPI_Comm comm, MPI_Errhandler *errhandler);
+    int (*comm_get_errhandler)(MPI_Comm comm, MPI_Errhandler *errhandler);
+    int (*comm_set_errhandler)(MPI_Comm comm, MPI_Errhandler errhandler);
+    int (*win_get_errhandler)(MPI_Win win, MPI_Errhandler *errhandler);
+    int (*win_set_errhandler)(MPI_Win win, MPI_Errhandler errhandler);
     int (*comm_create_errhandler)(void (*handler_fn)(MPI_Comm *, int *, ...), MPI_Errhandler *errhandler);
     int (*comm_call_errhandler)(MPI_Comm comm, int errorcode);
     int (*win_create_errhandler)(void (*handler_fn)(MPI_Win *, int *, ...), MPI_Errhandler *errhandler);

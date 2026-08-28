@@ -773,6 +773,16 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Errhandler_set");
     unimpi.errhandler_get = (int (*)(MPI_Comm, MPI_Errhandler*))
         unimpi_platform_dlsym(handle, "MPI_Errhandler_get");
+
+    unimpi.comm_get_errhandler = (int (*)(MPI_Comm, MPI_Errhandler*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_get_errhandler");
+    unimpi.comm_set_errhandler = (int (*)(MPI_Comm, MPI_Errhandler))
+        unimpi_platform_dlsym(handle, "MPI_Comm_set_errhandler");
+    unimpi.win_get_errhandler = (int (*)(MPI_Win, MPI_Errhandler*))
+        unimpi_platform_dlsym(handle, "MPI_Win_get_errhandler");
+    unimpi.win_set_errhandler = (int (*)(MPI_Win, MPI_Errhandler))
+        unimpi_platform_dlsym(handle, "MPI_Win_set_errhandler");
+
     unimpi.comm_create_errhandler = (int (*)(void (*)(MPI_Comm*, int*, ...), MPI_Errhandler*))
         unimpi_platform_dlsym(handle, "MPI_Comm_create_errhandler");
     unimpi.comm_call_errhandler = (int (*)(MPI_Comm, int))

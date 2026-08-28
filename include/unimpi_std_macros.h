@@ -477,6 +477,12 @@
 #define MPI_Errhandler_free unimpi.errhandler_free
 #define MPI_Errhandler_set unimpi.errhandler_set
 #define MPI_Errhandler_get unimpi.errhandler_get
+#define MPI_Comm_get_errhandler unimpi.comm_get_errhandler
+#define MPI_Comm_set_errhandler unimpi.comm_set_errhandler
+#define MPI_Win_get_errhandler unimpi.win_get_errhandler
+#define MPI_Win_set_errhandler unimpi.win_set_errhandler
+#define MPI_File_get_errhandler unimpi.file_get_errhandler
+#define MPI_File_set_errhandler unimpi.file_set_errhandler
 #define MPI_Comm_create_errhandler unimpi.comm_create_errhandler
 #define MPI_Comm_call_errhandler unimpi.comm_call_errhandler
 #define MPI_Win_create_errhandler unimpi.win_create_errhandler
