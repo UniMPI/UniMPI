@@ -24,6 +24,11 @@ typedef intptr_t MPI_Message;
 typedef intptr_t MPI_Aint;
 typedef long long MPI_Offset;
 
+/* MPI_Fint - the C type representing a Fortran INTEGER, element type of the
+ * status arrays used by MPI_Status_f2c/c2f. The MPI standard defines it to
+ * match the C binding of Fortran INTEGER, i.e. int. */
+typedef int MPI_Fint;
+
 /* MPI Window attribute callback function types */
 typedef int (MPI_Win_copy_attr_function)(MPI_Win oldwin, int win_keyval, void *extra_state,
                                          void *attribute_val_in, void *attribute_val_out, int *flag);
@@ -591,6 +596,8 @@ typedef struct {
     /* Status manipulation */
     int (*status_set_elements)(MPI_Status *status, MPI_Datatype datatype, int count);
     int (*status_set_cancelled)(MPI_Status *status, int flag);
+    int (*status_f2c)(const MPI_Fint *f_status, MPI_Status *c_status);
+    int (*status_c2f)(const MPI_Status *c_status, MPI_Fint *f_status);
 
     /* Error handling */
     int (*errhandler_create)(void (*handler_fn)(MPI_Comm *, int *, ...), MPI_Errhandler *errhandler);

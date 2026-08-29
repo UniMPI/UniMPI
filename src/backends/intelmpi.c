@@ -822,6 +822,11 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     unimpi.status_set_cancelled = (int (*)(MPI_Status*, int))
         unimpi_platform_dlsym(handle, "MPI_Status_set_cancelled");
 
+    unimpi.status_f2c = (int (*)(const MPI_Fint*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_Status_f2c");
+    unimpi.status_c2f = (int (*)(const MPI_Status*, MPI_Fint*))
+        unimpi_platform_dlsym(handle, "MPI_Status_c2f");
+
     /* Error handling */
     unimpi.errhandler_create = (int (*)(void (*)(MPI_Comm*, int*, ...), MPI_Errhandler*))
         unimpi_platform_dlsym(handle, "MPI_Errhandler_create");

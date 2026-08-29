@@ -500,6 +500,8 @@
 /* MPI-3 Status manipulation */
 #define MPI_Status_set_elements unimpi.status_set_elements
 #define MPI_Status_set_cancelled unimpi.status_set_cancelled
+#define MPI_Status_f2c unimpi.status_f2c
+#define MPI_Status_c2f unimpi.status_c2f
 
 /* MPI-3 Error handling */
 #define MPI_Errhandler_create unimpi.errhandler_create
