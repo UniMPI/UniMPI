@@ -142,6 +142,9 @@
 #define MPI_Startall unimpi.startall
 #define MPI_Request_free unimpi.request_free
 #define MPI_Request_get_status unimpi.request_get_status
+#define MPI_Grequest_start(query_fn, free_fn, cancel_fn, extra_state, request) \
+    unimpi.grequest_start(query_fn, free_fn, cancel_fn, extra_state, request)
+#define MPI_Grequest_complete(request) unimpi.grequest_complete(request)
 
 /* Cancel and status */
 #define MPI_Cancel unimpi.cancel

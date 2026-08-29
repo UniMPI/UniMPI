@@ -437,6 +437,13 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_status_fortran test_status_fortran 2)
 endif()
 
+# MPI-2 generalized-request test (Grequest_start/complete); single-rank sufficient.
+add_executable(test_grequest mpi/test_grequest.c)
+target_link_libraries(test_grequest unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_grequest test_grequest 2)
+endif()
+
 # RMA extension tests (MPI-2.2)
 add_executable(test_rma_extended mpi/test_rma_extended.c)
 target_link_libraries(test_rma_extended unimpi)

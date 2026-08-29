@@ -5,8 +5,8 @@
 UniMPI is a runtime dispatch layer for native MPI implementations. It provides
 one C99-facing library and selects a backend when the process initializes.
 
-The current dispatch structure has 323 MPI function-pointer fields, and the
-standard-name header has 296 direct `MPI_*` aliases. These inventory counts do
+The current dispatch structure has 325 MPI function-pointer fields, and the
+standard-name header has 298 direct `MPI_*` aliases. These inventory counts do
 not imply complete MPI-3/MPI-4 conformance; see
 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).
 

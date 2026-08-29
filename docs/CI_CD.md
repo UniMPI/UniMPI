@@ -105,5 +105,5 @@ See [TESTING.md](TESTING.md) for the process-count and sanitizer policy.
 ## What CI does not prove
 
 A green matrix does not establish complete MPI conformance, fault tolerance,
-GPU awareness, production-scale performance, or every entry in the 323-field
+GPU awareness, production-scale performance, or every entry in the 325-field
 vtable. Explicit gaps are listed in [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).

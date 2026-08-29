@@ -84,6 +84,12 @@ typedef union MPI_Status MPI_Status;
 /* Verify union is exactly 24 bytes (offset/size of largest member) */
 typedef char unimpi_status_union_size_is_24[(sizeof(union MPI_Status) == 24) ? 1 : -1];
 
+/* Generalized-request callback function types (MPI-2). Defined after MPI_Status
+ * because MPI_Grequest_query_function's signature references it. */
+typedef int (MPI_Grequest_query_function)(void *extra_state, MPI_Status *status);
+typedef int (MPI_Grequest_free_function)(void *extra_state);
+typedef int (MPI_Grequest_cancel_function)(void *extra_state, int complete);
+
 /* MPI predefined operations - will be resolved at runtime from backend */
 extern MPI_Op UNIMPI_MAX;
 extern MPI_Op UNIMPI_MIN;
@@ -244,6 +250,11 @@ typedef struct {
     int (*startall)(int count, MPI_Request *array_of_requests);
     int (*request_free)(MPI_Request *request);
     int (*request_get_status)(MPI_Request request, int *flag, MPI_Status *status);
+    int (*grequest_start)(MPI_Grequest_query_function *query_fn,
+                          MPI_Grequest_free_function *free_fn,
+                          MPI_Grequest_cancel_function *cancel_fn,
+                          void *extra_state, MPI_Request *request);
+    int (*grequest_complete)(MPI_Request request);
 
     /* Cancel and status query */
     int (*cancel)(MPI_Request *request);

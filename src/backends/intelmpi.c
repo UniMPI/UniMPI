@@ -765,6 +765,11 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Issend");
     unimpi.request_get_status = (int (*)(MPI_Request, int*, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_Request_get_status");
+
+    unimpi.grequest_start = (int (*)(MPI_Grequest_query_function*, MPI_Grequest_free_function*, MPI_Grequest_cancel_function*, void*, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Grequest_start");
+    unimpi.grequest_complete = (int (*)(MPI_Request))
+        unimpi_platform_dlsym(handle, "MPI_Grequest_complete");
     unimpi.reduce_local = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op))
         unimpi_platform_dlsym(handle, "MPI_Reduce_local");
     unimpi.info_dup = (int (*)(MPI_Info, MPI_Info*))
