@@ -415,6 +415,14 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_base_completeness test_base_completeness 2)
 endif()
 
+# MPI-2.2 Tier-A gap smoke test (error class/string + file shared-pointer and
+# split-collective I/O). Requires >=2 ranks for the collective file portion.
+add_executable(test_tierA_gaps mpi/test_tierA_gaps.c)
+target_link_libraries(test_tierA_gaps unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_tierA_gaps test_tierA_gaps 2)
+endif()
+
 # RMA extension tests (MPI-2.2)
 add_executable(test_rma_extended mpi/test_rma_extended.c)
 target_link_libraries(test_rma_extended unimpi)

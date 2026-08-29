@@ -11,8 +11,8 @@ MPI conformance or runtime availability.
 
 ## Current API inventory
 
-- `unimpi_vtable_t` contains 275 MPI function-pointer fields.
-- `unimpi_std_macros.h` contains 246 direct standard-name aliases of the form
+- `unimpi_vtable_t` contains 317 MPI function-pointer fields.
+- `unimpi_std_macros.h` contains 290 direct standard-name aliases of the form
   `MPI_* -> unimpi.<field>`.
 - Initialization, finalization, constants, and a small number of function-like
   convenience macros are defined separately.

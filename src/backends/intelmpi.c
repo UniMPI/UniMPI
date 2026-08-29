@@ -623,6 +623,13 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     unimpi.file_get_byte_offset = (int (*)(MPI_File, MPI_Offset, MPI_Offset*))
         unimpi_platform_dlsym(handle, "MPI_File_get_byte_offset");
 
+    unimpi.file_seek_shared = (int (*)(MPI_File, MPI_Offset, int))
+        unimpi_platform_dlsym(handle, "MPI_File_seek_shared");
+    unimpi.file_get_position_shared = (int (*)(MPI_File, MPI_Offset*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_position_shared");
+    unimpi.file_get_type_extent = (int (*)(MPI_File, MPI_Datatype, MPI_Aint*))
+        unimpi_platform_dlsym(handle, "MPI_File_get_type_extent");
+
     /* Parallel I/O - Read/Write */
     unimpi.file_read = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_read");
@@ -649,6 +656,31 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     unimpi.file_write_ordered = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Status*))
         unimpi_platform_dlsym(handle, "MPI_File_write_ordered");
 
+    unimpi.file_read_all_begin = (int (*)(MPI_File, void*, int, MPI_Datatype))
+        unimpi_platform_dlsym(handle, "MPI_File_read_all_begin");
+    unimpi.file_read_all_end = (int (*)(MPI_File, void*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_all_end");
+    unimpi.file_read_at_all_begin = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype))
+        unimpi_platform_dlsym(handle, "MPI_File_read_at_all_begin");
+    unimpi.file_read_at_all_end = (int (*)(MPI_File, void*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_at_all_end");
+    unimpi.file_read_ordered_begin = (int (*)(MPI_File, void*, int, MPI_Datatype))
+        unimpi_platform_dlsym(handle, "MPI_File_read_ordered_begin");
+    unimpi.file_read_ordered_end = (int (*)(MPI_File, void*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_read_ordered_end");
+    unimpi.file_write_all_begin = (int (*)(MPI_File, const void*, int, MPI_Datatype))
+        unimpi_platform_dlsym(handle, "MPI_File_write_all_begin");
+    unimpi.file_write_all_end = (int (*)(MPI_File, const void*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_all_end");
+    unimpi.file_write_at_all_begin = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype))
+        unimpi_platform_dlsym(handle, "MPI_File_write_at_all_begin");
+    unimpi.file_write_at_all_end = (int (*)(MPI_File, const void*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_at_all_end");
+    unimpi.file_write_ordered_begin = (int (*)(MPI_File, const void*, int, MPI_Datatype))
+        unimpi_platform_dlsym(handle, "MPI_File_write_ordered_begin");
+    unimpi.file_write_ordered_end = (int (*)(MPI_File, const void*, MPI_Status*))
+        unimpi_platform_dlsym(handle, "MPI_File_write_ordered_end");
+
     /* Parallel I/O - Non-blocking */
     unimpi.file_iread = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_File_iread");
@@ -658,6 +690,11 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_File_iread_at");
     unimpi.file_iwrite_at = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_File_iwrite_at");
+
+    unimpi.file_iread_shared = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iread_shared");
+    unimpi.file_iwrite_shared = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iwrite_shared");
 
     /* Parallel I/O - Views */
     unimpi.file_set_view = (int (*)(MPI_File, MPI_Offset, MPI_Datatype, MPI_Datatype, const char*, MPI_Info))
@@ -835,6 +872,13 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Add_error_code");
     unimpi.add_error_string = (int (*)(int, const char*))
         unimpi_platform_dlsym(handle, "MPI_Add_error_string");
+
+    unimpi.error_class = (int (*)(int, int*))
+        unimpi_platform_dlsym(handle, "MPI_Error_class");
+    unimpi.error_string = (int (*)(int, char*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Error_string");
+    unimpi.pcontrol = (int (*)(const int, ...))
+        unimpi_platform_dlsym(handle, "MPI_Pcontrol");
 
     /* Attributes */
     unimpi.attr_put = (int (*)(MPI_Comm, int, void*))

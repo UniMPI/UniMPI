@@ -10,8 +10,8 @@ The maintained verification contract is
 
 ## Inventory
 
-- 275 MPI function-pointer fields in `unimpi_vtable_t`.
-- 246 direct standard-name aliases in `unimpi_std_macros.h`.
+- 317 MPI function-pointer fields in `unimpi_vtable_t`.
+- 290 direct standard-name aliases in `unimpi_std_macros.h`.
 - Separate control wrappers for initialization, finalization, state queries,
   backend identity, diagnostics, and UniMPI errors.
 - Four backend adapters: Open MPI, MPICH, Intel MPI, and MS-MPI.
@@ -25,7 +25,7 @@ narrows with the target version selected at build time
 (`UNIMPI_MPI_TARGET_VERSION`/`UNIMPI_MPI_TARGET_SUBVERSION`): the 6 MPI-3.0
 clusters (matched probe, nonblocking collectives, comm info, shared windows,
 RMA atomics, RMA sync) are physically
-removed below a 3.0 target, so a 2.2 build has 256 vtable fields and a matching
+removed below a 3.0 target, so a 2.2 build has 276 vtable fields and a matching
 alias surface. The MPI-2 base (including `Alltoallw`, `Comm_join`,
 `Op_commutative`) is always present. Runtime capability is still
 decided by the dlopen'd backend, independent of the compile-time target. See
@@ -36,18 +36,20 @@ decided by the dlopen'd backend, independent of the compile-time target. See
 The always-present 2.2 surface is mechanically audited by
 `tools/mpi_version_gate.py base`, which (a) fails if any gated field is
 actually a 2.2 canonical function and (b) reports how many of the ~305
-canonical 2.2 functions are exposed. Currently **252/305 (82.6%)** of the
+canonical 2.2 functions are exposed. Currently **272/305 (89.2%)** of the
 MPI-2.2 canonical functions are bound in the always-present vtable. The
 remaining gaps are niche / callback-heavy APIs (attribute keyval and
-`*_copy_attr`/`*_delete_attr` infrastructure, `*_begin`/`*_end` and
-`*_shared`/`*_ordered` file I/O, `MPI_Grequest_*`, `MPI_Register_datarep`,
-`MPI_Status_f2c`/`c2f`, `MPI_Error_class`/`MPI_Error_string`,
-`MPI_Dist_graph_*`, `MPI_Pcontrol`) and are tracked as a follow-up. The common
-subset already added (`MPI_Type_create_hvector`/`hindexed`/`struct`,
-`MPI_Get_address`, `MPI_Type_create_f90_*`, `MPI_Ibsend`/`Irsend`/`Issend`,
-`MPI_Info_dup`/`get_valuelen`, `MPI_Request_get_status`, `MPI_Reduce_local`,
-`MPI_Comm`/`Win`/`File_get|set_errhandler`) is validated against real OpenMPI
-and MPICH in `tests/mpi/test_base_completeness.c`.
+`*_copy_attr`/`*_delete_attr` infrastructure, `MPI_Grequest_*`,
+`MPI_Register_datarep`, `MPI_Status_f2c`/`c2f`, `MPI_Dist_graph_*`) and are
+tracked as a follow-up. The common subset already added (`MPI_Type_create_hvector`/
+`hindexed`/`struct`, `MPI_Get_address`, `MPI_Type_create_f90_*`,
+`MPI_Ibsend`/`Irsend`/`Issend`, `MPI_Info_dup`/`get_valuelen`,
+`MPI_Request_get_status`, `MPI_Reduce_local`,
+`MPI_Comm`/`Win`/`File_get|set_errhandler`) plus a second batch
+(`MPI_Error_class`/`MPI_Error_string`, `MPI_Pcontrol`,
+`MPI_File_get_type_extent`, `MPI_File_*_shared`, and the
+`MPI_File_*_{begin,end}` split collectives) are validated against real OpenMPI
+in `tests/mpi/test_base_completeness.c` and `tests/mpi/test_tierA_gaps.c`.
 
 ## Focused real-backend coverage
 

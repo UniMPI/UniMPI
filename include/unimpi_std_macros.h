@@ -393,6 +393,9 @@
 #define MPI_File_seek unimpi.file_seek
 #define MPI_File_get_position unimpi.file_get_position
 #define MPI_File_get_byte_offset unimpi.file_get_byte_offset
+#define MPI_File_seek_shared unimpi.file_seek_shared
+#define MPI_File_get_position_shared unimpi.file_get_position_shared
+#define MPI_File_get_type_extent unimpi.file_get_type_extent
 
 /* Parallel I/O - Read/Write */
 #define MPI_File_read unimpi.file_read
@@ -410,11 +413,27 @@
 #define MPI_File_read_ordered unimpi.file_read_ordered
 #define MPI_File_write_ordered unimpi.file_write_ordered
 
+/* MPI-2 Split collective I/O */
+#define MPI_File_read_all_begin unimpi.file_read_all_begin
+#define MPI_File_read_all_end unimpi.file_read_all_end
+#define MPI_File_read_at_all_begin unimpi.file_read_at_all_begin
+#define MPI_File_read_at_all_end unimpi.file_read_at_all_end
+#define MPI_File_read_ordered_begin unimpi.file_read_ordered_begin
+#define MPI_File_read_ordered_end unimpi.file_read_ordered_end
+#define MPI_File_write_all_begin unimpi.file_write_all_begin
+#define MPI_File_write_all_end unimpi.file_write_all_end
+#define MPI_File_write_at_all_begin unimpi.file_write_at_all_begin
+#define MPI_File_write_at_all_end unimpi.file_write_at_all_end
+#define MPI_File_write_ordered_begin unimpi.file_write_ordered_begin
+#define MPI_File_write_ordered_end unimpi.file_write_ordered_end
+
 /* Parallel I/O - Non-blocking */
 #define MPI_File_iread unimpi.file_iread
 #define MPI_File_iwrite unimpi.file_iwrite
 #define MPI_File_iread_at unimpi.file_iread_at
 #define MPI_File_iwrite_at unimpi.file_iwrite_at
+#define MPI_File_iread_shared unimpi.file_iread_shared
+#define MPI_File_iwrite_shared unimpi.file_iwrite_shared
 
 /* Parallel I/O - Views */
 #define MPI_File_set_view unimpi.file_set_view
@@ -503,6 +522,9 @@
 #define MPI_Add_error_class unimpi.add_error_class
 #define MPI_Add_error_code unimpi.add_error_code
 #define MPI_Add_error_string unimpi.add_error_string
+#define MPI_Error_class unimpi.error_class
+#define MPI_Error_string unimpi.error_string
+#define MPI_Pcontrol unimpi.pcontrol
 
 /* MPI-3 Attributes */
 #define MPI_Attr_put unimpi.attr_put

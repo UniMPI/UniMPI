@@ -1,8 +1,8 @@
 # API Reference
 
 Reference for UniMPI's public control API and commonly used runtime-dispatch
-fields. The vtable currently contains 275 MPI function-pointer fields and the
-standard-name header contains 246 direct aliases. This document is not a claim
+fields. The vtable currently contains 317 MPI function-pointer fields and the
+standard-name header contains 290 direct aliases. This document is not a claim
 of complete MPI-standard coverage; consult
 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) before depending on a category.
 

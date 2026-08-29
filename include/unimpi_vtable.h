@@ -489,6 +489,9 @@ typedef struct {
     int (*file_seek)(MPI_File fh, MPI_Offset offset, int whence);
     int (*file_get_position)(MPI_File fh, MPI_Offset *offset);
     int (*file_get_byte_offset)(MPI_File fh, MPI_Offset offset, MPI_Offset *disp);
+    int (*file_seek_shared)(MPI_File fh, MPI_Offset offset, int whence);
+    int (*file_get_position_shared)(MPI_File fh, MPI_Offset *offset);
+    int (*file_get_type_extent)(MPI_File fh, MPI_Datatype datatype, MPI_Aint *extent);
 
     /* Parallel I/O - Read/Write */
     int (*file_read)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
@@ -503,12 +506,26 @@ typedef struct {
     int (*file_write_shared)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
     int (*file_read_ordered)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
     int (*file_write_ordered)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Status *status);
+    int (*file_read_all_begin)(MPI_File fh, void *buf, int count, MPI_Datatype datatype);
+    int (*file_read_all_end)(MPI_File fh, void *buf, MPI_Status *status);
+    int (*file_read_at_all_begin)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype);
+    int (*file_read_at_all_end)(MPI_File fh, void *buf, MPI_Status *status);
+    int (*file_read_ordered_begin)(MPI_File fh, void *buf, int count, MPI_Datatype datatype);
+    int (*file_read_ordered_end)(MPI_File fh, void *buf, MPI_Status *status);
+    int (*file_write_all_begin)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype);
+    int (*file_write_all_end)(MPI_File fh, const void *buf, MPI_Status *status);
+    int (*file_write_at_all_begin)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype);
+    int (*file_write_at_all_end)(MPI_File fh, const void *buf, MPI_Status *status);
+    int (*file_write_ordered_begin)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype);
+    int (*file_write_ordered_end)(MPI_File fh, const void *buf, MPI_Status *status);
 
     /* Parallel I/O - Nonblocking */
     int (*file_iread)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
     int (*file_iwrite)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
     int (*file_iread_at)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
     int (*file_iwrite_at)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iread_shared)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iwrite_shared)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
 
     /* Parallel I/O - Views */
     int (*file_set_view)(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, const char *datarep, MPI_Info info);
@@ -590,6 +607,9 @@ typedef struct {
     int (*add_error_class)(int *errorclass);
     int (*add_error_code)(int errorclass, int *errorcode);
     int (*add_error_string)(int errorcode, const char *string);
+    int (*error_class)(int errorcode, int *errorclass);
+    int (*error_string)(int errorcode, char *string, int *resultlen);
+    int (*pcontrol)(const int level, ...);
 
     /* Attributes */
     int (*attr_put)(MPI_Comm comm, int keyval, void *attribute_val);
