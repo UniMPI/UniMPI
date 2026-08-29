@@ -36,11 +36,13 @@ decided by the dlopen'd backend, independent of the compile-time target. See
 The always-present 2.2 surface is mechanically audited by
 `tools/mpi_version_gate.py base`, which (a) fails if any gated field is
 actually a 2.2 canonical function and (b) reports how many of the ~305
-canonical 2.2 functions are exposed. Currently **293/305 (96.1%)** of the
-MPI-2.2 canonical functions are bound in the always-present vtable. The
-only remaining gaps are the 12 predefined attribute callbacks (`MPI_*_DUP_FN` /
-`MPI_*_NULL_COPY_FN` / `MPI_*_NULL_DELETE_FN`), which are backend-specific
-compile-time values rather than uniformly dlsym-able symbols. The common subset already added (`MPI_Type_create_hvector`/
+canonical 2.2 surface is exposed. **305/305 (100%)** of the MPI-2.2 canonical
+entities are covered: 293 are vtable function-pointer fields, and the 12
+predefined attribute callbacks (`MPI_*_DUP_FN` / `MPI_*_NULL_COPY_FN` /
+`MPI_*_NULL_DELETE_FN`) are exposed as extern global callback-value variables
+that each backend resolves to its own value at init (OpenMPI -> real
+OMPI_C_MPI_*_FN functions; MPICH-family -> shared MPIR_Dup_fn plus NULL),
+exactly like the extern MPI_ERR_* ints. The common subset already added (`MPI_Type_create_hvector`/
 `hindexed`/`struct`, `MPI_Get_address`, `MPI_Type_create_f90_*`,
 `MPI_Ibsend`/`Irsend`/`Issend`, `MPI_Info_dup`/`get_valuelen`,
 `MPI_Request_get_status`, `MPI_Reduce_local`,

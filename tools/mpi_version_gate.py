@@ -284,6 +284,10 @@ def extract_always_present_fields(vtable_path):
         lines = fh.readlines()
 
     field_rx = re.compile(r"\(\*\s*(\w+)\s*\)")
+    # Predefined-value globals are exposed as `extern <type> *NAME;` (e.g. the
+    # predefined attribute callbacks), not as vtable fields. They are part of
+    # the always-present base surface too.
+    extern_rx = re.compile(r"^\s*extern\s+[^;]+?\*\s*(\w+)\s*;")
     guard_rx = re.compile(r"#\s*if\s+UNIMPI_MPI_AT_LEAST")
     present = set()
     depth = 0
@@ -299,6 +303,13 @@ def extract_always_present_fields(vtable_path):
         m = field_rx.search(l)
         if m:
             present.add(m.group(1))
+            continue
+        m2 = extern_rx.match(l)
+        if m2:
+            # Predefined-value globals carry the STANDARD name (MPI_COMM_DUP_FN);
+            # normalize to the vtable-field convention used by the base list
+            # (strip MPI_ prefix, lowercase) so comm_dup_fn matches.
+            present.add(re.sub(r"^MPI_", "", m2.group(1), flags=re.I).lower())
     return present
 
 

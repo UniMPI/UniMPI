@@ -136,6 +136,33 @@ static int test_old_keyval(void) {
     return 0;
 }
 
+static int test_predefined_attr_values(void) {
+    int comm_kv, type_kv;
+
+    TEST("predefined attribute callback values (MPI_*_DUP_FN / *_NULL_*_FN)");
+
+    /* DUP variants must resolve to a real function on every backend
+     * (OpenMPI -> OMPI_C_MPI_*_DUP_FN, MPICH-family -> shared MPIR_Dup_fn). */
+    if (MPI_COMM_DUP_FN == 0 || MPI_TYPE_DUP_FN == 0 || MPI_WIN_DUP_FN == 0)
+        FAIL("predefined MPI_DUP_FN variable not populated by backend");
+    if (MPI_DUP_FN == 0)
+        FAIL("predefined MPI_DUP_FN (generic) not populated by backend");
+
+    /* The *_NULL_COPY/DELETE values are backend-dependent (NULL on MPICH,
+     * a real no-op function on OpenMPI); either is a valid copy/delete fn for
+     * keyval creation, so passing them must succeed on a real backend. */
+    if (MPI_Comm_create_keyval(MPI_COMM_NULL_COPY_FN, MPI_COMM_NULL_DELETE_FN,
+                               &comm_kv, NULL) != MPI_SUCCESS)
+        FAIL("MPI_Comm_create_keyval with predefined null callbacks failed");
+    if (MPI_Type_create_keyval(MPI_TYPE_NULL_COPY_FN, MPI_TYPE_NULL_DELETE_FN,
+                               &type_kv, NULL) != MPI_SUCCESS)
+        FAIL("MPI_Type_create_keyval with predefined null callbacks failed");
+    MPI_Comm_free_keyval(&comm_kv);
+    MPI_Type_free_keyval(&type_kv);
+    PASS();
+    return 0;
+}
+
 static int test_register_datarep(void) {
     int extra = 0, rc;
     TEST("Register_datarep");
@@ -167,6 +194,7 @@ int main(int argc, char **argv) {
     if ((ret = test_comm_attr()) != 0) goto cleanup;
     if ((ret = test_type_attr()) != 0) goto cleanup;
     if ((ret = test_old_keyval()) != 0) goto cleanup;
+    if ((ret = test_predefined_attr_values()) != 0) goto cleanup;
     if ((ret = test_register_datarep()) != 0) goto cleanup;
 
     printf("\n=== All attribute/datarep tests passed ===\n");

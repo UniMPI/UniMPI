@@ -46,6 +46,7 @@ set(UNIMPI_SOURCES
     src/loader.c
     src/vtable.c
     src/error.c
+    src/predef_attr.c
 )
 
 if(UNIMPI_PLATFORM_POSIX)

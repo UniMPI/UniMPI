@@ -893,6 +893,11 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Keyval_free");
     unimpi.register_datarep = (int (*)(const char*, MPI_Datarep_conversion_function*, MPI_Datarep_conversion_function*, MPI_Datarep_extent_function*, void*))
         unimpi_platform_dlsym(handle, "MPI_Register_datarep");
+    /* Predefined attribute callback values (MPICH-family: shared MPIR_Dup_fn). */
+    MPI_COMM_DUP_FN = (MPI_Comm_copy_attr_function*)unimpi_platform_dlsym(handle, "MPIR_Dup_fn");
+    MPI_TYPE_DUP_FN = (MPI_Type_copy_attr_function*)unimpi_platform_dlsym(handle, "MPIR_Dup_fn");
+    MPI_WIN_DUP_FN = (MPI_Win_copy_attr_function*)unimpi_platform_dlsym(handle, "MPIR_Dup_fn");
+    MPI_DUP_FN = (MPI_Copy_function*)unimpi_platform_dlsym(handle, "MPIR_Dup_fn");
     unimpi.win_get_group = (int (*)(MPI_Win, MPI_Group*))
         unimpi_platform_dlsym(handle, "MPI_Win_get_group");
     unimpi.win_call_errhandler = (int (*)(MPI_Win, int))

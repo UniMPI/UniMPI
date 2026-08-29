@@ -54,6 +54,24 @@ typedef int (MPI_Datarep_conversion_function)(void *userbuf, MPI_Datatype dataty
 typedef int (MPI_Datarep_extent_function)(MPI_Datatype datatype, MPI_Aint *extent,
                                           void *extra_state);
 
+/* Predefined attribute callback VALUES. These are not vtable function-pointer
+ * fields (there is no dlsym-able uniform symbol): each backend resolves them to
+ * its own compile-time value at init, exactly like the extern MPI_ERR_* ints.
+ * OpenMPI provides real OMPI_C_MPI_*_FN functions; MPICH-family provides a
+ * shared MPIR_Dup_fn (cast) plus NULL for the null copy/delete values. */
+extern MPI_Comm_copy_attr_function *MPI_COMM_DUP_FN;
+extern MPI_Comm_copy_attr_function *MPI_COMM_NULL_COPY_FN;
+extern MPI_Comm_delete_attr_function *MPI_COMM_NULL_DELETE_FN;
+extern MPI_Type_copy_attr_function *MPI_TYPE_DUP_FN;
+extern MPI_Type_copy_attr_function *MPI_TYPE_NULL_COPY_FN;
+extern MPI_Type_delete_attr_function *MPI_TYPE_NULL_DELETE_FN;
+extern MPI_Win_copy_attr_function *MPI_WIN_DUP_FN;
+extern MPI_Win_copy_attr_function *MPI_WIN_NULL_COPY_FN;
+extern MPI_Win_delete_attr_function *MPI_WIN_NULL_DELETE_FN;
+extern MPI_Copy_function *MPI_DUP_FN;
+extern MPI_Copy_function *MPI_NULL_COPY_FN;
+extern MPI_Delete_function *MPI_NULL_DELETE_FN;
+
 /* Status struct - must be defined before MPI_Status
  * Union accommodating the real backend status layouts (verified against
  * system mpi.h headers):
