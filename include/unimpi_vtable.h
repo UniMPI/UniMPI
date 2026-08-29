@@ -408,6 +408,22 @@ typedef struct {
     int (*graph_map)(MPI_Comm comm, int nnodes, const int *index,
                      const int *edges, int *newrank);
 
+    /* Process Topologies - Distributed Graph */
+    int (*dist_graph_create)(MPI_Comm comm_old, int n, const int *sources,
+                             const int *degrees, const int *destinations,
+                             const int *weights, MPI_Info info, int reorder,
+                             MPI_Comm *comm_dist_graph);
+    int (*dist_graph_create_adjacent)(MPI_Comm comm_old, int indegree,
+                                      const int *sources, const int *sourceweights,
+                                      int outdegree, const int *destinations,
+                                      const int *destweights, MPI_Info info,
+                                      int reorder, MPI_Comm *comm_dist_graph);
+    int (*dist_graph_neighbors_count)(MPI_Comm comm, int *indegree,
+                                      int *outdegree, int *weighted);
+    int (*dist_graph_neighbors)(MPI_Comm comm, int maxindegree, int *sources,
+                                int *sourceweights, int maxoutdegree,
+                                int *destinations, int *destweights);
+
     /* Topology Testing */
     int (*topo_test)(MPI_Comm comm, int *status);
 

@@ -322,6 +322,16 @@
 #define MPI_Graph_map(comm, nnodes, index, edges, newrank) \
     unimpi.graph_map(comm, nnodes, index, edges, newrank)
 
+/* Process Topologies - Distributed Graph */
+#define MPI_Dist_graph_create(comm_old, n, sources, degrees, destinations, weights, info, reorder, comm_dist_graph) \
+    unimpi.dist_graph_create(comm_old, n, sources, degrees, destinations, weights, info, reorder, comm_dist_graph)
+#define MPI_Dist_graph_create_adjacent(comm_old, indegree, sources, sourceweights, outdegree, destinations, destweights, info, reorder, comm_dist_graph) \
+    unimpi.dist_graph_create_adjacent(comm_old, indegree, sources, sourceweights, outdegree, destinations, destweights, info, reorder, comm_dist_graph)
+#define MPI_Dist_graph_neighbors_count(comm, indegree, outdegree, weighted) \
+    unimpi.dist_graph_neighbors_count(comm, indegree, outdegree, weighted)
+#define MPI_Dist_graph_neighbors(comm, maxindegree, sources, sourceweights, maxoutdegree, destinations, destweights) \
+    unimpi.dist_graph_neighbors(comm, maxindegree, sources, sourceweights, maxoutdegree, destinations, destweights)
+
 /* Topology Testing */
 #define MPI_Topo_test(comm, status) \
     unimpi.topo_test(comm, status)

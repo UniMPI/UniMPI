@@ -397,6 +397,15 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     unimpi.graph_map = (int (*)(MPI_Comm, int, const int*, const int*, int*))
         unimpi_platform_dlsym(handle, "MPI_Graph_map");
 
+    unimpi.dist_graph_create = (int (*)(MPI_Comm, int, const int*, const int*, const int*, const int*, MPI_Info, int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Dist_graph_create");
+    unimpi.dist_graph_create_adjacent = (int (*)(MPI_Comm, int, const int*, const int*, int, const int*, const int*, MPI_Info, int, MPI_Comm*))
+        unimpi_platform_dlsym(handle, "MPI_Dist_graph_create_adjacent");
+    unimpi.dist_graph_neighbors_count = (int (*)(MPI_Comm, int*, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Dist_graph_neighbors_count");
+    unimpi.dist_graph_neighbors = (int (*)(MPI_Comm, int, int*, int*, int, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Dist_graph_neighbors");
+
     /* Topology Testing */
     unimpi.topo_test = (int (*)(MPI_Comm, int*))
         unimpi_platform_dlsym(handle, "MPI_Topo_test");

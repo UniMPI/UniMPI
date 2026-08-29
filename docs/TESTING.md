@@ -158,12 +158,12 @@ build is under test:
 ```bash
 # 3.1 (default) build
 strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_join|MPI_Iallreduce'   # -> 12
-./build/tests/test_vtable_layout                                           # 2536 / 317
+./build/tests/test_vtable_layout                                           # 2568 / 321
 
 # 2.2 build (-DUNIMPI_MPI_TARGET_VERSION=2 -DUNIMPI_MPI_TARGET_SUBVERSION=2)
 strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_create_group|MPI_Win_sync'   # -> 0
 strings build22/libunimpi.a | grep -cE 'MPI_Alltoallw|MPI_Comm_join|MPI_Op_commutative'  # -> 12 (always present)
-./build22/tests/test_vtable_layout                                         # 2208 / 276
+./build22/tests/test_vtable_layout                                         # 2240 / 280
 ```
 
 At target 2.2 the whole-tree build is validated on the library and unit tests;

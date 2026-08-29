@@ -423,6 +423,13 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_tierA_gaps test_tierA_gaps 2)
 endif()
 
+# MPI-2.2 Tier-D distributed-graph topology test. Requires >=2 ranks for a ring.
+add_executable(test_tierD_dist_graph mpi/test_tierD_dist_graph.c)
+target_link_libraries(test_tierD_dist_graph unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_tierD_dist_graph test_tierD_dist_graph 2)
+endif()
+
 # RMA extension tests (MPI-2.2)
 add_executable(test_rma_extended mpi/test_rma_extended.c)
 target_link_libraries(test_rma_extended unimpi)
