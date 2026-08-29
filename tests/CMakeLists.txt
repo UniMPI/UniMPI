@@ -444,6 +444,13 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_grequest test_grequest 2)
 endif()
 
+# Attribute + datarep tests (MPI-2.2)
+add_executable(test_attr mpi/test_attr.c)
+target_link_libraries(test_attr unimpi)
+if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+    add_mpi_test(test_attr test_attr 2)
+endif()
+
 # RMA extension tests (MPI-2.2)
 add_executable(test_rma_extended mpi/test_rma_extended.c)
 target_link_libraries(test_rma_extended unimpi)

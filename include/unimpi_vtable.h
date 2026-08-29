@@ -29,11 +29,30 @@ typedef long long MPI_Offset;
  * match the C binding of Fortran INTEGER, i.e. int. */
 typedef int MPI_Fint;
 
-/* MPI Window attribute callback function types */
+/* MPI attribute callback function types (comm/type/win) */
+typedef int (MPI_Comm_copy_attr_function)(MPI_Comm oldcomm, int comm_keyval, void *extra_state,
+                                          void *attribute_val_in, void *attribute_val_out, int *flag);
+typedef int (MPI_Comm_delete_attr_function)(MPI_Comm comm, int comm_keyval, void *attribute_val,
+                                            void *extra_state);
+typedef int (MPI_Type_copy_attr_function)(MPI_Datatype oldtype, int type_keyval, void *extra_state,
+                                          void *attribute_val_in, void *attribute_val_out, int *flag);
+typedef int (MPI_Type_delete_attr_function)(MPI_Datatype type, int type_keyval, void *attribute_val,
+                                            void *extra_state);
 typedef int (MPI_Win_copy_attr_function)(MPI_Win oldwin, int win_keyval, void *extra_state,
                                          void *attribute_val_in, void *attribute_val_out, int *flag);
 typedef int (MPI_Win_delete_attr_function)(MPI_Win win, int win_keyval, void *attribute_val,
                                            void *extra_state);
+
+/* MPI-1 deprecated attribute callback types (for MPI_Keyval_create/free) */
+typedef int (MPI_Copy_function)(MPI_Comm oldcomm, int keyval, void *extra_state,
+                                void *attribute_val_in, void *attribute_val_out, int *flag);
+typedef int (MPI_Delete_function)(MPI_Comm comm, int keyval, void *attribute_val, void *extra_state);
+
+/* MPI datarep callback types (for MPI_Register_datarep) */
+typedef int (MPI_Datarep_conversion_function)(void *userbuf, MPI_Datatype datatype, int count,
+                                              void *filebuf, MPI_Offset position, void *extra_state);
+typedef int (MPI_Datarep_extent_function)(MPI_Datatype datatype, MPI_Aint *extent,
+                                          void *extra_state);
 
 /* Status struct - must be defined before MPI_Status
  * Union accommodating the real backend status layouts (verified against
@@ -629,6 +648,28 @@ typedef struct {
     int (*win_set_attr)(MPI_Win win, int win_keyval, void *attribute_val);
     int (*win_get_attr)(MPI_Win win, int win_keyval, void *attribute_val, int *flag);
     int (*win_delete_attr)(MPI_Win win, int win_keyval);
+    int (*comm_create_keyval)(MPI_Comm_copy_attr_function *copy_fn,
+                              MPI_Comm_delete_attr_function *delete_fn,
+                              int *keyval, void *extra_state);
+    int (*comm_free_keyval)(int *keyval);
+    int (*comm_set_attr)(MPI_Comm comm, int keyval, void *attribute_val);
+    int (*comm_get_attr)(MPI_Comm comm, int keyval, void *attribute_val, int *flag);
+    int (*comm_delete_attr)(MPI_Comm comm, int keyval);
+    int (*type_create_keyval)(MPI_Type_copy_attr_function *copy_fn,
+                              MPI_Type_delete_attr_function *delete_fn,
+                              int *keyval, void *extra_state);
+    int (*type_free_keyval)(int *keyval);
+    int (*type_set_attr)(MPI_Datatype type, int keyval, void *attribute_val);
+    int (*type_get_attr)(MPI_Datatype type, int keyval, void *attribute_val, int *flag);
+    int (*type_delete_attr)(MPI_Datatype type, int keyval);
+    int (*keyval_create)(MPI_Copy_function *copy_fn, MPI_Delete_function *delete_fn,
+                         int *keyval, void *extra_state);
+    int (*keyval_free)(int *keyval);
+    int (*register_datarep)(const char *datarep,
+                            MPI_Datarep_conversion_function *read_conversion_fn,
+                            MPI_Datarep_conversion_function *write_conversion_fn,
+                            MPI_Datarep_extent_function *dtype_file_extent_fn,
+                            void *extra_state);
     int (*win_get_group)(MPI_Win win, MPI_Group *group);
     int (*win_call_errhandler)(MPI_Win win, int errorcode);
     int (*file_create_errhandler)(void (*handler_fn)(MPI_File *, int *, ...), MPI_Errhandler *errhandler);

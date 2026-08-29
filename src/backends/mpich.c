@@ -855,6 +855,32 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_get_attr");
     unimpi.win_delete_attr = (int (*)(MPI_Win, int))
         unimpi_platform_dlsym(handle, "MPI_Win_delete_attr");
+    unimpi.comm_create_keyval = (int (*)(MPI_Comm_copy_attr_function*, MPI_Comm_delete_attr_function*, int*, void*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_create_keyval");
+    unimpi.comm_free_keyval = (int (*)(int*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_free_keyval");
+    unimpi.comm_set_attr = (int (*)(MPI_Comm, int, void*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_set_attr");
+    unimpi.comm_get_attr = (int (*)(MPI_Comm, int, void*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_get_attr");
+    unimpi.comm_delete_attr = (int (*)(MPI_Comm, int))
+        unimpi_platform_dlsym(handle, "MPI_Comm_delete_attr");
+    unimpi.type_create_keyval = (int (*)(MPI_Type_copy_attr_function*, MPI_Type_delete_attr_function*, int*, void*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_keyval");
+    unimpi.type_free_keyval = (int (*)(int*))
+        unimpi_platform_dlsym(handle, "MPI_Type_free_keyval");
+    unimpi.type_set_attr = (int (*)(MPI_Datatype, int, void*))
+        unimpi_platform_dlsym(handle, "MPI_Type_set_attr");
+    unimpi.type_get_attr = (int (*)(MPI_Datatype, int, void*, int*))
+        unimpi_platform_dlsym(handle, "MPI_Type_get_attr");
+    unimpi.type_delete_attr = (int (*)(MPI_Datatype, int))
+        unimpi_platform_dlsym(handle, "MPI_Type_delete_attr");
+    unimpi.keyval_create = (int (*)(MPI_Copy_function*, MPI_Delete_function*, int*, void*))
+        unimpi_platform_dlsym(handle, "MPI_Keyval_create");
+    unimpi.keyval_free = (int (*)(int*))
+        unimpi_platform_dlsym(handle, "MPI_Keyval_free");
+    unimpi.register_datarep = (int (*)(const char*, MPI_Datarep_conversion_function*, MPI_Datarep_conversion_function*, MPI_Datarep_extent_function*, void*))
+        unimpi_platform_dlsym(handle, "MPI_Register_datarep");
     unimpi.win_get_group = (int (*)(MPI_Win, MPI_Group*))
         unimpi_platform_dlsym(handle, "MPI_Win_get_group");
     unimpi.win_call_errhandler = (int (*)(MPI_Win, int))
