@@ -342,6 +342,12 @@ int unimpi_mpi_get_version(int *version, int *subversion) {
     return UNIMPI_OK;
 }
 
+/* UniMPI library's own version (not the backend's MPI version). Returns the
+ * canonical version string defined in unimpi_version.h, e.g. "0.1.0-alpha". */
+const char* unimpi_get_version(void) {
+    return UNIMPI_VERSION_STRING;
+}
+
 int unimpi_mpi_get_library_version(char *version, int *resultlen) {
     if (!version || !resultlen) {
         return UNIMPI_ERR_INVALID_ARGUMENT;

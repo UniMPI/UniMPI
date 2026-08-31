@@ -1,6 +1,25 @@
 cmake_minimum_required(VERSION 3.10)
 project(unimpi VERSION 0.1.0 LANGUAGES C)
 
+# Pre-release tag: "alpha", "beta", "rc", or "" for a final release. Together
+# with project(VERSION ...) this is the single source of truth for the library
+# version. configure_file renders include/unimpi_version.h.in into
+# ${CMAKE_CURRENT_BINARY_DIR}/include/unimpi_version.h.
+set(UNIMPI_VERSION_PRERELEASE "alpha")
+if(UNIMPI_VERSION_PRERELEASE)
+    set(UNIMPI_VERSION_STRING
+        "${unimpi_VERSION_MAJOR}.${unimpi_VERSION_MINOR}.${unimpi_VERSION_PATCH}-${UNIMPI_VERSION_PRERELEASE}")
+else()
+    set(UNIMPI_VERSION_STRING
+        "${unimpi_VERSION_MAJOR}.${unimpi_VERSION_MINOR}.${unimpi_VERSION_PATCH}")
+endif()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/unimpi_version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/unimpi_version.h"
+    @ONLY
+)
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -72,6 +91,7 @@ add_library(unimpi::unimpi ALIAS unimpi)
 
 target_include_directories(unimpi
     PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )

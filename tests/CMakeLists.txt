@@ -102,6 +102,15 @@ set_tests_properties(test_version_gate PROPERTIES
     TIMEOUT 30
 )
 
+# UniMPI library version surface (compile-time macros + runtime query)
+add_executable(test_version internal/test_version.c)
+target_link_libraries(test_version unimpi)
+add_test(NAME test_version COMMAND test_version)
+set_tests_properties(test_version PROPERTIES
+    LABELS "unit;internal;version"
+    TIMEOUT 10
+)
+
 # Negative proof: at a 2.2 target every MPI-3.0 std macro must be ABSENT.
 # Compiled with the target pinned to 2.2; each #ifdef MPI_<3.0 macro> below
 # would trigger a #error and fail this TU's build. The executable only runs
@@ -112,6 +121,7 @@ add_executable(test_version_gate_strict internal/test_version_gate_strict.c)
 # library, because unimpi now PUBLICly propagates the (3/1 by default)
 # UNIMPI_MPI_TARGET_* macros, which would otherwise override this TU's 2.2 pin.
 target_include_directories(test_version_gate_strict PRIVATE
+    ${PROJECT_BINARY_DIR}/include
     ${PROJECT_SOURCE_DIR}/include)
 target_compile_definitions(test_version_gate_strict PRIVATE
     UNIMPI_USE_STD_NAMES

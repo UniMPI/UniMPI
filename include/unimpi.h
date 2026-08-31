@@ -14,10 +14,10 @@ extern "C" {
 /* Compatibility typedef - UNIMPI_Status is the same as MPI_Status */
 typedef MPI_Status UNIMPI_Status;
 
-/* Version */
-#define UNIMPI_VERSION_MAJOR 0
-#define UNIMPI_VERSION_MINOR 1
-#define UNIMPI_VERSION_PATCH 0
+/* UniMPI library version macros live in unimpi_version.h (single source of
+ * truth); they are re-exported here via the #include at the top of this file.
+ * UNIMPI_MPI_VERSION / UNIMPI_MPI_SUBVERSION below are the MPI standard
+ * revision the stable facade targets - unrelated to the library version. */
 
 /* MPI profile version exposed by the stable facade */
 #define UNIMPI_MPI_VERSION 3
@@ -70,6 +70,7 @@ UNIMPI_API int unimpi_mpi_get_library_version(char *version, int *resultlen);
 UNIMPI_API int unimpi_is_initialized(void);
 UNIMPI_API const char* unimpi_get_backend_name(void);
 UNIMPI_API const char* unimpi_get_library_path(void);
+UNIMPI_API const char* unimpi_get_version(void);   /* returns UNIMPI_VERSION_STRING */
 
 /* Error handling */
 UNIMPI_API const char* unimpi_error_string(int error_code);
