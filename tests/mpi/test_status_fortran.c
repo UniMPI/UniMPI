@@ -22,12 +22,18 @@ static int test_status_roundtrip(void) {
     const int tag = 77;
     MPI_Status status, status2;
     int count_before = -1, count_after = -1;
-    MPI_Fint fs[MPI_STATUS_SIZE];
+    /* MPI_STATUS_SIZE is an extern int (runtime-populated per backend), so a
+     * stack array of that size is a VLA. MSVC does not support VLAs, so use
+     * malloc with the runtime value instead. */
+    MPI_Fint *fs;
 
     TEST("Recv + Status_c2f/f2c round trip");
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     if (nprocs < 2) { printf("  SKIP (need >=2 ranks)\n"); return 0; }
+
+    fs = (MPI_Fint *)malloc((size_t)MPI_STATUS_SIZE * sizeof(MPI_Fint));
+    if (!fs) FAIL("malloc(fs) failed");
 
     if (rank == 0) {
         int val = 42;
@@ -56,18 +62,23 @@ static int test_status_roundtrip(void) {
 
         /* Round-trip identity: c2f(f2c(c2f(s))) == c2f(s), backend-agnostic. */
         {
-            MPI_Fint fs2[MPI_STATUS_SIZE];
+            MPI_Fint *fs2 = (MPI_Fint *)malloc((size_t)MPI_STATUS_SIZE * sizeof(MPI_Fint));
+            if (!fs2) { free(fs); FAIL("malloc(fs2) failed"); }
             if (MPI_Status_c2f(&status2, fs2) != MPI_SUCCESS)
                 FAIL("MPI_Status_c2f(re) failed");
             for (i = 0; i < MPI_STATUS_SIZE; i++) {
                 if (fs[i] != fs2[i]) {
                     fprintf(stderr, "  FAIL: fs[%d]=%d want %d\n", i, fs[i], fs2[i]);
+                    free(fs2);
+                    free(fs);
                     return 1;
                 }
             }
+            free(fs2);
         }
     }
 
+    free(fs);
     PASS();
     return 0;
 }

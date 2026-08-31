@@ -31,18 +31,21 @@ static int test_type_create_struct(void) {
     /* struct { int a; double b; char c; } */
     MPI_Datatype types[3] = { MPI_INT, MPI_DOUBLE, MPI_CHAR };
     int blens[3] = { 1, 1, 1 };
-    MPI_Aint off[3];
+    MPI_Aint off[3], base;
     MPI_Datatype mystruct;
     int struct_size, elem_size;
 
     TEST("Type_create_struct");
-    /* Derive offsets portably from a real struct instance (also exercises
-     * Get_address). */
+    /* MPI_Type_create_struct displacements are byte offsets from the struct
+     * base. MPI_Get_address returns absolute addresses, so subtract the struct
+     * base address to get relative offsets (required by MPICH-family backends;
+     * Open MPI tolerates absolute addresses but the standard is unambiguous). */
     {
         struct st { int a; double b; char c; } s;
-        MPI_Get_address(&s.a, &off[0]);
-        MPI_Get_address(&s.b, &off[1]);
-        MPI_Get_address(&s.c, &off[2]);
+        MPI_Get_address(&s, &base);
+        MPI_Get_address(&s.a, &off[0]); off[0] -= base;
+        MPI_Get_address(&s.b, &off[1]); off[1] -= base;
+        MPI_Get_address(&s.c, &off[2]); off[2] -= base;
     }
     if (MPI_Type_create_struct(3, blens, off, types, &mystruct) != MPI_SUCCESS)
         FAIL("MPI_Type_create_struct failed");

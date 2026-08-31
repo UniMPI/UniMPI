@@ -117,7 +117,9 @@ static int require_mpi_success(int code, const char *operation) {
 
     fprintf(stderr, "%s failed with MPI error %d: %s\n",
             operation, code, unimpi_mpi_error_string(code));
-    (void)unimpi.abort(MPI_COMM_WORLD, code);
+    /* Do not abort here — return the error so callers can unwind gracefully.
+     * A smoke test should exit non-zero rather than take down the whole MPI
+     * job, which would mask the actual error in CI logs. */
     return -1;
 }
 
@@ -420,9 +422,12 @@ static int benchmark_alltoallw(int buffer_size,
     size_t total_size;
     unsigned char *send_buffer;
     unsigned char *receive_buffer;
-    int *counts;
-    int *displacements;
-    MPI_Datatype *types;
+    int *send_counts;
+    int *send_displacements;
+    MPI_Datatype *send_types;
+    int *recv_counts;
+    int *recv_displacements;
+    MPI_Datatype *recv_types;
     double start;
     double end;
     double local_time_us;
@@ -434,9 +439,9 @@ static int benchmark_alltoallw(int buffer_size,
         (size_t)process_count > SIZE_MAX / (size_t)buffer_size ||
         (process_count > 1 &&
          buffer_size > INT_MAX / (process_count - 1)) ||
-        (size_t)process_count > SIZE_MAX / sizeof(*counts) ||
-        (size_t)process_count > SIZE_MAX / sizeof(*displacements) ||
-        (size_t)process_count > SIZE_MAX / sizeof(*types)) {
+        (size_t)process_count > SIZE_MAX / sizeof(*send_counts) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*send_displacements) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*send_types)) {
         if (rank == 0) {
             fprintf(stderr,
                     "alltoallw benchmark dimensions exceed address or "
@@ -448,19 +453,28 @@ static int benchmark_alltoallw(int buffer_size,
     total_size = (size_t)buffer_size * (size_t)process_count;
     send_buffer = (unsigned char *)malloc(total_size);
     receive_buffer = (unsigned char *)malloc(total_size);
-    counts = (int *)malloc((size_t)process_count * sizeof(*counts));
-    displacements = (int *)malloc(
-        (size_t)process_count * sizeof(*displacements));
-    types = (MPI_Datatype *)malloc(
-        (size_t)process_count * sizeof(*types));
+    send_counts = (int *)malloc((size_t)process_count * sizeof(*send_counts));
+    send_displacements = (int *)malloc(
+        (size_t)process_count * sizeof(*send_displacements));
+    send_types = (MPI_Datatype *)malloc(
+        (size_t)process_count * sizeof(*send_types));
+    recv_counts = (int *)malloc((size_t)process_count * sizeof(*recv_counts));
+    recv_displacements = (int *)malloc(
+        (size_t)process_count * sizeof(*recv_displacements));
+    recv_types = (MPI_Datatype *)malloc(
+        (size_t)process_count * sizeof(*recv_types));
 
-    local_allocated = send_buffer && receive_buffer && counts &&
-                      displacements && types;
+    local_allocated = send_buffer && receive_buffer && send_counts &&
+                      send_displacements && send_types && recv_counts &&
+                      recv_displacements && recv_types;
     if (allocation_succeeded(
             local_allocated, rank, "alltoallw buffers") != 0) {
-        free(types);
-        free(displacements);
-        free(counts);
+        free(recv_types);
+        free(recv_displacements);
+        free(recv_counts);
+        free(send_types);
+        free(send_displacements);
+        free(send_counts);
         free(receive_buffer);
         free(send_buffer);
         return -1;
@@ -468,15 +482,18 @@ static int benchmark_alltoallw(int buffer_size,
     memset(send_buffer, rank + 1, total_size);
     memset(receive_buffer, 0, total_size);
     for (i = 0; i < process_count; ++i) {
-        counts[i] = buffer_size;
-        displacements[i] = i * buffer_size;
-        types[i] = MPI_CHAR;
+        send_counts[i] = buffer_size;
+        send_displacements[i] = i * buffer_size;
+        send_types[i] = MPI_CHAR;
+        recv_counts[i] = buffer_size;
+        recv_displacements[i] = i * buffer_size;
+        recv_types[i] = MPI_CHAR;
     }
 
     for (i = 0; i < config->warmup_iterations; ++i) {
         if (require_mpi_success(MPI_Alltoallw(
-                send_buffer, counts, displacements, types,
-                receive_buffer, counts, displacements, types,
+                send_buffer, send_counts, send_displacements, send_types,
+                receive_buffer, recv_counts, recv_displacements, recv_types,
                 MPI_COMM_WORLD), "MPI_Alltoallw(warmup)") != 0) {
             local_valid = 0;
             break;
@@ -490,8 +507,8 @@ static int benchmark_alltoallw(int buffer_size,
     start = MPI_Wtime();
     for (i = 0; local_valid && i < config->benchmark_iterations; ++i) {
         if (require_mpi_success(MPI_Alltoallw(
-                send_buffer, counts, displacements, types,
-                receive_buffer, counts, displacements, types,
+                send_buffer, send_counts, send_displacements, send_types,
+                receive_buffer, recv_counts, recv_displacements, recv_types,
                 MPI_COMM_WORLD), "MPI_Alltoallw(measurement)") != 0) {
             local_valid = 0;
         }
@@ -518,9 +535,12 @@ static int benchmark_alltoallw(int buffer_size,
         local_valid = 0;
     }
 
-    free(types);
-    free(displacements);
-    free(counts);
+    free(recv_types);
+    free(recv_displacements);
+    free(recv_counts);
+    free(send_types);
+    free(send_displacements);
+    free(send_counts);
     free(receive_buffer);
     free(send_buffer);
     return local_valid ? 0 : -1;
