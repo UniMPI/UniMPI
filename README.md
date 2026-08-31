@@ -1,12 +1,18 @@
 # UniMPI
 
+**Current release:** [v0.1.0-alpha](CHANGELOG.md) (2026-08-29) - MPI-2.2 base
+surface **305 / 305 canonical entities exposed (100%)**.
+
 UniMPI is a C99 runtime-dispatch layer for MPI. An application links to UniMPI
 once, then loads Open MPI, MPICH, Intel MPI, or Microsoft MPI at runtime.
 
-The current interface contains 275 MPI function-pointer fields and 246 direct
-standard-name aliases. This is a broad MPI-2.2/MPI-3-era surface, not a claim
-of complete MPI-3 or MPI-4 coverage. See the
-[support matrix](docs/SUPPORT_MATRIX.md) for what is exercised on each backend.
+The current interface contains **338 MPI function-pointer fields** and **311
+direct standard-name aliases**, covering the full MPI-2.2 base surface and
+selected MPI-3.0+ extensions. MPI-3.0+ fields are gated behind
+`UNIMPI_MPI_AT_LEAST(3,0)` and only appear when the user builds with
+`-DUNIMPI_MPI_TARGET_VERSION=3`; the default target is MPI-2.2, which is the
+guaranteed base. See the [support matrix](docs/SUPPORT_MATRIX.md) for what is
+exercised on each backend.
 
 ## What it provides
 
