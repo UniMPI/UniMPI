@@ -540,19 +540,26 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED AND UNIMPI_BUILD_EXAMPLES)
     add_mpi_test(example_std_style std_style 1)
     add_mpi_test(example_backend_info backend_info 1)
     add_mpi_test(example_thread_init thread_init 1)
-    add_mpi_test(example_nonblocking nonblocking 2)
     add_mpi_test(example_collective collective 4)
     add_mpi_test(example_rma rma 2)
+    # nonblocking example uses MPI-3.0 non-blocking collectives; only register
+    # when the target version is at least MPI-3.0.
+    if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
+        add_mpi_test(example_nonblocking nonblocking 2)
+    endif()
     set_tests_properties(
         example_minimal
         example_std_style
         example_backend_info
         example_thread_init
-        example_nonblocking
         example_collective
         example_rma
         PROPERTIES LABELS "integration;mpi;example"
     )
+    if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
+        set_tests_properties(example_nonblocking
+            PROPERTIES LABELS "integration;mpi;example")
+    endif()
 endif()
 
 if(UNIMPI_REAL_MPI_TESTS_ENABLED AND UNIMPI_BUILD_BENCHMARKS)
