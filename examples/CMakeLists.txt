@@ -8,9 +8,13 @@ target_link_libraries(std_style unimpi)
 target_compile_definitions(std_style PRIVATE UNIMPI_USE_STD_NAMES)
 
 # Non-blocking communication example
-add_executable(nonblocking nonblocking.c)
-target_link_libraries(nonblocking unimpi)
-target_compile_definitions(nonblocking PRIVATE UNIMPI_USE_STD_NAMES)
+# nonblocking example uses MPI-3.0 non-blocking collectives (Ibarrier, etc.);
+# only register it when the target version is at least MPI-3.0.
+if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
+    add_executable(nonblocking nonblocking.c)
+    target_link_libraries(nonblocking unimpi)
+    target_compile_definitions(nonblocking PRIVATE UNIMPI_USE_STD_NAMES)
+endif()
 
 # Collective operations example
 add_executable(collective collective.c)

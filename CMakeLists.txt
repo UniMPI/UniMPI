@@ -49,8 +49,8 @@ option(UNIMPI_INSTALL_DOCS "Install documentation files" ON)
 
 # MPI facade target version (single source of truth, propagated PUBLICly so the
 # library and all consumers compile with the same macros).
-set(UNIMPI_MPI_TARGET_VERSION 3 CACHE STRING "Min MPI major version to build the facade for")
-set(UNIMPI_MPI_TARGET_SUBVERSION 1 CACHE STRING "Min MPI minor version to build the facade for")
+set(UNIMPI_MPI_TARGET_VERSION 2 CACHE STRING "Min MPI major version to build the facade for")
+set(UNIMPI_MPI_TARGET_SUBVERSION 2 CACHE STRING "Min MPI minor version to build the facade for")
 
 # Platform detection
 if(WIN32)

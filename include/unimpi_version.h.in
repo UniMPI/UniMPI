@@ -31,13 +31,15 @@ const char *unimpi_get_version(void);
  * UNIMPI_MPI_TARGET_VERSION / SUBVERSION (CMake INTERFACE propagates).
  * ============================================================ */
 
-/* Compile-time target MPI version (user-overridable). Default = upper bound
- * of the library's surface support (currently 3.1). The library and the
- * application must be compiled with exactly the same pair of macros (CMake
- * INTERFACE propagation guarantees this). */
+/* Compile-time target MPI version (user-overridable). Default = the base
+ * surface the library guarantees (currently MPI-2.2). MPI-3.0+ fields in the
+ * vtable are gated behind UNIMPI_MPI_AT_LEAST(3,0) and are only present when
+ * the user builds with a higher target. The library and the application must
+ * be compiled with exactly the same pair of macros (CMake INTERFACE
+ * propagation guarantees this). */
 #ifndef UNIMPI_MPI_TARGET_VERSION
-#define UNIMPI_MPI_TARGET_VERSION 3
-#define UNIMPI_MPI_TARGET_SUBVERSION 1
+#define UNIMPI_MPI_TARGET_VERSION 2
+#define UNIMPI_MPI_TARGET_SUBVERSION 2
 #endif
 
 #define UNIMPI_MPI_AT_LEAST(MJ, MN) \
