@@ -439,8 +439,14 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Type_create_resized");
     unimpi.type_get_envelope = (int (*)(MPI_Datatype, int*, int*, int*, int*))
         unimpi_platform_dlsym(handle, "MPI_Type_get_envelope");
-    unimpi.type_get_contents = (int (*)(MPI_Datatype, int, int, int, int*, MPI_Aint*, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_get_contents");
+    /* Type_get_contents (wrapped: array_of_datatypes is an output array that
+     * the backend fills with 4-byte int handles; expand back to 8-byte). */
+    intelmpi_type_get_contents = (int (*)(MPI_Datatype, int, int, int,
+            int*, MPI_Aint*, MPI_Datatype*))
+            unimpi_platform_dlsym(handle, "MPI_Type_get_contents");
+    if (intelmpi_type_get_contents) {
+        unimpi.type_get_contents = intelmpi_wrap_type_get_contents;
+    }
 
     /* Datatypes - Query */
     unimpi.type_get_extent = (int (*)(MPI_Datatype, MPI_Aint*, MPI_Aint*))
@@ -714,8 +720,14 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     /* Dynamic Process Management */
     unimpi.comm_spawn = (int (*)(const char*, char*[], int, MPI_Info, int, MPI_Comm, MPI_Comm*, int[]))
         unimpi_platform_dlsym(handle, "MPI_Comm_spawn");
-    unimpi.comm_spawn_multiple = (int (*)(int, char*[], char**[], const int[], const MPI_Info[], int, MPI_Comm, MPI_Comm*, int[]))
-        unimpi_platform_dlsym(handle, "MPI_Comm_spawn_multiple");
+    /* Comm_spawn_multiple (wrapped: array_of_info is an input array of MPI_Info
+     * handles; compress to the native 4-byte representation). */
+    intelmpi_comm_spawn_multiple = (int (*)(int, char*[], char**[],
+            const int[], const int[], int, MPI_Comm, MPI_Comm*, int[]))
+            unimpi_platform_dlsym(handle, "MPI_Comm_spawn_multiple");
+    if (intelmpi_comm_spawn_multiple) {
+        unimpi.comm_spawn_multiple = intelmpi_wrap_comm_spawn_multiple;
+    }
     unimpi.comm_accept = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_accept");
     unimpi.comm_connect = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
@@ -780,10 +792,20 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Type_create_hvector");
     unimpi.type_create_hindexed = (int (*)(int, const int*, const MPI_Aint*, MPI_Datatype, MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_create_hindexed");
-    unimpi.type_create_struct = (int (*)(int, const int*, const MPI_Aint*, const MPI_Datatype*, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_create_struct");
-    unimpi.type_struct = (int (*)(int, const int*, const MPI_Aint*, const MPI_Datatype*, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_struct");
+    /* Type_create_struct / Type_struct (wrapped: adapts 8-byte datatype arrays
+     * to the native 4-byte handle representation) */
+    intelmpi_type_create_struct = (int (*)(int, const int*, const MPI_Aint*,
+            const int*, MPI_Datatype*))
+            unimpi_platform_dlsym(handle, "MPI_Type_create_struct");
+    if (intelmpi_type_create_struct) {
+        unimpi.type_create_struct = intelmpi_wrap_type_create_struct;
+    }
+    intelmpi_type_struct = (int (*)(int, const int*, const MPI_Aint*,
+            const int*, MPI_Datatype*))
+            unimpi_platform_dlsym(handle, "MPI_Type_struct");
+    if (intelmpi_type_struct) {
+        unimpi.type_struct = intelmpi_wrap_type_struct;
+    }
     unimpi.type_match_size = (int (*)(MPI_Datatype, int, MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_match_size");
     unimpi.type_create_f90_integer = (int (*)(int, MPI_Datatype*))

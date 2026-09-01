@@ -434,8 +434,13 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Type_create_resized");
     unimpi.type_get_envelope = (int (*)(MPI_Datatype, int*, int*, int*, int*))
         unimpi_platform_dlsym(handle, "MPI_Type_get_envelope");
-    unimpi.type_get_contents = (int (*)(MPI_Datatype, int, int, int, int*, MPI_Aint*, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_get_contents");
+    /* Type_get_contents (wrapped) */
+    msmpi_type_get_contents = (int (*)(MPI_Datatype, int, int, int,
+            int*, MPI_Aint*, MPI_Datatype*))
+            unimpi_platform_dlsym(handle, "MPI_Type_get_contents");
+    if (msmpi_type_get_contents) {
+        unimpi.type_get_contents = msmpi_wrap_type_get_contents;
+    }
 
     /* MPI-3 Extended datatypes */
     unimpi.type_hvector = (int (*)(int, int, MPI_Aint, MPI_Datatype, MPI_Datatype*))
@@ -677,8 +682,13 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* Dynamic Process Management */
     unimpi.comm_spawn = (int (*)(const char*, char*[], int, MPI_Info, int, MPI_Comm, MPI_Comm*, int[]))
         unimpi_platform_dlsym(handle, "MPI_Comm_spawn");
-    unimpi.comm_spawn_multiple = (int (*)(int, char*[], char**[], const int[], const MPI_Info[], int, MPI_Comm, MPI_Comm*, int[]))
-        unimpi_platform_dlsym(handle, "MPI_Comm_spawn_multiple");
+    /* Comm_spawn_multiple (wrapped: array_of_info input array conversion) */
+    msmpi_comm_spawn_multiple = (int (*)(int, char*[], char**[],
+            const int[], const int[], int, MPI_Comm, MPI_Comm*, int[]))
+            unimpi_platform_dlsym(handle, "MPI_Comm_spawn_multiple");
+    if (msmpi_comm_spawn_multiple) {
+        unimpi.comm_spawn_multiple = msmpi_wrap_comm_spawn_multiple;
+    }
     unimpi.comm_accept = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
         unimpi_platform_dlsym(handle, "MPI_Comm_accept");
     unimpi.comm_connect = (int (*)(const char*, MPI_Info, int, MPI_Comm, MPI_Comm*))
@@ -744,9 +754,19 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Type_create_hvector");
     unimpi.type_create_hindexed = (int (*)(int, const int*, const MPI_Aint*, MPI_Datatype, MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_create_hindexed");
-    unimpi.type_create_struct = (int (*)(int, const int*, const MPI_Aint*, const MPI_Datatype*, MPI_Datatype*))
-        unimpi_platform_dlsym(handle, "MPI_Type_create_struct");
-    unimpi.type_struct = (int (*)(int, const int*, const MPI_Aint*, const MPI_Datatype*, MPI_Datatype*))
+    /* Type_create_struct / Type_struct (wrapped) */
+    msmpi_type_create_struct = (int (*)(int, const int*, const MPI_Aint*,
+            const int*, MPI_Datatype*))
+            unimpi_platform_dlsym(handle, "MPI_Type_create_struct");
+    if (msmpi_type_create_struct) {
+        unimpi.type_create_struct = msmpi_wrap_type_create_struct;
+    }
+    msmpi_type_struct = (int (*)(int, const int*, const MPI_Aint*,
+            const int*, MPI_Datatype*))
+            unimpi_platform_dlsym(handle, "MPI_Type_struct");
+    if (msmpi_type_struct) {
+        unimpi.type_struct = msmpi_wrap_type_struct;
+    }
         unimpi_platform_dlsym(handle, "MPI_Type_struct");
     unimpi.type_match_size = (int (*)(MPI_Datatype, int, MPI_Datatype*))
         unimpi_platform_dlsym(handle, "MPI_Type_match_size");

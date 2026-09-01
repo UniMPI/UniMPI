@@ -19,6 +19,14 @@ int (*intelmpi_alltoallw)(const void *, const int *, const int *,
 int (*intelmpi_ialltoallw)(const void *, const int *, const int *,
     const int *, void *, const int *, const int *, const int *, MPI_Comm,
     MPI_Request *);
+int (*intelmpi_type_create_struct)(int, const int *, const MPI_Aint *,
+    const int *, MPI_Datatype *);
+int (*intelmpi_type_struct)(int, const int *, const MPI_Aint *,
+    const int *, MPI_Datatype *);
+int (*intelmpi_type_get_contents)(MPI_Datatype, int, int, int,
+    int *, MPI_Aint *, MPI_Datatype *);
+int (*intelmpi_comm_spawn_multiple)(int, char *[], char **[],
+    const int[], const int[], int, MPI_Comm, MPI_Comm *, int[]);
 
 /* ---- Request array helpers ---- */
 
@@ -170,5 +178,51 @@ int intelmpi_wrap_ialltoallw(const void *sendbuf, const int *sendcounts,
         (const int *)recvtypes, comm, request);
     dtypes_restore_inplace((MPI_Datatype *)sendtypes, n);
     dtypes_restore_inplace((MPI_Datatype *)recvtypes, n);
+    return ret;
+}
+
+int intelmpi_wrap_type_create_struct(int count,
+    const int *array_of_blocklengths, const MPI_Aint *array_of_displacements,
+    const MPI_Datatype *array_of_types, MPI_Datatype *newtype) {
+    dtypes_compress_inplace(array_of_types, count);
+    int ret = intelmpi_type_create_struct(count, array_of_blocklengths,
+        array_of_displacements, (const int *)array_of_types, newtype);
+    dtypes_restore_inplace((MPI_Datatype *)array_of_types, count);
+    return ret;
+}
+
+int intelmpi_wrap_type_struct(int count,
+    const int *array_of_blocklengths, const MPI_Aint *array_of_displacements,
+    const MPI_Datatype *array_of_types, MPI_Datatype *newtype) {
+    dtypes_compress_inplace(array_of_types, count);
+    int ret = intelmpi_type_struct(count, array_of_blocklengths,
+        array_of_displacements, (const int *)array_of_types, newtype);
+    dtypes_restore_inplace((MPI_Datatype *)array_of_types, count);
+    return ret;
+}
+
+int intelmpi_wrap_type_get_contents(MPI_Datatype datatype, int max_integers,
+    int max_addresses, int max_datatypes, int *array_of_integers,
+    MPI_Aint *array_of_addresses, MPI_Datatype *array_of_datatypes) {
+    int ret = intelmpi_type_get_contents(datatype, max_integers, max_addresses,
+        max_datatypes, array_of_integers, array_of_addresses,
+        array_of_datatypes);
+    /* Output array_of_datatypes: backend wrote 4-byte int handles over the
+     * 8-byte slots; sign-extend them back into intptr_t MPI_Datatype values. */
+    dtypes_restore_inplace(array_of_datatypes, max_datatypes);
+    return ret;
+}
+
+int intelmpi_wrap_comm_spawn_multiple(int count, char *array_of_commands[],
+    char **array_of_argv[], const int array_of_maxprocs[],
+    const MPI_Info array_of_info[], int root, MPI_Comm comm, MPI_Comm *intercomm,
+    int array_of_errcodes[]) {
+    /* array_of_info is an input array of MPI_Info handles (8-byte in UnimPI,
+     * 4-byte int on INTELMPI); compress before the call, restore after. */
+    dtypes_compress_inplace(array_of_info, count);
+    int ret = intelmpi_comm_spawn_multiple(count, array_of_commands,
+        array_of_argv, array_of_maxprocs, (const int *)array_of_info, root,
+        comm, intercomm, array_of_errcodes);
+    dtypes_restore_inplace((MPI_Datatype *)array_of_info, count);
     return ret;
 }

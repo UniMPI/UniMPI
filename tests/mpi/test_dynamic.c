@@ -156,20 +156,27 @@ int test_spawn_single(void) {
 
 /* Internal test function for port management */
 static int test_port_management_internal(void) {
-    char port_name[MPI_MAX_PORT_NAME];
+    /* MPI_MAX_PORT_NAME is an extern int (runtime-populated per backend), so
+     * use malloc to avoid a VLA (MSVC does not support VLAs). */
+    char *port_name;
     int ret;
+
+    port_name = (char *)malloc((size_t)MPI_MAX_PORT_NAME);
+    if (!port_name) FAIL("malloc(port_name) failed");
 
     /* Open a port */
     ret = MPI_Open_port(MPI_INFO_NULL, port_name);
     if (ret != MPI_SUCCESS) {
+        free(port_name);
         printf("  SKIP: MPI_Open_port returned error %d (may not be supported)\n", ret);
         return 0; /* Skip, not fail */
     }
 
-    if (strlen(port_name) == 0) FAIL("Port name is empty");
+    if (strlen(port_name) == 0) { free(port_name); FAIL("Port name is empty"); }
 
     /* Close the port */
     ret = MPI_Close_port(port_name);
+    free(port_name);
     if (ret != MPI_SUCCESS) FAIL("MPI_Close_port failed");
 
     return 0;
@@ -192,13 +199,18 @@ int test_port_management(void) {
 }
 
 int test_publish_lookup(void) {
-    char port_name[MPI_MAX_PORT_NAME];
-    char looked_up[MPI_MAX_PORT_NAME];
+    /* MPI_MAX_PORT_NAME is an extern int (runtime-populated per backend), so
+     * use malloc to avoid VLAs (MSVC does not support VLAs). */
+    char *port_name = (char *)malloc((size_t)MPI_MAX_PORT_NAME);
+    char *looked_up = (char *)malloc((size_t)MPI_MAX_PORT_NAME);
     const char *service_name = "unimpi_test_service";
     int ret;
 
+    if (!port_name || !looked_up) { free(port_name); free(looked_up); FAIL("malloc failed"); }
+
     if (is_mswin()) {
         printf("  SKIP: name service tests disabled on MS-MPI\n");
+        free(port_name); free(looked_up);
         return 0;
     }
 
@@ -206,16 +218,18 @@ int test_publish_lookup(void) {
 
     /* Skip name service tests - requires OpenMPI nameserver which may crash */
     printf("  SKIP: Name service tests require running nameserver\n");
+    free(port_name); free(looked_up);
     return 0;
 
     /* Open port for service */
     ret = MPI_Open_port(MPI_INFO_NULL, port_name);
-    if (ret != MPI_SUCCESS) FAIL("MPI_Open_port failed");
+    if (ret != MPI_SUCCESS) { free(port_name); free(looked_up); FAIL("MPI_Open_port failed"); }
 
     /* Publish name */
     ret = MPI_Publish_name(service_name, MPI_INFO_NULL, port_name);
     if (ret != MPI_SUCCESS) {
         MPI_Close_port(port_name);
+        free(port_name); free(looked_up);
         printf("  SKIP: MPI_Publish_name failed (may need nameserver)\n");
         return 0;
     }
@@ -225,12 +239,14 @@ int test_publish_lookup(void) {
     if (ret != MPI_SUCCESS) {
         MPI_Unpublish_name(service_name, MPI_INFO_NULL, port_name);
         MPI_Close_port(port_name);
+        free(port_name); free(looked_up);
         FAIL("MPI_Lookup_name failed");
     }
 
     if (strcmp(port_name, looked_up) != 0) {
         MPI_Unpublish_name(service_name, MPI_INFO_NULL, port_name);
         MPI_Close_port(port_name);
+        free(port_name); free(looked_up);
         FAIL("Looked up port name doesn't match");
     }
 
@@ -238,11 +254,13 @@ int test_publish_lookup(void) {
     ret = MPI_Unpublish_name(service_name, MPI_INFO_NULL, port_name);
     if (ret != MPI_SUCCESS) {
         MPI_Close_port(port_name);
+        free(port_name); free(looked_up);
         FAIL("MPI_Unpublish_name failed");
     }
 
     /* Close port */
     ret = MPI_Close_port(port_name);
+    free(port_name); free(looked_up);
     if (ret != MPI_SUCCESS) FAIL("MPI_Close_port failed");
 
     PASS();

@@ -16,16 +16,26 @@
 
 static int test_error_class_string(void) {
     int cls = -1, len = -1;
-    char buf[MPI_MAX_ERROR_STRING];
+    /* MPI_MAX_ERROR_STRING is an extern int (runtime-populated per backend),
+     * so a stack array of that size is a VLA. MSVC does not support VLAs, so
+     * use malloc with the runtime value instead. */
+    char *buf;
     TEST("Error_class + Error_string");
-    if (MPI_Error_class(MPI_SUCCESS, &cls) != MPI_SUCCESS)
+    buf = (char *)malloc((size_t)MPI_MAX_ERROR_STRING);
+    if (!buf) FAIL("malloc(buf) failed");
+    if (MPI_Error_class(MPI_SUCCESS, &cls) != MPI_SUCCESS) {
+        free(buf);
         FAIL("MPI_Error_class failed");
-    if (cls != MPI_SUCCESS) { fprintf(stderr, "  FAIL: class=%d want 0\n", cls); return 1; }
-    if (MPI_Error_string(MPI_SUCCESS, buf, &len) != MPI_SUCCESS)
+    }
+    if (cls != MPI_SUCCESS) { fprintf(stderr, "  FAIL: class=%d want 0\n", cls); free(buf); return 1; }
+    if (MPI_Error_string(MPI_SUCCESS, buf, &len) != MPI_SUCCESS) {
+        free(buf);
         FAIL("MPI_Error_string failed");
-    if (len <= 0) FAIL("MPI_Error_string returned empty");
+    }
+    if (len <= 0) { free(buf); FAIL("MPI_Error_string returned empty"); }
     /* Pcontrol is a profiling no-op hook; it must return cleanly. */
-    if (MPI_Pcontrol(0) != MPI_SUCCESS) FAIL("MPI_Pcontrol(0) failed");
+    if (MPI_Pcontrol(0) != MPI_SUCCESS) { free(buf); FAIL("MPI_Pcontrol(0) failed"); }
+    free(buf);
     PASS();
     return 0;
 }
