@@ -961,6 +961,12 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
     /* MPICH uses 0x1c000000 as MPI_INFO_NULL */
     UNIMPI_INFO_NULL = (MPI_Info)0x1c000000;
 
+    /* MPICH file/error-handler magic handles (MPICH-derived ABI). */
+    UNIMPI_FILE_NULL = (MPI_File)0;
+    UNIMPI_ERRORS_ARE_FATAL = (MPI_Errhandler)0x54000000;
+    UNIMPI_ERRORS_RETURN = (MPI_Errhandler)0x54000001;
+    UNIMPI_ERRORS_ABORT = (MPI_Errhandler)0x54000003;
+
     /* Initialize MPICH-standard error codes */
     init_mpich_error_codes();
 

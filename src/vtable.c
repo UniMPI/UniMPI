@@ -15,6 +15,12 @@ MPI_Info UNIMPI_INFO_NULL = 0;
 MPI_Request UNIMPI_REQUEST_NULL = 0;
 MPI_Status *UNIMPI_STATUS_IGNORE = NULL;
 
+/* MPI predefined file handle and error handlers - filled at runtime */
+MPI_File UNIMPI_FILE_NULL = 0;
+MPI_Errhandler UNIMPI_ERRORS_ARE_FATAL = 0;
+MPI_Errhandler UNIMPI_ERRORS_RETURN = 0;
+MPI_Errhandler UNIMPI_ERRORS_ABORT = 0;
+
 /* MPI topology types - filled at runtime */
 int UNIMPI_CART = 0;
 int UNIMPI_GRAPH = 0;

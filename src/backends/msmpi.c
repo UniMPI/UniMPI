@@ -935,6 +935,12 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* MS-MPI uses MPICH-compatible info null value */
     UNIMPI_INFO_NULL = (MPI_Info)0x1c000000;
 
+    /* MS-MPI uses MPICH-compatible file/error-handler magic handles. */
+    UNIMPI_FILE_NULL = (MPI_File)0;
+    UNIMPI_ERRORS_ARE_FATAL = (MPI_Errhandler)0x54000000;
+    UNIMPI_ERRORS_RETURN = (MPI_Errhandler)0x54000001;
+    UNIMPI_ERRORS_ABORT = (MPI_Errhandler)0x54000003;
+
     /* Initialize MS-MPI error codes (same as MPICH) */
     init_msmpi_error_codes();
 

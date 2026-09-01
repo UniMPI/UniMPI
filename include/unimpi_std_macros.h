@@ -45,6 +45,14 @@
 #define MPI_COMM_WORLD UNIMPI_COMM_WORLD
 #define MPI_COMM_SELF UNIMPI_COMM_SELF
 
+/* Predefined file handle */
+#define MPI_FILE_NULL UNIMPI_FILE_NULL
+
+/* Predefined error handlers */
+#define MPI_ERRORS_ARE_FATAL UNIMPI_ERRORS_ARE_FATAL
+#define MPI_ERRORS_RETURN UNIMPI_ERRORS_RETURN
+#define MPI_ERRORS_ABORT UNIMPI_ERRORS_ABORT
+
 /* Predefined request constant */
 #define MPI_REQUEST_NULL UNIMPI_REQUEST_NULL
 

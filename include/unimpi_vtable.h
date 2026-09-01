@@ -145,6 +145,16 @@ extern MPI_Op UNIMPI_MAXLOC;
 extern MPI_Comm UNIMPI_COMM_WORLD;
 extern MPI_Comm UNIMPI_COMM_SELF;
 
+/* MPI predefined file and error-handler handles. Like all predefined MPI
+ * values these are backend-resolved at init: the integer-handle backends
+ * (MPICH/Intel/MS-MPI) use their magic handle values, Open MPI exposes symbol
+ * addresses. They are required because MPI_File_set_errhandler(MPI_FILE_NULL,
+ * MPI_ERRORS_RETURN) must reach the backend with a handle it recognizes. */
+extern MPI_File UNIMPI_FILE_NULL;
+extern MPI_Errhandler UNIMPI_ERRORS_ARE_FATAL;
+extern MPI_Errhandler UNIMPI_ERRORS_RETURN;
+extern MPI_Errhandler UNIMPI_ERRORS_ABORT;
+
 /* MPI predefined Info */
 extern MPI_Info UNIMPI_INFO_NULL;
 

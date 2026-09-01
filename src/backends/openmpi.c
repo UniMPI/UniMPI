@@ -142,6 +142,15 @@ static int get_openmpi_comm_values(unimpi_lib_handle_t handle) {
     /* Get MPI_INFO_NULL */
     UNIMPI_INFO_NULL = get_ompi_symbol_addr(handle, "ompi_mpi_info_null");
 
+    /* Get the predefined file handle and error handlers as symbol addresses
+     * (OMPI_PREDEFINED_GLOBAL resolves each to &global). Required so that
+     * MPI_File_set_errhandler(MPI_FILE_NULL, MPI_ERRORS_RETURN) reaches the
+     * backend with handles it recognizes. */
+    UNIMPI_FILE_NULL = get_ompi_symbol_addr(handle, "ompi_mpi_file_null");
+    UNIMPI_ERRORS_ARE_FATAL = get_ompi_symbol_addr(handle, "ompi_mpi_errors_are_fatal");
+    UNIMPI_ERRORS_RETURN = get_ompi_symbol_addr(handle, "ompi_mpi_errors_return");
+    UNIMPI_ERRORS_ABORT = get_ompi_symbol_addr(handle, "ompi_mpi_errors_abort");
+
     return UNIMPI_OK;
 }
 

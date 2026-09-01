@@ -165,19 +165,44 @@ static int test_predefined_attr_values(void) {
 
 static int test_register_datarep(void) {
     int extra = 0, rc;
+    MPI_Datatype t = MPI_CHAR;
+    MPI_Aint ext = -1;
     TEST("Register_datarep");
-    rc = MPI_Register_datarep("UNIMPI_TEST_DREP", datarep_conv_fn, datarep_conv_fn,
+
+    /* First, prove the datarep callback ABI itself: the user-facing
+     * MPI_Datarep_conversion_function / MPI_Datarep_extent_function typedefs
+     * carry an 8-byte MPI_Datatype. No backend ever invokes user conversion
+     * callbacks (see below), so this ABI can only be validated by calling the
+     * callback types directly — proving they compile, link and run with the
+     * 8-byte-datatype signature UnimPI exposes. */
+    rc = datarep_conv_fn(NULL, t, 0, NULL, 0, &extra);
+    if (rc != MPI_SUCCESS) FAIL("conversion callback self-check failed");
+    rc = datarep_extent_fn(t, &ext, &extra);
+    if (rc != MPI_SUCCESS || ext != (MPI_Aint)1) FAIL("extent callback self-check failed");
+
+    /* Next, exercise the MPI_Register_datarep binding. User data-conversion
+     * functions are unsupported by the MPICH-derived backends
+     * (MPICH/Intel/MS-MPI): their internal_Register_datarep treats any
+     * non-NULL read/write conversion function as an unsupported operation and
+     * some versions abort the process inside the call with no recoverable
+     * error code to catch ("conversions are currently not supported"). So we
+     * register an extent-only datarep (NULL conversions + non-NULL extent — a
+     * form the MPI standard permits), which never trips that fatal path and is
+     * therefore abort-free and uniform on every backend. We additionally pin
+     * the default file error handler to MPI_ERRORS_RETURN so any residual
+     * registration error always surfaces as a return code, never an abort.
+     * The call must reach the backend and return an MPI status; no backend is
+     * required to accept user datareps, so the concrete code varies. */
+    MPI_File_set_errhandler(MPI_FILE_NULL, MPI_ERRORS_RETURN);
+    rc = MPI_Register_datarep("UNIMPI_TEST_DREP", NULL, NULL,
                               datarep_extent_fn, &extra);
     if (rc == MPI_SUCCESS) {
         PASS();
         return 0;
     }
-    /* Backends vary widely in whether they implement user-registered datareps:
-     * Open MPI, MPICH, and Intel MPI all reject registration with differing
-     * error codes (class-based on MPICH/Intel, linear on Open MPI). The binding
-     * validation is that the call resolves and dispatches without crashing; the
-     * specific non-success code is backend-dependent and not assertable here. */
-    printf("  OK (backend does not support user datareps, rc=%d)\n", rc);
+    /* Binding contract met: resolved, dispatched, no abort, returned a status.
+     * The specific non-success code is backend-dependent and not assertable. */
+    printf("  OK (backend returned rc=%d)\n", rc);
     PASS();
     return 0;
 }

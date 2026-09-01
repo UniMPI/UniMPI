@@ -73,13 +73,19 @@ static int test_file_shared_and_split(void) {
             FAIL("MPI_File_write_at_all_end failed");
     }
 
-    /* collective read-back of rank 0's record using the existing read_at_all
-     * binding, to prove the split-collective data landed. */
-    if (rank == 0) {
+    /* Collective read-back: EVERY rank must call MPI_File_read_at_all because
+     * it is a collective — calling it from one rank alone would deadlock the
+     * whole job against MPI_File_close. Each rank reads and verifies its own
+     * block, which also independently proves the split-collective write
+     * landed at its per-rank offset. */
+    {
         char rbuf[16];
-        if (MPI_File_read_at_all(fh, 0, rbuf, 16, MPI_CHAR, MPI_STATUS_IGNORE) != MPI_SUCCESS)
+        char expect[16];
+        snprintf(expect, sizeof expect, "rank%d", rank);
+        if (MPI_File_read_at_all(fh, (MPI_Offset)(rank * 16), rbuf, 16,
+                                 MPI_CHAR, MPI_STATUS_IGNORE) != MPI_SUCCESS)
             FAIL("MPI_File_read_at_all failed");
-        if (strncmp(rbuf, "rank0", 5) != 0) FAIL("split-collective write mismatch");
+        if (strcmp(rbuf, expect) != 0) FAIL("split-collective read-back mismatch");
     }
 
     MPI_File_close(&fh);
