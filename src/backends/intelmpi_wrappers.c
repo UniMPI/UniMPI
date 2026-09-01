@@ -30,6 +30,10 @@ int (*intelmpi_comm_spawn_multiple)(int, char *[], char **[],
 
 /* ---- Request array helpers ---- */
 
+/* Compress 8-byte MPI_Request array to 4-byte int array in-place.
+ * Low-32-bit value truncation; correct on supported (little-endian) targets,
+ * where the i-th 4-byte slot aliases reqs[i]'s low half and element 0 is
+ * already laid out as its low 32 bits. Forward scan: read lags write. */
 static inline void reqs_compress_inplace(MPI_Request *reqs, int n) {
     int32_t *p = (int32_t*)reqs;
     for (int i = 1; i < n; i++) {
@@ -133,6 +137,8 @@ int intelmpi_wrap_startall(int count, MPI_Request *array_of_requests) {
 
 /* ---- Datatype array helpers ---- */
 
+/* Compress MPI_Datatype array to 4-byte int array in-place (see
+ * reqs_compress_inplace: same little-endian layout assumption). */
 static inline void dtypes_compress_inplace(const MPI_Datatype *types, int n) {
     int32_t *p = (int32_t *)types;
     for (int i = 1; i < n; i++) {

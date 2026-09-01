@@ -31,13 +31,15 @@ int (*mpich_comm_spawn_multiple)(int, char *[], char **[],
 /* ---- Request array helpers ---- */
 
 /* Compress 8-byte MPI_Request array to 4-byte int array in-place.
- * Byte-order independent: extracts lower 32 bits using bit mask.
- * Forward scan: for each i from 1 to n-1, extract low 32 bits from element i
- * and write to position i. */
+ * Low 32-bit value truncation via bit mask, then write into the i-th 4-byte
+ * slot (p[i]). Correct on all platforms unimpi supports, which are uniformly
+ * little-endian (x86/ARM): p[i] then aliases the low half of reqs[i], so
+ * element 0 (written in-place as reqs[0]) needs no host-order conversion.
+ * Forward scan is safe because source index (i) lags the data it rewrites. */
 static inline void reqs_compress_inplace(MPI_Request *reqs, int n) {
     int32_t *p = (int32_t*)reqs;
     for (int i = 1; i < n; i++) {
-        /* Extract lower 32 bits - works on any endianness */
+        /* Low-32-bit value truncation; correct on supported (little-endian) targets */
         p[i] = (int32_t)(reqs[i] & 0xFFFFFFFF);
     }
 }
@@ -144,7 +146,7 @@ int mpich_wrap_startall(int count, MPI_Request *array_of_requests) {
 static inline void dtypes_compress_inplace(const MPI_Datatype *types, int n) {
     int32_t *p = (int32_t *)types;
     for (int i = 1; i < n; i++) {
-        /* Extract lower 32 bits - works on any endianness */
+        /* Low-32-bit value truncation; correct on supported (little-endian) targets */
         p[i] = (int32_t)(types[i] & 0xFFFFFFFF);
     }
 }
