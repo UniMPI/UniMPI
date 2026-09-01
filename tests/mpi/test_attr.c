@@ -188,12 +188,17 @@ static int test_register_datarep(void) {
      * error code to catch ("conversions are currently not supported"). So we
      * register an extent-only datarep (NULL conversions + non-NULL extent — a
      * form the MPI standard permits), which never trips that fatal path and is
-     * therefore abort-free and uniform on every backend. We additionally pin
-     * the default file error handler to MPI_ERRORS_RETURN so any residual
-     * registration error always surfaces as a return code, never an abort.
+     * therefore abort-free and uniform on every backend.
      * The call must reach the backend and return an MPI status; no backend is
-     * required to accept user datareps, so the concrete code varies. */
-    MPI_File_set_errhandler(MPI_FILE_NULL, MPI_ERRORS_RETURN);
+     * required to accept user datareps, so the concrete code varies.
+     *
+     * Also route MPI_FILE_NULL / MPI_ERRORS_RETURN through their bindings once:
+     * the file set_errhandler path is the sole consumer of those new predefined
+     * handles, and a wrong value surfaces here as an error (or an unexpected
+     * abort) rather than only at a later MPI_File call. The result is
+     * intentionally unchecked: a bad handle may legitimately produce a return
+     * code on some backends while the binding is still correct. */
+    (void)MPI_File_set_errhandler(MPI_FILE_NULL, MPI_ERRORS_RETURN);
     rc = MPI_Register_datarep("UNIMPI_TEST_DREP", NULL, NULL,
                               datarep_extent_fn, &extra);
     if (rc == MPI_SUCCESS) {

@@ -216,8 +216,13 @@ int msmpi_wrap_type_get_contents(MPI_Datatype datatype, int max_integers,
         max_datatypes, array_of_integers, array_of_addresses,
         array_of_datatypes);
     /* Output array_of_datatypes: backend wrote 4-byte int handles over the
-     * 8-byte slots; sign-extend them back into intptr_t MPI_Datatype values. */
-    dtypes_restore_inplace(array_of_datatypes, max_datatypes);
+     * 8-byte slots; sign-extend them back into intptr_t MPI_Datatype values.
+     * Only on success: on failure the output arrays are unspecified (a NULL
+     * array with max_datatypes > 0 is already rejected with MPI_ERR_ARG), so
+     * there is nothing valid to restore. */
+    if (ret == MPI_SUCCESS) {
+        dtypes_restore_inplace(array_of_datatypes, max_datatypes);
+    }
     return ret;
 }
 

@@ -441,7 +441,10 @@ static int benchmark_alltoallw(int buffer_size,
          buffer_size > INT_MAX / (process_count - 1)) ||
         (size_t)process_count > SIZE_MAX / sizeof(*send_counts) ||
         (size_t)process_count > SIZE_MAX / sizeof(*send_displacements) ||
-        (size_t)process_count > SIZE_MAX / sizeof(*send_types)) {
+        (size_t)process_count > SIZE_MAX / sizeof(*send_types) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*recv_counts) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*recv_displacements) ||
+        (size_t)process_count > SIZE_MAX / sizeof(*recv_types)) {
         if (rank == 0) {
             fprintf(stderr,
                     "alltoallw benchmark dimensions exceed address or "
