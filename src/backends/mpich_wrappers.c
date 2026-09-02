@@ -27,6 +27,16 @@ int (*mpich_type_get_contents)(MPI_Datatype, int, int, int,
     int *, MPI_Aint *, MPI_Datatype *);
 int (*mpich_comm_spawn_multiple)(int, char *[], char **[],
     const int[], const int[], int, MPI_Comm, MPI_Comm *, int[]);
+int (*mpich_neighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+int (*mpich_neighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+int (*mpich_ineighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
+int (*mpich_ineighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
 
 /* ---- Request array helpers ---- */
 
