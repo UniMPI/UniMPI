@@ -1033,6 +1033,11 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     get_intelmpi_comm_world(handle, &UNIMPI_COMM_WORLD);
     UNIMPI_COMM_SELF = 0x44000001;  /* Intel MPI hardcoded value */
 
+    /* Intel MPI is MPICH-family: window lock constants use 234/235, not the
+     * MPI-standard 1/2. */
+    MPI_LOCK_EXCLUSIVE = 234;
+    MPI_LOCK_SHARED = 235;
+
     /* Intel MPI uses MPICH-compatible request null value */
     UNIMPI_REQUEST_NULL = (MPI_Request)0x2c000000;
 

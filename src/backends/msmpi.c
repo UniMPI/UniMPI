@@ -995,6 +995,11 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     UNIMPI_COMM_WORLD = (MPI_Comm)0x44000000;
     UNIMPI_COMM_SELF = (MPI_Comm)0x44000001;
 
+    /* MS-MPI is MPICH-family: window lock constants use 234/235, not the
+     * MPI-standard 1/2. */
+    MPI_LOCK_EXCLUSIVE = 234;
+    MPI_LOCK_SHARED = 235;
+
     /* MS-MPI uses MPICH-compatible request null value */
     UNIMPI_REQUEST_NULL = (MPI_Request)0x2c000000;
 

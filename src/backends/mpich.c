@@ -1021,6 +1021,11 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
     get_mpich_comm_world(handle, &UNIMPI_COMM_WORLD);
     get_mpich_comm_self(handle, &UNIMPI_COMM_SELF);
 
+    /* MPICH-family window lock constants differ from the MPI-standard values
+     * (MPI_LOCK_EXCLUSIVE/SHARED = 1/2 is OpenMPI; MPICH ABI uses 234/235). */
+    MPI_LOCK_EXCLUSIVE = 234;
+    MPI_LOCK_SHARED = 235;
+
     /* MPICH uses 0x2c000000 as MPI_REQUEST_NULL */
     UNIMPI_REQUEST_NULL = (MPI_Request)0x2c000000;
 
