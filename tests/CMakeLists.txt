@@ -449,6 +449,12 @@ if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
     if(UNIMPI_REAL_MPI_TESTS_ENABLED)
         add_mpi_test(test_mpi30_core test_mpi30_core 2)
     endif()
+    # MPI-3.0 RMA epoch-model semantics (lock_all/lock + flush* + sync + Info).
+    add_executable(test_mpi30_rma mpi/test_mpi30_rma.c)
+    target_link_libraries(test_mpi30_rma unimpi)
+    if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+        add_mpi_test(test_mpi30_rma test_mpi30_rma 2)
+    endif()
 endif()
 
 # MPI-2 Fortran-status conversion test (Status_f2c/c2f). Requires >=2 ranks.
