@@ -32,6 +32,16 @@ extern int (*mpich_type_get_contents)(MPI_Datatype, int, int, int,
     int *, MPI_Aint *, MPI_Datatype *);
 extern int (*mpich_comm_spawn_multiple)(int, char *[], char **[],
     const int[], const int[], int, MPI_Comm, MPI_Comm *, int[]);
+extern int (*mpich_neighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+extern int (*mpich_neighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+extern int (*mpich_ineighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
+extern int (*mpich_ineighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
 
 /* Wrapper entry points for MPICH vtable */
 int mpich_wrap_waitall(int count, MPI_Request *array_of_requests,
@@ -72,5 +82,21 @@ int mpich_wrap_comm_spawn_multiple(int count, char *array_of_commands[],
     char **array_of_argv[], const int array_of_maxprocs[],
     const MPI_Info array_of_info[], int root, MPI_Comm comm, MPI_Comm *intercomm,
     int array_of_errcodes[]);
+int mpich_wrap_neighbor_alltoallv(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm);
+int mpich_wrap_neighbor_alltoallw(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm);
+int mpich_wrap_ineighbor_alltoallv(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm, MPI_Request *request);
+int mpich_wrap_ineighbor_alltoallw(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm, MPI_Request *request);
 
 #endif /* UNIMPI_MPICH_WRAPPERS_H */
