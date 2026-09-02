@@ -440,6 +440,17 @@ if(UNIMPI_REAL_MPI_TESTS_ENABLED)
     add_mpi_test(test_tierD_dist_graph test_tierD_dist_graph 2)
 endif()
 
+# MPI-3.0 core coverage (neighbor collectives, large-count _x types,
+# dynamic windows, Comm_idup). These call API that `#if` removes below a
+# 3.0 target, so gate on the target version rather than the real-MPI flag.
+if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
+    add_executable(test_mpi30_core mpi/test_mpi30_core.c)
+    target_link_libraries(test_mpi30_core unimpi)
+    if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+        add_mpi_test(test_mpi30_core test_mpi30_core 2)
+    endif()
+endif()
+
 # MPI-2 Fortran-status conversion test (Status_f2c/c2f). Requires >=2 ranks.
 add_executable(test_status_fortran mpi/test_status_fortran.c)
 target_link_libraries(test_status_fortran unimpi)
