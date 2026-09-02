@@ -29,6 +29,12 @@ typedef long long MPI_Offset;
  * match the C binding of Fortran INTEGER, i.e. int. */
 typedef int MPI_Fint;
 
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI_Count - MPI-3.0 large-count type (>= 64-bit unsigned). Non-handle,
+ * passed by value; must remain 64-bit to match every backend's MPI_Count. */
+typedef unsigned long long MPI_Count;
+#endif
+
 /* MPI attribute callback function types (comm/type/win) */
 typedef int (MPI_Comm_copy_attr_function)(MPI_Comm oldcomm, int comm_keyval, void *extra_state,
                                           void *attribute_val_in, void *attribute_val_out, int *flag);
@@ -402,6 +408,44 @@ typedef struct {
                    MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
 #endif
 
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 neighbor_collectives */
+    int (*neighbor_allgather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                              void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                              MPI_Comm comm);
+    int (*neighbor_allgatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                               void *recvbuf, const int *recvcounts, const int *displs, MPI_Datatype recvtype,
+                               MPI_Comm comm);
+    int (*neighbor_alltoall)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                             void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                             MPI_Comm comm);
+    int (*neighbor_alltoallv)(const void *sendbuf, const int *sendcounts, const MPI_Aint *sdispls,
+                              const MPI_Datatype *sendtypes, void *recvbuf,
+                              const int *recvcounts, const MPI_Aint *rdispls,
+                              const MPI_Datatype *recvtypes, MPI_Comm comm);
+    int (*neighbor_alltoallw)(const void *sendbuf, const int *sendcounts, const MPI_Aint *sdispls,
+                              const MPI_Datatype *sendtypes, void *recvbuf,
+                              const int *recvcounts, const MPI_Aint *rdispls,
+                              const MPI_Datatype *recvtypes, MPI_Comm comm);
+    int (*ineighbor_allgather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                               void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                               MPI_Comm comm, MPI_Request *request);
+    int (*ineighbor_allgatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                                void *recvbuf, const int *recvcounts, const int *displs, MPI_Datatype recvtype,
+                                MPI_Comm comm, MPI_Request *request);
+    int (*ineighbor_alltoall)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                              void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                              MPI_Comm comm, MPI_Request *request);
+    int (*ineighbor_alltoallv)(const void *sendbuf, const int *sendcounts, const MPI_Aint *sdispls,
+                               const MPI_Datatype *sendtypes, void *recvbuf,
+                               const int *recvcounts, const MPI_Aint *rdispls,
+                               const MPI_Datatype *recvtypes, MPI_Comm comm, MPI_Request *request);
+    int (*ineighbor_alltoallw)(const void *sendbuf, const int *sendcounts, const MPI_Aint *sdispls,
+                               const MPI_Datatype *sendtypes, void *recvbuf,
+                               const int *recvcounts, const MPI_Aint *rdispls,
+                               const MPI_Datatype *recvtypes, MPI_Comm comm, MPI_Request *request);
+#endif
+
     /* Group operations */
     int (*group_size)(MPI_Group group, int *size);
     int (*group_rank)(MPI_Group group, int *rank);
@@ -434,6 +478,7 @@ typedef struct {
     int (*comm_create_group)(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm);
     int (*comm_get_info)(MPI_Comm comm, MPI_Info *info_used);
     int (*comm_set_info)(MPI_Comm comm, MPI_Info info);
+    int (*comm_idup)(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request);
 #endif
 
     /* Intercommunicator Operations (MPI-2.2) */
@@ -552,6 +597,16 @@ typedef struct {
     int (*win_flush_all)(MPI_Win win);
     int (*win_flush_local)(int rank, MPI_Win win);
     int (*win_sync)(MPI_Win win);
+#endif
+
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 win_dynamic */
+    int (*win_attach)(MPI_Win win, void *base, MPI_Aint size);
+    int (*win_detach)(MPI_Win win, void *base);
+    int (*win_shared_query)(MPI_Win win, int rank, MPI_Aint *size, int *disp_unit, void *baseptr);
+    int (*win_flush_local_all)(MPI_Win win);
+    int (*win_get_info)(MPI_Win win, MPI_Info *info_used);
+    int (*win_set_info)(MPI_Win win, MPI_Info info);
 #endif
 
     /* Parallel I/O - File operations */
@@ -771,6 +826,17 @@ typedef struct {
                              MPI_Datatype *array_of_datatypes);
     int (*type_get_size)(MPI_Datatype datatype, int *size);
     int (*type_size)(MPI_Datatype datatype, int *size);
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 large_count */
+    int (*type_size_x)(MPI_Datatype datatype, MPI_Count *size);
+    int (*type_get_extent_x)(MPI_Datatype datatype, MPI_Count *lb, MPI_Count *extent);
+    int (*type_get_true_extent_x)(MPI_Datatype datatype, MPI_Count *lb, MPI_Count *extent);
+    int (*type_create_hindexed_block)(int count, int blocklength,
+                                      const MPI_Aint *array_of_displacements,
+                                      MPI_Datatype oldtype, MPI_Datatype *newtype);
+    int (*get_elements_x)(const MPI_Status *status, MPI_Datatype datatype, MPI_Count *count);
+    int (*status_set_elements_x)(MPI_Status *status, MPI_Datatype datatype, MPI_Count count);
+#endif
     int (*type_get_name)(MPI_Datatype datatype, char *type_name, int *resultlen);
     int (*type_set_name)(MPI_Datatype datatype, const char *type_name);
     int (*type_extent)(MPI_Datatype datatype, MPI_Aint *extent);
