@@ -87,6 +87,39 @@ REGISTRY = {
     ],
 }
 
+# ---------------------------------------------------------------------------
+# Canonical MPI-3.0 C-callable function roster (bare names, no MPI_ prefix).
+#
+# This is the authoritative "what must the 3.0 surface expose" set, used by the
+# `mpi3` subcommand to mechanically reconcile the vtable against the standard.
+# It deliberately EXCLUDES:
+#   * the MPI_T tool interface (24 functions + 4 handle types) -- deferred to a
+#     separate stage;
+#   * the Fortran-2008 bindings (MPI_Status_f2f08/c2f08/f082f/f082c) -- they
+#     export no C symbol to bind and cannot live in the C vtable.
+# It INCLUDES the MPI-3.0 one-sided RMA expansion, nonblocking + neighbor
+# collectives, matched probe, _x large-count queries, and communicator helpers.
+# Types (MPI_Count, MPI_Message) are not functions and are not listed here.
+# ---------------------------------------------------------------------------
+M30_CANONICAL = set("""
+    win_allocate win_allocate_shared win_create_dynamic win_attach win_detach
+    win_shared_query win_flush win_flush_all win_flush_local win_flush_local_all
+    win_lock_all win_unlock_all win_sync win_get_info win_set_info
+    get_accumulate fetch_and_op compare_and_swap rput rget raccumulate
+    rget_accumulate
+    ibarrier ibcast igather igatherv iscatter iscatterv iallgather iallgatherv
+    ialltoall ialltoallv ialltoallw ireduce iallreduce ireduce_scatter
+    ireduce_scatter_block iscan iexscan
+    neighbor_allgather neighbor_allgatherv neighbor_alltoall neighbor_alltoallv
+    neighbor_alltoallw ineighbor_allgather ineighbor_allgatherv
+    ineighbor_alltoall ineighbor_alltoallv ineighbor_alltoallw
+    mprobe improbe mrecv imrecv
+    comm_idup comm_create_group comm_split_type comm_dup_with_info
+    comm_get_info comm_set_info
+    get_elements_x status_set_elements_x type_get_extent_x
+    type_get_true_extent_x type_size_x type_create_hindexed_block
+""".split())
+
 FAILURES = []
 
 
@@ -327,6 +360,74 @@ def extract_always_present_fields(vtable_path):
     return present
 
 
+def extract_all_fields(vtable_path):
+    """Return EVERY vtable field name, regardless of preprocessor guard depth.
+
+    Used by `mpi3` to reconcile the canonical MPI-3.0 roster against what the
+    vtable exposes at all (whether gated or always-present).
+    """
+    with open(vtable_path, "r", encoding="utf-8-sig") as fh:
+        lines = fh.readlines()
+    field_rx = re.compile(r"\(\*\s*(\w+)\s*\)")
+    fields = set()
+    for l in lines:
+        m = field_rx.search(l)
+        if m:
+            fields.add(m.group(1))
+    return fields
+
+
+def run_check_mpi3(args):
+    """Reconcile the canonical MPI-3.0 C roster against the vtable.
+
+    Reports, per standard function: present-in-vtable, properly gated in a 3.0
+    cluster, present-but-not-clustered (gating audit), or missing entirely.
+    Also checks the gated registry never drifts outside the canonical roster.
+    A function that is absent from the whole vtable is a hard coverage gap.
+    """
+    vtable_path = resolve_file_path(args.vtable)
+    if not os.path.isfile(vtable_path):
+        fail("mpi3: vtable header not found: %s" % vtable_path)
+        return
+    all_fields = extract_all_fields(vtable_path)
+
+    gated = set()
+    for members in REGISTRY.values():
+        gated.update(members)
+
+    # Registry hygiene: every gated member must be a canonical MPI-3.0 function.
+    stray = gated - M30_CANONICAL
+    if stray:
+        for f in sorted(stray):
+            fail("mpi3: gated registry member '%s' is not in the canonical "
+                 "MPI-3.0 roster (check REGISTRY / M30_CANONICAL)" % f)
+
+    present = M30_CANONICAL & all_fields
+    missing = M30_CANONICAL - all_fields
+    gated_here = M30_CANONICAL & gated
+    present_ungated = sorted(present - gated)
+
+    total = len(M30_CANONICAL)
+    print("mpi3: canonical MPI-3.0 C functions (excl. MPI_T, F08): %d" % total)
+    print("mpi3: present in vtable: %d (%.1f%%)" % (len(present), 100.0 * len(present) / total))
+    print("mpi3: properly gated in a 3.0 cluster: %d" % len(gated_here))
+    if present_ungated:
+        print("mpi3: present but NOT clustered/gated (exposed; gating audit):")
+        for f in present_ungated:
+            print("   - %s" % f)
+    if missing:
+        print("mpi3: MISSING from the vtable entirely (coverage gaps):")
+        for f in sorted(missing):
+            print("   - %s" % f)
+    print("mpi3: excluded by design -- MPI_T (24 + 4 types), status_f08 (4)")
+
+    if missing or stray:
+        print("mpi3: FAILED (%d coverage gap(s), %d registry stray(s))"
+              % (len(missing), len(stray)))
+        sys.exit(1)
+    print("mpi3: passed (all canonical MPI-3.0 C functions exposed)")
+
+
 def run_check_base(args):
     evo = os.path.abspath(args.evolution)
     if not os.path.isfile(evo):
@@ -416,6 +517,12 @@ def main(argv=None):
     base.add_argument("--vtable", default=os.path.join("include", "unimpi_vtable.h"),
                       help="path to include/unimpi_vtable.h")
     base.set_defaults(func=run_check_base)
+
+    m3 = sub.add_parser("mpi3", help="reconcile the canonical MPI-3.0 C roster "
+                                     "against the vtable (present/gated/missing)")
+    m3.add_argument("--vtable", default=os.path.join("include", "unimpi_vtable.h"),
+                    help="path to include/unimpi_vtable.h")
+    m3.set_defaults(func=run_check_mpi3)
 
     args = parser.parse_args(argv)
     if not hasattr(args, "func"):
