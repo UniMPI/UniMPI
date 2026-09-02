@@ -92,7 +92,9 @@ standard rule is covered.
 | Request completion and persistent setup | No | Yes | Yes | Yes | Yes | Request-handle arrays and per-element status arrays are adapted in place for the native stride; payload completion, zero counts and `Startall` are exercised |
 | Blocking collectives | No | Yes | Yes | Yes | Yes | Barrier, broadcast, gather/scatter, all-to-all and reductions subset |
 | Nonblocking collectives | No | Yes | Yes | Yes | Partial | Open MPI exercises all 17 calls; MPICH and Intel exercise the full set including `Ialltoallw`, adapted in memory for the native 4-byte datatype-handle stride; MS-MPI requires its documented nine-call subset |
+| Neighbor collectives | No | Yes | Yes | Yes | Yes | MPI-3.0 dist-graph ring round trip: `Neighbor_allgather`, the neighbor `alltoall(v/w)` family and `Comm_idup`; datatype arrays adapted for the MPICH-family 4-byte stride |
 | Core datatypes and pack/unpack | No | Yes | Yes | Yes | Yes | Representative derived datatypes |
+| Large-count (_x) types | No | Yes | Yes | Yes | Yes | MPI-3.0 `Type_size_x` / `get_extent_x` / `get_true_extent_x`, `Get_elements_x` / `Status_set_elements_x`, `Type_create_hindexed_block` (64-bit `MPI_Count`) |
 | Communicators and groups | No | Yes | Yes | Yes | Yes | Representative create/split/compare/group operations |
 | Cartesian and graph topology | No | Yes | Yes | Yes | Yes | Focused MPI-2.2 topology cases |
 | Intercommunicators | No | Yes | Yes | Yes | Yes | Even and odd process partitions |
@@ -115,13 +117,19 @@ focused, cross-backend semantic coverage. Important examples include:
   (in-place, zero-count and non-power-of-two behavior is not exhaustively
   certified on every backend);
 - advanced datatype constructors and external data representation;
-- RMA atomics, dynamic/shared windows, and epoch models other than fence;
+- RMA atomics, shared windows, and epoch models other than fence (dynamic
+  windows — `Win_create_dynamic`/`Win_attach`/`Win_detach` — are covered by
+  the MPI-3.0 core tests);
 - MPI I/O file views, shared/ordered pointers, seek operations, split
   collectives, and broader nonblocking cases;
 - custom reduction operations, custom error handlers, and attribute corner
   cases;
 - multithreaded concurrent initialization, finalization, and MPI calls;
-- fault tolerance, GPU-aware behavior, and vendor-specific extensions.
+- fault tolerance, GPU-aware behavior, and vendor-specific extensions;
+- the MPI_T tool interface (24 functions + handle types), deferred to a
+  later stage;
+- the Fortran-2008 status binding (`MPI_Status_f2f08`/`c2f08`/`f082f`/`f082c`):
+  F08-binding-only entry points that export no C symbol to bind.
 
 Add or tighten a row only when a focused test demonstrates the behavior. See
 [TESTING.md](TESTING.md) for the required test layers.

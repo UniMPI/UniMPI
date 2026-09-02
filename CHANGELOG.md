@@ -5,6 +5,15 @@ All notable changes to UniMPI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- MPI-3.0 core support: neighbor collectives, large-count (`_x`) datatype
+  queries on 64-bit `MPI_Count`, dynamic windows (`Win_create_dynamic`/
+  `attach`/`detach`), and `Comm_idup`, across the OpenMPI/MPICH/Intel-MPI/
+  MS-MPI backends under the `UNIMPI_MPI_TARGET_VERSION>=3` gate, with an
+  MPI-3.0 core integration test.
+
 ## [0.1.0-alpha] - 2026-08-29
 
 First public pre-release. UniMPI is a C99 runtime-dispatch layer for MPI that

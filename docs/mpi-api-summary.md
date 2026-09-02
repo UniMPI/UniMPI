@@ -101,6 +101,9 @@ variable-count gather/scatter/all-to-all families, and nonblocking reduction
 families. This is still a representative subset rather than exhaustive
 collective conformance or corner-case coverage.
 
+MPI-3.0 neighbor collectives (`MPI_Neighbor_allgather(_v)`, `MPI_Neighbor_alltoall(v|w)`,
+`MPI_Ineighbor_*`) are covered by a dist-graph ring test in `tests/mpi/test_mpi30_core.c`.
+
 ## Datatypes
 
 Common predefined datatypes:
@@ -138,6 +141,11 @@ MPI_Unpack
 Do not copy numeric datatype values from a vendor header. UniMPI initializes
 the exported predefined objects for the selected backend.
 
+MPI-3.0 large-count query types (`MPI_Type_size_x`, `MPI_Type_get_extent_x`,
+`MPI_Type_get_true_extent_x`, `MPI_Type_create_hindexed_block`,
+`MPI_Get_elements_x`, `MPI_Status_set_elements_x`) use the 64-bit `MPI_Count`
+type and are covered by the MPI-3.0 core test.
+
 ## Communicators, groups, and topology
 
 Focused tests exercise representative calls from:
@@ -169,7 +177,9 @@ The interface includes a broad set of window and file fields. Current focused
 tests cover fence-based `Put`, `Get`, and `Accumulate`; window
 lifecycle/attributes; and positioned independent, collective, and nonblocking
 file round trips plus selected metadata. They do not cover the full RMA epoch,
-atomic-operation, file-view, shared-pointer, or split-collective matrix.
+atomic-operation, file-view, shared-pointer, or split-collective matrix. MPI-3.0
+dynamic windows (`MPI_Win_create_dynamic`, `MPI_Win_attach`, `MPI_Win_detach`)
+are covered by the MPI-3.0 core test.
 
 Representative aliases:
 
