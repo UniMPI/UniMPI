@@ -9,6 +9,7 @@
 #define UNIMPI_MSMPI_WRAPPERS_H
 
 #include "unimpi_vtable.h"
+#include "unimpi_errors.h"
 
 /* Backend function pointers - set directly by msmpi.c during init */
 extern int (*msmpi_waitall)(int, int*, MPI_Status*);

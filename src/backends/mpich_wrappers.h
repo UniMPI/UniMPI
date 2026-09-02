@@ -9,6 +9,7 @@
 #define UNIMPI_MPICH_WRAPPERS_H
 
 #include "unimpi_vtable.h"
+#include "unimpi_errors.h"
 
 /* Backend function pointers - set directly by mpich.c during init */
 extern int (*mpich_waitall)(int, int*, MPI_Status*);

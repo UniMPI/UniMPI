@@ -68,9 +68,11 @@ int MPI_Get_library_version(char *version, int *resultlen) {
     return 0;
 }
 
-/* IntelMPI-specific symbol */
+/* IntelMPI-specific symbol. Must be explicitly exported on Windows (where
+ * WINDOWS_EXPORT_ALL_SYMBOLS does not reliably capture leading-underscore
+ * text symbols); the loader identifies Intel MPI by this symbol. */
 #if defined(UNIMPI_FAKE_INTELMPI)
-int __I_MPI___cpu_core_type(void) {
+FAKE_MPI_EXPORT int __I_MPI___cpu_core_type(void) {
     return 0;
 }
 #endif

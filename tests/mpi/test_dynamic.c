@@ -22,12 +22,14 @@
 #define PASS() printf("  PASS\n")
 #define FAIL(msg) do { fprintf(stderr, "  FAIL: %s\n", msg); return 1; } while(0)
 
-/* Timeout handler */
+/* Timeout handler (POSIX alarm only - unused on Windows) */
+#ifndef _WIN32
 static void timeout_handler(int sig) {
     (void)sig;
     fprintf(stderr, "  FAIL: Test timeout\n");
     exit(1);
 }
+#endif
 
 /* Signal handling for catching segfaults from unsupported MPI features */
 static jmp_buf g_jump_buffer;
