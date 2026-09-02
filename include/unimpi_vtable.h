@@ -537,9 +537,9 @@ typedef struct {
 
     /* RMA/One-Sided - Window creation */
     int (*win_create)(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win);
-    int (*win_allocate)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
 #if UNIMPI_MPI_AT_LEAST(3,0)
     /* MPI-3.0 win_alloc_shared */
+    int (*win_allocate)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
     int (*win_allocate_shared)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
     int (*win_create_dynamic)(MPI_Info info, MPI_Comm comm, MPI_Win *win);
 #endif

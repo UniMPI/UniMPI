@@ -25,6 +25,7 @@ comm_split_type,3,0
 comm_create_group,3,0
 comm_get_info,3,0
 comm_set_info,3,0
+win_allocate,3,0
 win_allocate_shared,3,0
 win_create_dynamic,3,0
 get_accumulate,3,0

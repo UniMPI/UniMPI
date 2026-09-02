@@ -62,7 +62,7 @@ REGISTRY = {
         "comm_dup_with_info", "comm_split_type", "comm_create_group",
         "comm_get_info", "comm_set_info", "comm_idup",
     ],
-    "win_alloc_shared": ["win_allocate_shared", "win_create_dynamic"],
+    "win_alloc_shared": ["win_allocate", "win_allocate_shared", "win_create_dynamic"],
     "rma_atomics": [
         "get_accumulate", "fetch_and_op", "compare_and_swap", "rput", "rget",
         "raccumulate", "rget_accumulate",

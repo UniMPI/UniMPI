@@ -365,11 +365,11 @@
 
 /* RMA - Window creation */
 #define MPI_Win_create unimpi.win_create
-#define MPI_Win_allocate unimpi.win_allocate
 #define MPI_Win_free unimpi.win_free
 
 #if UNIMPI_MPI_AT_LEAST(3,0)
 /* MPI-3.0 win_alloc_shared */
+#define MPI_Win_allocate unimpi.win_allocate
 #define MPI_Win_allocate_shared unimpi.win_allocate_shared
 #define MPI_Win_create_dynamic unimpi.win_create_dynamic
 #endif

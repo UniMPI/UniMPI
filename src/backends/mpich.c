@@ -569,13 +569,13 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
     /* RMA - Window creation */
     unimpi.win_create = (int (*)(void*, MPI_Aint, int, MPI_Info, MPI_Comm, MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_create");
-    unimpi.win_allocate = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
-        unimpi_platform_dlsym(handle, "MPI_Win_allocate");
     unimpi.win_free = (int (*)(MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_free");
 
 #if UNIMPI_MPI_AT_LEAST(3,0)
     /* MPI-3.0 win_alloc_shared */
+    unimpi.win_allocate = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
+        unimpi_platform_dlsym(handle, "MPI_Win_allocate");
     unimpi.win_allocate_shared = (int (*)(MPI_Aint, int, MPI_Info, MPI_Comm, void*, MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_allocate_shared");
     unimpi.win_create_dynamic = (int (*)(MPI_Info, MPI_Comm, MPI_Win*))
