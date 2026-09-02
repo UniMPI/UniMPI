@@ -60,7 +60,7 @@ REGISTRY = {
     ],
     "comm_3x": [
         "comm_dup_with_info", "comm_split_type", "comm_create_group",
-        "comm_get_info", "comm_set_info",
+        "comm_get_info", "comm_set_info", "comm_idup",
     ],
     "win_alloc_shared": ["win_allocate_shared", "win_create_dynamic"],
     "rma_atomics": [
@@ -70,6 +70,20 @@ REGISTRY = {
     "rma_sync_3x": [
         "win_lock_all", "win_unlock_all", "win_flush", "win_flush_all",
         "win_flush_local", "win_sync",
+    ],
+    "neighbor_collectives": [
+        "neighbor_allgather", "neighbor_allgatherv", "neighbor_alltoall",
+        "neighbor_alltoallv", "neighbor_alltoallw",
+        "ineighbor_allgather", "ineighbor_allgatherv", "ineighbor_alltoall",
+        "ineighbor_alltoallv", "ineighbor_alltoallw",
+    ],
+    "large_count": [
+        "get_elements_x", "status_set_elements_x", "type_get_extent_x",
+        "type_get_true_extent_x", "type_size_x", "type_create_hindexed_block",
+    ],
+    "win_dynamic": [
+        "win_attach", "win_detach", "win_shared_query", "win_flush_local_all",
+        "win_get_info", "win_set_info",
     ],
 }
 
