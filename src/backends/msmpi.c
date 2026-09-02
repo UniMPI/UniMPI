@@ -289,6 +289,43 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Iexscan");
 #endif
 
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 neighbor_collectives */
+    unimpi.neighbor_allgather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm))
+        unimpi_platform_dlsym(handle, "MPI_Neighbor_allgather");
+    unimpi.neighbor_allgatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm))
+        unimpi_platform_dlsym(handle, "MPI_Neighbor_allgatherv");
+    unimpi.neighbor_alltoall = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm))
+        unimpi_platform_dlsym(handle, "MPI_Neighbor_alltoall");
+    /* Neighbor_alltoallv/w and Ineighbor_* wrapped (datatype arrays) */
+    msmpi_neighbor_alltoallv = (int (*)(const void*, const int*, const MPI_Aint*, const int*,
+            void*, const int*, const MPI_Aint*, const int*, MPI_Comm))
+            unimpi_platform_dlsym(handle, "MPI_Neighbor_alltoallv");
+    if (msmpi_neighbor_alltoallv)
+        unimpi.neighbor_alltoallv = msmpi_wrap_neighbor_alltoallv;
+    msmpi_neighbor_alltoallw = (int (*)(const void*, const int*, const MPI_Aint*, const int*,
+            void*, const int*, const MPI_Aint*, const int*, MPI_Comm))
+            unimpi_platform_dlsym(handle, "MPI_Neighbor_alltoallw");
+    if (msmpi_neighbor_alltoallw)
+        unimpi.neighbor_alltoallw = msmpi_wrap_neighbor_alltoallw;
+    unimpi.ineighbor_allgather = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Ineighbor_allgather");
+    unimpi.ineighbor_allgatherv = (int (*)(const void*, int, MPI_Datatype, void*, const int*, const int*, MPI_Datatype, MPI_Comm, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Ineighbor_allgatherv");
+    unimpi.ineighbor_alltoall = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, MPI_Comm, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Ineighbor_alltoall");
+    msmpi_ineighbor_alltoallv = (int (*)(const void*, const int*, const MPI_Aint*, const int*,
+            void*, const int*, const MPI_Aint*, const int*, MPI_Comm, MPI_Request*))
+            unimpi_platform_dlsym(handle, "MPI_Ineighbor_alltoallv");
+    if (msmpi_ineighbor_alltoallv)
+        unimpi.ineighbor_alltoallv = msmpi_wrap_ineighbor_alltoallv;
+    msmpi_ineighbor_alltoallw = (int (*)(const void*, const int*, const MPI_Aint*, const int*,
+            void*, const int*, const MPI_Aint*, const int*, MPI_Comm, MPI_Request*))
+            unimpi_platform_dlsym(handle, "MPI_Ineighbor_alltoallw");
+    if (msmpi_ineighbor_alltoallw)
+        unimpi.ineighbor_alltoallw = msmpi_wrap_ineighbor_alltoallw;
+#endif
+
     /* Communicator */
     unimpi.comm_size = (int (*)(MPI_Comm, int*))
         unimpi_platform_dlsym(handle, "MPI_Comm_size");
@@ -350,6 +387,8 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_get_info");
     unimpi.comm_set_info = (int (*)(MPI_Comm, MPI_Info))
         unimpi_platform_dlsym(handle, "MPI_Comm_set_info");
+    unimpi.comm_idup = (int (*)(MPI_Comm, MPI_Comm*, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_idup");
 #endif
 
     /* Intercommunicator Operations (MPI-2.2) */
@@ -465,6 +504,21 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Type_get_true_extent");
     unimpi.type_size = (int (*)(MPI_Datatype, int*))
         unimpi_platform_dlsym(handle, "MPI_Type_size");
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 large_count */
+    unimpi.type_size_x = (int (*)(MPI_Datatype, MPI_Count*))
+        unimpi_platform_dlsym(handle, "MPI_Type_size_x");
+    unimpi.type_get_extent_x = (int (*)(MPI_Datatype, MPI_Count*, MPI_Count*))
+        unimpi_platform_dlsym(handle, "MPI_Type_get_extent_x");
+    unimpi.type_get_true_extent_x = (int (*)(MPI_Datatype, MPI_Count*, MPI_Count*))
+        unimpi_platform_dlsym(handle, "MPI_Type_get_true_extent_x");
+    unimpi.type_create_hindexed_block = (int (*)(int, int, const MPI_Aint*, MPI_Datatype, MPI_Datatype*))
+        unimpi_platform_dlsym(handle, "MPI_Type_create_hindexed_block");
+    unimpi.get_elements_x = (int (*)(const MPI_Status*, MPI_Datatype, MPI_Count*))
+        unimpi_platform_dlsym(handle, "MPI_Get_elements_x");
+    unimpi.status_set_elements_x = (int (*)(MPI_Status*, MPI_Datatype, MPI_Count))
+        unimpi_platform_dlsym(handle, "MPI_Status_set_elements_x");
+#endif
     unimpi.type_extent = (int (*)(MPI_Datatype, MPI_Aint*))
         unimpi_platform_dlsym(handle, "MPI_Type_extent");
     unimpi.type_lb = (int (*)(MPI_Datatype, MPI_Aint*))
@@ -556,6 +610,21 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_sync");
     unimpi.win_flush_local = (int (*)(int, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_flush_local");
+#endif
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 win_dynamic */
+    unimpi.win_attach = (int (*)(MPI_Win, void*, MPI_Aint))
+        unimpi_platform_dlsym(handle, "MPI_Win_attach");
+    unimpi.win_detach = (int (*)(MPI_Win, void*))
+        unimpi_platform_dlsym(handle, "MPI_Win_detach");
+    unimpi.win_shared_query = (int (*)(MPI_Win, int, MPI_Aint*, int*, void*))
+        unimpi_platform_dlsym(handle, "MPI_Win_shared_query");
+    unimpi.win_flush_local_all = (int (*)(MPI_Win))
+        unimpi_platform_dlsym(handle, "MPI_Win_flush_local_all");
+    unimpi.win_get_info = (int (*)(MPI_Win, MPI_Info*))
+        unimpi_platform_dlsym(handle, "MPI_Win_get_info");
+    unimpi.win_set_info = (int (*)(MPI_Win, MPI_Info))
+        unimpi_platform_dlsym(handle, "MPI_Win_set_info");
 #endif
     unimpi.win_start = (int (*)(MPI_Group, int, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_start");

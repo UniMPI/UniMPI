@@ -72,5 +72,31 @@ int msmpi_wrap_comm_spawn_multiple(int count, char *array_of_commands[],
     char **array_of_argv[], const int array_of_maxprocs[],
     const MPI_Info array_of_info[], int root, MPI_Comm comm, MPI_Comm *intercomm,
     int array_of_errcodes[]);
+extern int (*msmpi_neighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+extern int (*msmpi_neighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+extern int (*msmpi_ineighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
+extern int (*msmpi_ineighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
+int msmpi_wrap_neighbor_alltoallv(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm);
+int msmpi_wrap_neighbor_alltoallw(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm);
+int msmpi_wrap_ineighbor_alltoallv(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm, MPI_Request *request);
+int msmpi_wrap_ineighbor_alltoallw(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm, MPI_Request *request);
 
 #endif /* UNIMPI_MSMPI_WRAPPERS_H */

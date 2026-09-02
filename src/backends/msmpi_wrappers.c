@@ -27,6 +27,16 @@ int (*msmpi_type_get_contents)(MPI_Datatype, int, int, int,
     int *, MPI_Aint *, MPI_Datatype *);
 int (*msmpi_comm_spawn_multiple)(int, char *[], char **[],
     const int[], const int[], int, MPI_Comm, MPI_Comm *, int[]);
+int (*msmpi_neighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+int (*msmpi_neighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm);
+int (*msmpi_ineighbor_alltoallv)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
+int (*msmpi_ineighbor_alltoallw)(const void *, const int *, const MPI_Aint *,
+    const int *, void *, const int *, const MPI_Aint *, const int *, MPI_Comm,
+    MPI_Request *);
 
 /* ---- Setters ---- */
 
@@ -237,5 +247,86 @@ int msmpi_wrap_comm_spawn_multiple(int count, char *array_of_commands[],
         array_of_argv, array_of_maxprocs, (const int *)array_of_info, root,
         comm, intercomm, array_of_errcodes);
     dtypes_restore_inplace((MPI_Datatype *)array_of_info, count);
+    return ret;
+}
+
+/* ---- Neighbor collective datatype-array wrappers ---- */
+
+/* Neighbor collectives carry MPI_Datatype arrays whose length is the comm's
+ * neighbor degree. Query indegree/outdegree via Dist_graph_neighbors_count
+ * (the neighbor-collective contract requires a dist-graph or cart topology).
+ * Send arrays are sized outdegree, recv arrays indegree. */
+static int neighbor_degree(MPI_Comm comm, int *indegree, int *outdegree) {
+    int weighted = 0;
+    if (unimpi.dist_graph_neighbors_count == NULL)
+        return MPI_ERR_TOPOLOGY;
+    return unimpi.dist_graph_neighbors_count(comm, indegree, outdegree, &weighted);
+}
+
+int msmpi_wrap_neighbor_alltoallw(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm) {
+    int indeg = 0, outdeg = 0;
+    int rc = neighbor_degree(comm, &indeg, &outdeg);
+    if (rc != MPI_SUCCESS) return rc;
+    dtypes_compress_inplace(sendtypes, outdeg);
+    dtypes_compress_inplace(recvtypes, indeg);
+    int ret = msmpi_neighbor_alltoallw(sendbuf, sendcounts, sdispls,
+        (const int *)sendtypes, recvbuf, recvcounts, rdispls,
+        (const int *)recvtypes, comm);
+    dtypes_restore_inplace((MPI_Datatype *)sendtypes, outdeg);
+    dtypes_restore_inplace((MPI_Datatype *)recvtypes, indeg);
+    return ret;
+}
+
+int msmpi_wrap_neighbor_alltoallv(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm) {
+    int indeg = 0, outdeg = 0;
+    int rc = neighbor_degree(comm, &indeg, &outdeg);
+    if (rc != MPI_SUCCESS) return rc;
+    dtypes_compress_inplace(sendtypes, outdeg);
+    dtypes_compress_inplace(recvtypes, indeg);
+    int ret = msmpi_neighbor_alltoallv(sendbuf, sendcounts, sdispls,
+        (const int *)sendtypes, recvbuf, recvcounts, rdispls,
+        (const int *)recvtypes, comm);
+    dtypes_restore_inplace((MPI_Datatype *)sendtypes, outdeg);
+    dtypes_restore_inplace((MPI_Datatype *)recvtypes, indeg);
+    return ret;
+}
+
+int msmpi_wrap_ineighbor_alltoallv(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm, MPI_Request *request) {
+    int indeg = 0, outdeg = 0;
+    int rc = neighbor_degree(comm, &indeg, &outdeg);
+    if (rc != MPI_SUCCESS) return rc;
+    dtypes_compress_inplace(sendtypes, outdeg);
+    dtypes_compress_inplace(recvtypes, indeg);
+    int ret = msmpi_ineighbor_alltoallv(sendbuf, sendcounts, sdispls,
+        (const int *)sendtypes, recvbuf, recvcounts, rdispls,
+        (const int *)recvtypes, comm, request);
+    dtypes_restore_inplace((MPI_Datatype *)sendtypes, outdeg);
+    dtypes_restore_inplace((MPI_Datatype *)recvtypes, indeg);
+    return ret;
+}
+
+int msmpi_wrap_ineighbor_alltoallw(const void *sendbuf, const int *sendcounts,
+    const MPI_Aint *sdispls, const MPI_Datatype *sendtypes, void *recvbuf,
+    const int *recvcounts, const MPI_Aint *rdispls, const MPI_Datatype *recvtypes,
+    MPI_Comm comm, MPI_Request *request) {
+    int indeg = 0, outdeg = 0;
+    int rc = neighbor_degree(comm, &indeg, &outdeg);
+    if (rc != MPI_SUCCESS) return rc;
+    dtypes_compress_inplace(sendtypes, outdeg);
+    dtypes_compress_inplace(recvtypes, indeg);
+    int ret = msmpi_ineighbor_alltoallw(sendbuf, sendcounts, sdispls,
+        (const int *)sendtypes, recvbuf, recvcounts, rdispls,
+        (const int *)recvtypes, comm, request);
+    dtypes_restore_inplace((MPI_Datatype *)sendtypes, outdeg);
+    dtypes_restore_inplace((MPI_Datatype *)recvtypes, indeg);
     return ret;
 }
