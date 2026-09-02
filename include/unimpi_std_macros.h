@@ -256,6 +256,21 @@
 #define MPI_Iexscan unimpi.iexscan
 #endif
 
+/* MPI-3 Neighbor Collectives */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 neighbor_collectives */
+#define MPI_Neighbor_allgather unimpi.neighbor_allgather
+#define MPI_Neighbor_allgatherv unimpi.neighbor_allgatherv
+#define MPI_Neighbor_alltoall unimpi.neighbor_alltoall
+#define MPI_Neighbor_alltoallv unimpi.neighbor_alltoallv
+#define MPI_Neighbor_alltoallw unimpi.neighbor_alltoallw
+#define MPI_Ineighbor_allgather unimpi.ineighbor_allgather
+#define MPI_Ineighbor_allgatherv unimpi.ineighbor_allgatherv
+#define MPI_Ineighbor_alltoall unimpi.ineighbor_alltoall
+#define MPI_Ineighbor_alltoallv unimpi.ineighbor_alltoallv
+#define MPI_Ineighbor_alltoallw unimpi.ineighbor_alltoallw
+#endif
+
 /* Group operations */
 #define MPI_Group_size unimpi.group_size
 #define MPI_Group_rank unimpi.group_rank
@@ -284,6 +299,7 @@
 #define MPI_Comm_create_group unimpi.comm_create_group
 #define MPI_Comm_get_info unimpi.comm_get_info
 #define MPI_Comm_set_info unimpi.comm_set_info
+#define MPI_Comm_idup unimpi.comm_idup
 #endif
 #define MPI_Comm_compare unimpi.comm_compare
 
@@ -566,5 +582,27 @@
 #define MPI_Attr_put unimpi.attr_put
 #define MPI_Attr_get unimpi.attr_get
 #define MPI_Attr_delete unimpi.attr_delete
+
+/* MPI-3 Dynamic Windows */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 win_dynamic */
+#define MPI_Win_attach unimpi.win_attach
+#define MPI_Win_detach unimpi.win_detach
+#define MPI_Win_shared_query unimpi.win_shared_query
+#define MPI_Win_flush_local_all unimpi.win_flush_local_all
+#define MPI_Win_get_info unimpi.win_get_info
+#define MPI_Win_set_info unimpi.win_set_info
+#endif
+
+/* MPI-3 Large Count (_x) */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-3.0 large_count */
+#define MPI_Type_size_x unimpi.type_size_x
+#define MPI_Type_get_extent_x unimpi.type_get_extent_x
+#define MPI_Type_get_true_extent_x unimpi.type_get_true_extent_x
+#define MPI_Type_create_hindexed_block unimpi.type_create_hindexed_block
+#define MPI_Get_elements_x unimpi.get_elements_x
+#define MPI_Status_set_elements_x unimpi.status_set_elements_x
+#endif
 
 #endif /* UNIMPI_STD_MACROS_H */
