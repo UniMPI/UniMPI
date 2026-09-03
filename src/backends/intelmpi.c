@@ -5,6 +5,24 @@
 #include "intelmpi_wrappers.h"
 #include <limits.h>
 
+/* UniMPI status field accessors for the legacy (MPICH/Intel/MS-MPI) 20-byte
+ * status layout: MPI_SOURCE/TAG/ERROR at offsets 8/12/16. See the vtable
+ * comment on status_get_source. These match the standard MPI_Status_get_*
+ * signature: return an MPI error code and write the field through the out
+ * parameter. */
+static int status_legacy_get_source(const MPI_Status *status, int *source) {
+    *source = status->legacy.MPI_SOURCE;
+    return MPI_SUCCESS;
+}
+static int status_legacy_get_tag(const MPI_Status *status, int *tag) {
+    *tag = status->legacy.MPI_TAG;
+    return MPI_SUCCESS;
+}
+static int status_legacy_get_error(const MPI_Status *status, int *error) {
+    *error = status->legacy.MPI_ERROR;
+    return MPI_SUCCESS;
+}
+
 /* Intel MPI is based on MPICH and uses MPICH-compatible error codes
  * Note: Intel MPI error codes differ from standard MPICH values.
  * Verified against Intel MPI 2021.x releases.
@@ -922,6 +940,10 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Status_f2c");
     unimpi.status_c2f = (int (*)(const MPI_Status*, MPI_Fint*))
         unimpi_platform_dlsym(handle, "MPI_Status_c2f");
+
+    unimpi.status_get_source = status_legacy_get_source;
+    unimpi.status_get_tag = status_legacy_get_tag;
+    unimpi.status_get_error = status_legacy_get_error;
 
     /* Error handling */
     unimpi.errhandler_create = (int (*)(void (*)(MPI_Comm*, int*, ...), MPI_Errhandler*))

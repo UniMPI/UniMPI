@@ -712,6 +712,20 @@ typedef struct {
     int (*status_f2c)(const MPI_Fint *f_status, MPI_Status *c_status);
     int (*status_c2f)(const MPI_Status *c_status, MPI_Fint *f_status);
 
+    /* UniMPI status field accessors. Names and signatures follow the standard
+     * MPI_Status_get_source/_tag/_error functions (introduced in MPI-4.0,
+     * carried in MPI-5.0): each returns an MPI error code (MPI_SUCCESS on
+     * success) and writes the requested field through its out parameter. The
+     * MPI C standard (through MPI-3.1) defines no accessor for MPI_SOURCE /
+     * MPI_TAG / MPI_ERROR (only count via MPI_Get_count), so UniMPI exposes
+     * the standard-named accessors here. Each backend binds a reader for its
+     * own status layout (OpenMPI fields at offset 0; legacy MPICH/Intel/MS-MPI
+     * at offset 8). Prefer these over direct `status.MPI_SOURCE` access, which
+     * is not layout-portable across backends. */
+    int (*status_get_source)(const MPI_Status *status, int *source);
+    int (*status_get_tag)(const MPI_Status *status, int *tag);
+    int (*status_get_error)(const MPI_Status *status, int *error);
+
     /* Error handling */
     int (*errhandler_create)(void (*handler_fn)(MPI_Comm *, int *, ...), MPI_Errhandler *errhandler);
     int (*errhandler_free)(MPI_Errhandler *errhandler);

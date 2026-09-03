@@ -160,6 +160,20 @@
 #define MPI_Get_count unimpi.get_count
 #define MPI_Get_elements unimpi.get_elements
 
+/* UniMPI status field accessors. These map to the standard MPI-4.0/5.0
+ * functions MPI_Status_get_source/_tag/_error (the MPI C standard through
+ * MPI-3.1 defined no accessor for MPI_SOURCE / MPI_TAG / MPI_ERROR; each
+ * backend binds a reader for its own status layout). Signature matches the
+ * standard: return an MPI error code and write the field through the out
+ * parameter. Usage:
+ *   int src, tag, err;
+ *   MPI_Status_get_source(&status, &src);
+ *   MPI_Status_get_tag(&status, &tag);
+ *   MPI_Status_get_error(&status, &err); */
+#define MPI_Status_get_source unimpi.status_get_source
+#define MPI_Status_get_tag unimpi.status_get_tag
+#define MPI_Status_get_error unimpi.status_get_error
+
 /* Collectives - Variable length */
 #define MPI_Gatherv unimpi.gatherv
 #define MPI_Allgatherv unimpi.allgatherv

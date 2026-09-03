@@ -4,6 +4,24 @@
 #include "unimpi_platform.h"
 #include "unimpi.h"
 
+/* UniMPI status field accessors for the OpenMPI 24-byte status layout:
+ * MPI_SOURCE/TAG/ERROR at offsets 0/4/8 (the vtable `base` member). See the
+ * vtable comment on status_get_source. These match the standard
+ * MPI_Status_get_* signature: return an MPI error code and write the field
+ * through the out parameter. */
+static int status_openmpi_get_source(const MPI_Status *status, int *source) {
+    *source = status->base.MPI_SOURCE;
+    return MPI_SUCCESS;
+}
+static int status_openmpi_get_tag(const MPI_Status *status, int *tag) {
+    *tag = status->base.MPI_TAG;
+    return MPI_SUCCESS;
+}
+static int status_openmpi_get_error(const MPI_Status *status, int *error) {
+    *error = status->base.MPI_ERROR;
+    return MPI_SUCCESS;
+}
+
 /* OpenMPI uses pointers for all opaque types */
 typedef struct ompi_communicator_t* ompi_comm_t;
 typedef struct ompi_datatype_t* ompi_datatype_t;
@@ -991,6 +1009,10 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Status_f2c");
     unimpi.status_c2f = (int (*)(const MPI_Status*, MPI_Fint*))
         unimpi_platform_dlsym(handle, "MPI_Status_c2f");
+
+    unimpi.status_get_source = status_openmpi_get_source;
+    unimpi.status_get_tag = status_openmpi_get_tag;
+    unimpi.status_get_error = status_openmpi_get_error;
 
     /* Error handling */
     unimpi.errhandler_create = (int (*)(void (*)(MPI_Comm*, int*, ...), MPI_Errhandler*))
