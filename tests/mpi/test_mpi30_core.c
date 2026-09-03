@@ -51,6 +51,64 @@ static int test_neighbor_allgather(MPI_Comm comm) {
     return 0;
 }
 
+/* MPI-3.0 neighbor collectives are defined on any communicator with an
+ * associated dist-graph, graph, or *cartesian* topology. The MPICH-family
+ * backends (MPICH/Intel/MS-MPI) route Neighbor_alltoallv/w through a wrapper
+ * that queries the neighbor degree; this guards that wrapper against wrongly
+ * rejecting a cart communicator with MPI_ERR_TOPOLOGY. All ranks send the
+ * identical index sequence {0..degree-1}, so the received multiset must equal
+ * {0..degree-1} regardless of the backend's cart-neighbor ordering. */
+static int test_neighbor_cart_alltoallw(MPI_Comm comm) {
+    int size, rank;
+    MPI_Comm_size(comm, &size);
+    MPI_Comm_rank(comm, &rank);
+    if (size < 2) return 0;              /* need a ring with a real neighbor */
+    /* 1-D periodic ring: every rank (dims[0]=size>=2) has 2 in-cart neighbors. */
+    int dims[1] = { size }, periods[1] = { 1 };
+    MPI_Comm cart;
+    CHECK(MPI_Cart_create(comm, 1, dims, periods, 0, &cart));
+
+    int ndims = 0;
+    CHECK(MPI_Cartdim_get(cart, &ndims));
+    int cdims[1], cperiods[1], ccoords[1];
+    CHECK(MPI_Cart_get(cart, ndims, cdims, cperiods, ccoords));
+    int degree = 0;
+    for (int i = 0; i < ndims; i++) {
+        if (cdims[i] <= 1) continue;
+        degree += cperiods[i] ? 2 : ((ccoords[i] > 0) + (ccoords[i] < cdims[i] - 1));
+    }
+
+    int sendbuf[16], recvbuf[16], counts[16];
+    MPI_Aint displs[16];
+    MPI_Datatype types[16];
+    for (int i = 0; i < degree && i < 16; i++) {
+        sendbuf[i] = i;
+        recvbuf[i] = -1;
+        counts[i] = 1;
+        displs[i] = (MPI_Aint)(i * (int)sizeof(int));
+        types[i] = MPI_INT;
+    }
+    CHECK(MPI_Neighbor_alltoallw(sendbuf, counts, displs, types,
+                                 recvbuf, counts, displs, types, cart));
+
+    /* verify the received multiset == {0..degree-1} (sort to drop ordering) */
+    for (int i = 0; i < degree; i++)
+        for (int j = i + 1; j < degree; j++)
+            if (recvbuf[j] < recvbuf[i]) {
+                int t = recvbuf[i]; recvbuf[i] = recvbuf[j]; recvbuf[j] = t;
+            }
+    for (int i = 0; i < degree; i++) {
+        if (recvbuf[i] != i) {
+            fprintf(stderr, "FAIL rank %d cart Neighbor_alltoallw recv[%d]=%d\n",
+                    rank, i, recvbuf[i]);
+            return 1;
+        }
+    }
+    printf("  Neighbor_alltoallw(cart) OK (rank %d degree %d)\n", rank, degree);
+    MPI_Comm_free(&cart);
+    return 0;
+}
+
 static int test_comm_idup(MPI_Comm comm) {
     MPI_Comm newcomm;
     MPI_Request req;
@@ -134,6 +192,7 @@ int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
     printf("=== MPI-3.0 core tests ===\n");
     if (test_neighbor_allgather(MPI_COMM_WORLD)) goto fail;
+    if (test_neighbor_cart_alltoallw(MPI_COMM_WORLD)) goto fail;
     if (test_comm_idup(MPI_COMM_WORLD)) goto fail;
     if (test_large_count_and_type_x(MPI_COMM_WORLD)) goto fail;
     if (test_win_dynamic()) goto fail;
