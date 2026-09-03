@@ -18,6 +18,7 @@ typedef struct {
     unimpi_backend_type_t type;
     const char *name;
     const char *lib_name;
+    const char *lib_name_alt;   /* fallback when lib_name fails to dlopen (NULL = none) */
     int priority;
 } unimpi_backend_info_t;
 

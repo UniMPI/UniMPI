@@ -7,10 +7,10 @@
 
 /* Backend definitions */
 const unimpi_backend_info_t unimpi_backends[UNIMPI_MAX_BACKENDS] = {
-    {UNIMPI_BACKEND_OPENMPI,   "openmpi",   "libmpi.so.40", 2},  /* Try .40 first, then .20 */
-    {UNIMPI_BACKEND_MPICH,     "mpich",     "libmpi.so",    4},  /* MPICH provides libmpi symlink */
-    {UNIMPI_BACKEND_INTELMPI,  "intelmpi",  "libmpi.so",    3},  /* Intel MPI uses libmpi.so */
-    {UNIMPI_BACKEND_MSMPI,     "msmpi",     "msmpi.dll",    5}   /* Windows only */
+    {UNIMPI_BACKEND_OPENMPI,   "openmpi",   "libmpi.so.40", NULL,         2},  /* Try .40 first, then .20 */
+    {UNIMPI_BACKEND_MPICH,     "mpich",     "libmpich.so",  "libmpi.so",  4},  /* Prefer libmpich.so; generic libmpi.so is alternatives-ambiguous */
+    {UNIMPI_BACKEND_INTELMPI,  "intelmpi",  "libmpi.so",    NULL,         3},  /* Intel MPI uses libmpi.so */
+    {UNIMPI_BACKEND_MSMPI,     "msmpi",     "msmpi.dll",    NULL,         5}   /* Windows only */
 };
 
 /* Check if a backend is supported on the current platform */
@@ -137,6 +137,23 @@ int unimpi_loader_load(const char *lib_path, unimpi_lib_handle_t *out_handle) {
     fprintf(stderr, "[unimpi] Loading backend library: %s\n", lib_path);
 
     unimpi_lib_handle_t handle = unimpi_platform_dlopen(lib_path);
+    if (!handle) {
+        /* Fallback: a backend may prefer a specific library name (e.g. MPICH
+         * prefers libmpich.so) but fall back to a generic name (libmpi.so)
+         * when the preferred one is absent. */
+        const char *alt = NULL;
+        for (int i = 0; i < UNIMPI_MAX_BACKENDS; i++) {
+            if (unimpi_backends[i].lib_name &&
+                strcmp(unimpi_backends[i].lib_name, lib_path) == 0) {
+                alt = unimpi_backends[i].lib_name_alt;
+                break;
+            }
+        }
+        if (alt) {
+            fprintf(stderr, "[unimpi] %s not found, trying fallback %s\n", lib_path, alt);
+            handle = unimpi_platform_dlopen(alt);
+        }
+    }
     if (!handle) {
         fprintf(stderr, "[unimpi:ERROR] Failed to load backend library: %s\n", lib_path);
         fprintf(stderr, "[unimpi:ERROR] %s\n", unimpi_platform_dlerror());
