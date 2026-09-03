@@ -603,7 +603,7 @@ typedef struct {
     /* MPI-3.0 win_dynamic */
     int (*win_attach)(MPI_Win win, void *base, MPI_Aint size);
     int (*win_detach)(MPI_Win win, void *base);
-    int (*win_shared_query)(MPI_Win win, int rank, MPI_Aint *size, int *disp_unit, void *baseptr);
+    int (*win_shared_query)(MPI_Win win, int rank, MPI_Aint *size, int *disp_unit, void **baseptr);
     int (*win_flush_local_all)(MPI_Win win);
     int (*win_get_info)(MPI_Win win, MPI_Info *info_used);
     int (*win_set_info)(MPI_Win win, MPI_Info info);

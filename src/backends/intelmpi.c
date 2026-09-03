@@ -687,7 +687,7 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_attach");
     unimpi.win_detach = (int (*)(MPI_Win, void*))
         unimpi_platform_dlsym(handle, "MPI_Win_detach");
-    unimpi.win_shared_query = (int (*)(MPI_Win, int, MPI_Aint*, int*, void*))
+    unimpi.win_shared_query = (int (*)(MPI_Win, int, MPI_Aint*, int*, void**))
         unimpi_platform_dlsym(handle, "MPI_Win_shared_query");
     unimpi.win_flush_local_all = (int (*)(MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_flush_local_all");
