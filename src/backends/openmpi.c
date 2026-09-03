@@ -41,6 +41,13 @@ static void init_openmpi_error_codes(void) {
      * sentinel regardless of the process-wide default. MPI_ANY_TAG = -1 is
      * correct on all backends. */
     MPI_ANY_SOURCE = -1;
+    /* OpenMPI also uses MPI_PROC_NULL = -2 and MPI_ROOT = -4 (MPICH-family
+     * use -1/-3, which match the UniMPI defaults and need no override). The
+     * MPI C standard requires a no-op for sends/ops targeting MPI_PROC_NULL,
+     * so passing UniMPI's default -1 would instead collide with OpenMPI's
+     * MPI_ANY_SOURCE and be rejected as an invalid rank. */
+    MPI_PROC_NULL = -2;
+    MPI_ROOT = -4;
     MPI_ERR_BUFFER = 1;
     MPI_ERR_COUNT = 2;
     MPI_ERR_TYPE = 3;
