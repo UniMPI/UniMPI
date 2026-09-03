@@ -455,6 +455,12 @@ if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
     if(UNIMPI_REAL_MPI_TESTS_ENABLED)
         add_mpi_test(test_mpi30_rma test_mpi30_rma 2)
     endif()
+    # MPI-3.0 matched-probe semantics (Mprobe/Improbe/Mrecv/Imrecv).
+    add_executable(test_mpi30_matched_probe mpi/test_mpi30_matched_probe.c)
+    target_link_libraries(test_mpi30_matched_probe unimpi)
+    if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+        add_mpi_test(test_mpi30_matched_probe test_mpi30_matched_probe 2)
+    endif()
 endif()
 
 # MPI-2 Fortran-status conversion test (Status_f2c/c2f). Requires >=2 ranks.
