@@ -36,6 +36,11 @@ typedef struct ompi_file_t* ompi_file_t;
 static void init_openmpi_error_codes(void) {
     /* OpenMPI error codes differ from MPICH standard */
     MPI_SUCCESS = 0;
+    /* OpenMPI uses MPI_ANY_SOURCE = -1 (MPICH-family use -2). Set it to this
+     * backend's value so wildcard-source operations always use the right
+     * sentinel regardless of the process-wide default. MPI_ANY_TAG = -1 is
+     * correct on all backends. */
+    MPI_ANY_SOURCE = -1;
     MPI_ERR_BUFFER = 1;
     MPI_ERR_COUNT = 2;
     MPI_ERR_TYPE = 3;

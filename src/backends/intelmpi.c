@@ -31,6 +31,11 @@ static void init_intelmpi_error_codes(void) {
     /* Intel MPI inherits MPICH public mpi.h error-class values.
      * These values may differ from other MPICH-based implementations. */
     MPI_SUCCESS = 0;
+    /* MPICH-family backends use MPI_ANY_SOURCE = -2 (OpenMPI uses -1). Sets
+     * must match the loaded backend or wildcard-source operations (Recv from
+     * MPI_ANY_SOURCE, Probe, Mprobe, ...) fail to match (MPI_MESSAGE_NO_PROC).
+     * MPI_ANY_TAG = -1 is correct on all backends. */
+    MPI_ANY_SOURCE = -2;
     MPI_ERR_BUFFER = 1;
     MPI_ERR_COUNT = 2;
     MPI_ERR_TYPE = 3;

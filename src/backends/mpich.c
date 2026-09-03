@@ -28,6 +28,12 @@ static int status_legacy_get_error(const MPI_Status *status, int *error) {
  */
 static void init_mpich_error_codes(void) {
     MPI_SUCCESS = 0;
+    /* MPICH-family backends use MPI_ANY_SOURCE = -2 (OpenMPI uses -1). UniMPI
+     * must set it to the loaded backend's value, otherwise wildcard-source
+     * operations (MPI_Recv from MPI_ANY_SOURCE, MPI_Probe, MPI_Mprobe, ...)
+     * treat -1 as a concrete rank and match no process (MPI_MESSAGE_NO_PROC).
+     * MPI_ANY_TAG = -1 is correct on all backends. */
+    MPI_ANY_SOURCE = -2;
     MPI_ERR_BUFFER = 1;
     MPI_ERR_COUNT = 2;
     MPI_ERR_TYPE = 3;

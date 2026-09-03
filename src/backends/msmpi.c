@@ -27,6 +27,11 @@ static int status_legacy_get_error(const MPI_Status *status, int *error) {
 static void init_msmpi_error_codes(void) {
     /* MS-MPI (based on MPICH) uses standard error class values */
     MPI_SUCCESS = 0;
+    /* MPICH-family backends use MPI_ANY_SOURCE = -2 (OpenMPI uses -1). Set it
+     * to the loaded backend's value or wildcard-source operations (Recv from
+     * MPI_ANY_SOURCE, Probe, Mprobe, ...) fail to match (MPI_MESSAGE_NO_PROC).
+     * MPI_ANY_TAG = -1 is correct on all backends. */
+    MPI_ANY_SOURCE = -2;
     MPI_ERR_BUFFER = 1;
     MPI_ERR_COUNT = 2;
     MPI_ERR_TYPE = 3;
