@@ -461,6 +461,13 @@ if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
     if(UNIMPI_REAL_MPI_TESTS_ENABLED)
         add_mpi_test(test_mpi30_matched_probe test_mpi30_matched_probe 2)
     endif()
+    # MPI-3.0 RMA atomic + nonblocking-request semantics (Fetch_and_op /
+    # Compare_and_swap / Get_accumulate / Rput / Rget / Raccumulate).
+    add_executable(test_mpi30_rma_atomic mpi/test_mpi30_rma_atomic.c)
+    target_link_libraries(test_mpi30_rma_atomic unimpi)
+    if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+        add_mpi_test(test_mpi30_rma_atomic test_mpi30_rma_atomic 2)
+    endif()
 endif()
 
 # MPI-2 Fortran-status conversion test (Status_f2c/c2f). Requires >=2 ranks.
