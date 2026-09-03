@@ -275,6 +275,14 @@ static int neighbor_degree(MPI_Comm comm, int *indegree, int *outdegree) {
         rc = unimpi.cartdim_get(comm, &ndims);
         if (rc != MPI_SUCCESS)
             return rc;
+        if (ndims <= 0) {
+            /* 0-dimensional cart (a Comm_dup-like communicator) has no
+             * neighbors; avoid a malloc(0) that may return NULL and be
+             * misreported as MPI_ERR_NO_MEM. */
+            *indegree = 0;
+            *outdegree = 0;
+            return MPI_SUCCESS;
+        }
         dims = malloc((size_t)ndims * sizeof(int));
         periods = malloc((size_t)ndims * sizeof(int));
         coords = malloc((size_t)ndims * sizeof(int));
