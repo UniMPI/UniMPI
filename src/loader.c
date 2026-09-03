@@ -7,8 +7,8 @@
 
 /* Backend definitions */
 const unimpi_backend_info_t unimpi_backends[UNIMPI_MAX_BACKENDS] = {
-    {UNIMPI_BACKEND_OPENMPI,   "openmpi",   "libmpi.so.40", NULL,         2},  /* Try .40 first, then .20 */
-    {UNIMPI_BACKEND_MPICH,     "mpich",     "libmpich.so",  "libmpi.so",  4},  /* Prefer libmpich.so; generic libmpi.so is alternatives-ambiguous */
+    {UNIMPI_BACKEND_OPENMPI,   "openmpi",   "libmpi.so.40", "libmpi.so.20", 2},  /* Try modern soname .40, then legacy .20 (OpenMPI 3.x) */
+    {UNIMPI_BACKEND_MPICH,     "mpich",     "libmpich.so",  NULL,         4},  /* Prefer libmpich.so; do NOT fall back to generic libmpi.so, which on Debian/Ubuntu resolves via alternatives to OpenMPI (libmpi.so.40) and would silently bind the wrong implementation */
     {UNIMPI_BACKEND_INTELMPI,  "intelmpi",  "libmpi.so",    NULL,         3},  /* Intel MPI uses libmpi.so */
     {UNIMPI_BACKEND_MSMPI,     "msmpi",     "msmpi.dll",    NULL,         5}   /* Windows only */
 };
