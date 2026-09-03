@@ -133,3 +133,28 @@ focused, cross-backend semantic coverage. Important examples include:
 
 Add or tighten a row only when a focused test demonstrates the behavior. See
 [TESTING.md](TESTING.md) for the required test layers.
+
+### MPI_Status field access
+
+`MPI_Status` is a 24-byte union whose member layout matches the active
+backend: OpenMPI fields at offset 0, legacy (MPICH / Intel-MPI / MS-MPI)
+fields at offset 8. The MPI C standard (through MPI-3.1) defines no accessor
+for `MPI_SOURCE` / `MPI_TAG` / `MPI_ERROR` (only count, via `MPI_Get_count`),
+so read these three through UniMPI's accessor function pointers — which use
+the standard MPI-4.0/5.0 names and signatures and are bound by each backend to
+its own layout:
+
+```c
+int src, tag, err, n;
+MPI_Status_get_source(&status, &src);   /* maps to unimpi.status_get_source */
+MPI_Status_get_tag(&status, &tag);      /* maps to unimpi.status_get_tag */
+MPI_Status_get_error(&status, &err);    /* maps to unimpi.status_get_error */
+n = -1;  MPI_Get_count(&status, MPI_INT, &n);   /* standard count accessor */
+```
+
+Direct `status.MPI_SOURCE`-style field access is **not layout-portable**
+across UniMPI backends and should be avoided in portable code.
+
+These accessors are the standard MPI-4.0 functions `MPI_Status_get_source` /
+`MPI_Status_get_tag` / `MPI_Status_get_error` (carried forward into
+MPI-5.0); UniMPI also exposes them on its MPI-2.2/3.x surface.

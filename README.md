@@ -143,6 +143,13 @@ unimpi.barrier(UNIMPI_COMM_WORLD);
 Call `unimpi_init`, `unimpi_init_thread`, or their standard-name equivalents
 before dereferencing runtime-populated vtable fields.
 
+To read the source / tag / error of an `MPI_Status`, use the standard-named
+accessors `MPI_Status_get_source` / `MPI_Status_get_tag` /
+`MPI_Status_get_error` (mapping to `unimpi.status_get_source` / `_tag` /
+`_error`). Do **not** read `status.MPI_SOURCE` directly: the status layout is
+backend-dependent and not portable. See [docs/API.md](docs/API.md) "Reading
+the status fields".
+
 ## Tests
 
 Run fake-backend unit tests without a real MPI installation:

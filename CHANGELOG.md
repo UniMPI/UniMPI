@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `attach`/`detach`), and `Comm_idup`, across the OpenMPI/MPICH/Intel-MPI/
   MS-MPI backends under the `UNIMPI_MPI_TARGET_VERSION>=3` gate, with an
   MPI-3.0 core integration test.
+- MPI_Status source/tag/error accessors: the MPI C standard (through 3.x)
+  exposes no accessor for these, so UniMPI adds per-backend function pointers
+  `unimpi.status_get_source/_tag/_error` under the standard MPI-4.0/5.0 names
+  `MPI_Status_get_source/_tag/_error` (returning an error code and writing the
+  field through an out parameter). Direct `status.MPI_SOURCE` reads are not
+  layout-portable across backends; see docs/API.md.
 
 ## [0.1.0-alpha] - 2026-08-29
 

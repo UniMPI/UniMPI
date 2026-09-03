@@ -3,8 +3,10 @@
 > 通过 `pdftotext` 从 MPI 官方标准报告（mpi22/mpi30/mpi31/mpi40/mpi50-report.pdf）提取。
 > - 函数：提取 C 绑定原型，过滤内部 `_c` 变体与回调类型（`tools/mpi_spec_extract.py`）。
 > - 类型：提取句柄类型与预定义数据类型（`tools/mpi_types_22.py`），标注引入版本。
-> 用作 UniMPI 后续 API 对齐的权威参照（例如：MPI 标准**没有** `MPI_Get_source/tag/error`；
-> MPI-5.0 才引入 `MPI_Status_get_source/_tag/_error` 访问器）。
+> 用作 UniMPI 后续 API 对齐的权威参照（例如：MPI 标准直到 3.x **没有**源/标签/错误访问器，
+> MPI-4.0 才引入标准 `MPI_Status_get_source/_tag/_error`（MPI-5.0 沿用之）；对 ≤3.x 目标面，
+> UniMPI 以相同命名与签名的访问器（映射到 `unimpi.status_get_source/_tag/_error`）提供等价物，
+> 见 docs/API.md "Reading the status fields"）。
 
 ## 各版本函数 / 类型总数
 

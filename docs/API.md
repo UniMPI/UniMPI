@@ -595,3 +595,32 @@ MPI_Finalize();
 ```
 
 See [BACKENDS.md](BACKENDS.md) for backend-specific information.
+
+### Reading the status fields (source / tag / error)
+
+`MPI_Status` is a 24-byte union whose member layout matches the active
+backend (OpenMPI fields at offset 0; legacy MPICH/Intel-MPI/MS-MPI fields at
+offset 8). The MPI C standard (through MPI-3.1) defines **no accessor** for
+`MPI_SOURCE` / `MPI_TAG` / `MPI_ERROR` — only count, via `MPI_Get_count` — so
+UniMPI exposes accessor function pointers bound by each backend to its own
+layout, using the standard names and signatures of the MPI-4.0/5.0 functions
+`MPI_Status_get_source` / `MPI_Status_get_tag` / `MPI_Status_get_error`
+(each returns an MPI error code and writes the field through its out
+parameter):
+
+```c
+int src, tag, err, n;
+MPI_Status_get_source(&status, &src);   /* == unimpi.status_get_source(&status, &src) */
+MPI_Status_get_tag(&status, &tag);      /* == unimpi.status_get_tag(&status, &tag) */
+MPI_Status_get_error(&status, &err);    /* == unimpi.status_get_error(&status, &err) */
+n = -1; MPI_Get_count(&status, MPI_INT, &n);  /* standard count accessor */
+```
+
+Pointers are the contract form (addressable via the `unimpi` vtable); the
+`MPI_Status_get_*` names are available under `UNIMPI_USE_STD_NAMES`.
+
+**Important — do not read `status.MPI_SOURCE` directly.** Because the status
+layout is backend-dependent, direct field access is not portable across
+UniMPI backends; always use these accessors. They are the standard MPI-4.0
+functions (carried forward into MPI-5.0); UniMPI exposes them on its
+MPI-2.2/3.x surface too.

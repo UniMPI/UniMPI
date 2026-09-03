@@ -94,6 +94,11 @@ These cases run across the platform/backend matrix described in
 Per-element status arrays from multi-request completion calls are adapted in
 place to the native 20-byte record stride, and `MPI_Get_count`/`MPI_Get_elements`
 are bound, so portable status access through the standard accessors is covered.
+For `MPI_SOURCE`/`MPI_TAG`/`MPI_ERROR`, read them via UniMPI's accessors
+(`MPI_Status_get_source`/`MPI_Status_get_tag`/`MPI_Status_get_error` or
+`unimpi.status_get_source`/`_tag`/`_error`), which are backend-layout aware;
+direct `status.MPI_SOURCE`-style reads are not portable (see docs/API.md and
+SUPPORT_MATRIX.md).
 
 ### Collectives
 
