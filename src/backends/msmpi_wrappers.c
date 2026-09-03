@@ -5,6 +5,7 @@
 #include "msmpi_wrappers.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* ---- Real backend function pointers ---- */
 int (*msmpi_waitall)(int, int*, MPI_Status*);
@@ -254,13 +255,88 @@ int msmpi_wrap_comm_spawn_multiple(int count, char *array_of_commands[],
 
 /* Neighbor collectives carry MPI_Datatype arrays whose length is the comm's
  * neighbor degree. Query indegree/outdegree via Dist_graph_neighbors_count
- * (the neighbor-collective contract requires a dist-graph or cart topology).
- * Send arrays are sized outdegree, recv arrays indegree. */
+ * (the neighbor-collective contract requires a dist-graph, cart, or graph
+ * topology). Send arrays are sized outdegree, recv arrays indegree. */
 static int neighbor_degree(MPI_Comm comm, int *indegree, int *outdegree) {
-    int weighted = 0;
-    if (unimpi.dist_graph_neighbors_count == NULL)
+    int topo_type = 0;
+    int rc;
+    if (unimpi.topo_test == NULL)
         return MPI_ERR_TOPOLOGY;
-    return unimpi.dist_graph_neighbors_count(comm, indegree, outdegree, &weighted);
+    rc = unimpi.topo_test(comm, &topo_type);
+    if (rc != MPI_SUCCESS)
+        return rc;
+
+    if (topo_type == UNIMPI_CART) {
+        /* Cartesian neighbor degree: sum of the two (+/-1) neighbors across
+         * each dimension, omitting 1-wide dims and the far side on
+         * non-periodic boundary ranks. Symmetric, so in == out. */
+        int ndims = 0, deg = 0;
+        int *dims = NULL, *periods = NULL, *coords = NULL;
+        if (unimpi.cartdim_get == NULL || unimpi.cart_get == NULL)
+            return MPI_ERR_TOPOLOGY;
+        rc = unimpi.cartdim_get(comm, &ndims);
+        if (rc != MPI_SUCCESS)
+            return rc;
+        dims = malloc((size_t)ndims * sizeof(int));
+        periods = malloc((size_t)ndims * sizeof(int));
+        coords = malloc((size_t)ndims * sizeof(int));
+        if (dims == NULL || periods == NULL || coords == NULL) {
+            free(dims); free(periods); free(coords);
+            return MPI_ERR_NO_MEM;
+        }
+        rc = unimpi.cart_get(comm, ndims, dims, periods, coords);
+        if (rc == MPI_SUCCESS) {
+            for (int i = 0; i < ndims; i++) {
+                if (dims[i] <= 1) continue;
+                if (periods[i]) {
+                    deg += 2;
+                } else {
+                    if (coords[i] > 0) deg += 1;
+                    if (coords[i] < dims[i] - 1) deg += 1;
+                }
+            }
+            *indegree = deg;
+            *outdegree = deg;
+        }
+        free(dims); free(periods); free(coords);
+        return rc;
+    }
+
+    if (topo_type == UNIMPI_GRAPH) {
+        /* Graph neighbor degree: index[rank] - index[rank-1] edges incident
+         * to this rank. Symmetric, so in == out. */
+        int nnodes = 0, nedges = 0, rank = 0, deg = 0;
+        int *index = NULL;
+        if (unimpi.graphdims_get == NULL || unimpi.graph_get == NULL ||
+            unimpi.comm_rank == NULL)
+            return MPI_ERR_TOPOLOGY;
+        rc = unimpi.graphdims_get(comm, &nnodes, &nedges);
+        if (rc != MPI_SUCCESS)
+            return rc;
+        index = malloc((size_t)nnodes * sizeof(int));
+        if (index == NULL)
+            return MPI_ERR_NO_MEM;
+        rc = unimpi.graph_get(comm, nnodes, nedges, index, NULL);
+        if (rc == MPI_SUCCESS)
+            rc = unimpi.comm_rank(comm, &rank);
+        if (rc == MPI_SUCCESS) {
+            deg = (rank == 0) ? index[0] : index[rank] - index[rank - 1];
+            *indegree = deg;
+            *outdegree = deg;
+        }
+        free(index);
+        return rc;
+    }
+
+    /* Dist-graph (or a communicator with no associated topology): the degree
+     * is given by Dist_graph_neighbors_count, which returns MPI_ERR_TOPOLOGY
+     * for communicators without a dist-graph topology. */
+    {
+        int weighted = 0;
+        if (unimpi.dist_graph_neighbors_count == NULL)
+            return MPI_ERR_TOPOLOGY;
+        return unimpi.dist_graph_neighbors_count(comm, indegree, outdegree, &weighted);
+    }
 }
 
 int msmpi_wrap_neighbor_alltoallw(const void *sendbuf, const int *sendcounts,
