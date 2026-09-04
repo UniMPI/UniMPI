@@ -39,6 +39,6 @@ extern int UNIMPI_T_VERBOSITY_USER_BASIC, UNIMPI_T_VERBOSITY_USER_DETAIL,
 /* MPI-T NULL handles */
 extern intptr_t UNIMPI_T_PVAR_HANDLE_NULL;
 extern intptr_t UNIMPI_T_CVAR_HANDLE_NULL;
-extern intptr_t UNIMPI_T_SESSION_NULL;
+extern intptr_t UNIMPI_T_PVAR_SESSION_NULL;
 #endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 #endif /* UNIMPI_MT_CONSTANTS_H */
