@@ -85,6 +85,16 @@ REGISTRY = {
         "win_attach", "win_detach", "win_shared_query", "win_flush_local_all",
         "win_get_info", "win_set_info",
     ],
+    "mpi_t_tools": [
+        "t_init_thread", "t_finalize",
+        "t_cvar_get_num", "t_cvar_get_index", "t_cvar_get_info",
+        "t_cvar_handle_alloc", "t_cvar_handle_free", "t_cvar_read",
+        "t_cvar_read_index", "t_cvar_write", "t_cvar_write_index",
+        "t_pvar_get_num", "t_pvar_get_index", "t_pvar_get_info",
+        "t_pvar_session_create", "t_pvar_session_free", "t_pvar_handle_alloc",
+        "t_pvar_handle_free", "t_pvar_start", "t_pvar_stop", "t_pvar_read",
+        "t_pvar_write", "t_pvar_readreset", "t_pvar_reset", "t_pvar_aggregate",
+    ],
 }
 
 # ---------------------------------------------------------------------------
@@ -92,13 +102,13 @@ REGISTRY = {
 #
 # This is the authoritative "what must the 3.0 surface expose" set, used by the
 # `mpi3` subcommand to mechanically reconcile the vtable against the standard.
-# It deliberately EXCLUDES:
-#   * the MPI_T tool interface (24 functions + 4 handle types) -- deferred to a
-#     separate stage;
-#   * the Fortran-2008 bindings (MPI_Status_f2f08/c2f08/f082f/f082c) -- they
-#     export no C symbol to bind and cannot live in the C vtable.
+# It deliberately EXCLUDES only the Fortran-2008 bindings
+# (MPI_Status_f2f08/c2f08/f082f/f082c) -- they export no C symbol to bind and
+# cannot live in the C vtable.
 # It INCLUDES the MPI-3.0 one-sided RMA expansion, nonblocking + neighbor
-# collectives, matched probe, _x large-count queries, and communicator helpers.
+# collectives, matched probe, _x large-count queries, communicator helpers, and
+# the MPI_T tool interface (t_* names; fields live in unimpi_mt.h, folded into
+# the reconcile set by run_check_mpi3).
 # Types (MPI_Count, MPI_Message) are not functions and are not listed here.
 # ---------------------------------------------------------------------------
 M30_CANONICAL = set("""
@@ -118,6 +128,12 @@ M30_CANONICAL = set("""
     comm_get_info comm_set_info
     get_elements_x status_set_elements_x type_get_extent_x
     type_get_true_extent_x type_size_x type_create_hindexed_block
+    t_init_thread t_finalize t_cvar_get_num t_cvar_get_index t_cvar_get_info
+    t_cvar_handle_alloc t_cvar_handle_free t_cvar_read t_cvar_read_index
+    t_cvar_write t_cvar_write_index t_pvar_get_num t_pvar_get_index
+    t_pvar_get_info t_pvar_session_create t_pvar_session_free
+    t_pvar_handle_alloc t_pvar_handle_free t_pvar_start t_pvar_stop
+    t_pvar_read t_pvar_write t_pvar_readreset t_pvar_reset t_pvar_aggregate
 """.split())
 
 FAILURES = []
@@ -390,6 +406,11 @@ def run_check_mpi3(args):
         fail("mpi3: vtable header not found: %s" % vtable_path)
         return
     all_fields = extract_all_fields(vtable_path)
+    # MPI-T tool-interface fields live in the separate unimpi_mt.h vtable; fold
+    # them into the reconcile set so mpi_t_tools drift is caught the same way.
+    mt_path = os.path.join(REPO_ROOT, "include", "unimpi_mt.h")
+    if os.path.isfile(mt_path):
+        all_fields |= extract_all_fields(mt_path)
 
     gated = set()
     for members in REGISTRY.values():
@@ -419,7 +440,7 @@ def run_check_mpi3(args):
         print("mpi3: MISSING from the vtable entirely (coverage gaps):")
         for f in sorted(missing):
             print("   - %s" % f)
-    print("mpi3: excluded by design -- MPI_T (24 + 4 types), status_f08 (4)")
+    print("mpi3: excluded by design -- status_f08 (4)")
 
     if missing or stray:
         print("mpi3: FAILED (%d coverage gap(s), %d registry stray(s))"

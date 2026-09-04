@@ -24,6 +24,10 @@ static void *p_rma_atomics = (void *)&unimpi.compare_and_swap;
 static void *p_rma_sync_3x = (void *)&unimpi.win_sync;
 static void *p_comm_join = (void *)&unimpi.comm_join;
 static void *p_op_commutative = (void *)&unimpi.op_commutative;
+/* MPI-T tool-interface vtable: none of these may exist at a 2.2 target. */
+static void *p_mt_init = (void *)&unimpi_mt.t_init_thread;
+static void *p_mt_cvar = (void *)&unimpi_mt.t_cvar_read;
+static void *p_mt_pvar = (void *)&unimpi_mt.t_pvar_aggregate;
 
 int main(void) {
     (void)p_matched_probe;
@@ -35,5 +39,8 @@ int main(void) {
     (void)p_rma_sync_3x;
     (void)p_comm_join;
     (void)p_op_commutative;
+    (void)p_mt_init;
+    (void)p_mt_cvar;
+    (void)p_mt_pvar;
     return 0;
 }

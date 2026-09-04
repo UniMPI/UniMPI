@@ -1057,8 +1057,9 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     UNIMPI_DIST_GRAPH = 3;
 
 #if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-T tools-interface bindings. MPI-3.0 is part of MS-MPI (>= 10);
-     * fall back to NULL for any symbol not exported. */
+    /* MPI-3.0 mpi_t_tools */
+    /* MPI-3.0 is part of MS-MPI (>= 10); fall back to NULL for any symbol
+     * not exported. */
     unimpi_mt.t_init_thread = (int (*)(int, int*))
         unimpi_platform_dlsym(handle, "MPI_T_init_thread");
     unimpi_mt.t_finalize = (int (*)(void))

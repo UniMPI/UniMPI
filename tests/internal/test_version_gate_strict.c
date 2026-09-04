@@ -30,6 +30,21 @@
 #ifdef MPI_Win_sync
 #error "MPI_Win_sync must be absent at target 2.2"
 #endif
+#ifdef MPI_T_init_thread
+#error "MPI_T_init_thread must be absent at target 2.2"
+#endif
+#ifdef MPI_T_cvar_get_num
+#error "MPI_T_cvar_get_num must be absent at target 2.2"
+#endif
+#ifdef MPI_T_pvar_session_create
+#error "MPI_T_pvar_session_create must be absent at target 2.2"
+#endif
+#ifdef MPI_T_BIND_NO_OBJECT
+#error "MPI_T_BIND_NO_OBJECT must be absent at target 2.2"
+#endif
+#ifdef MPI_T_ERR_MEMORY
+#error "MPI_T_ERR_MEMORY must be absent at target 2.2"
+#endif
 
 int main(void) {
     printf("STRICT_OK\n");

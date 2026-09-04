@@ -20,6 +20,7 @@ typedef int MPI_T_enum;             /* standard: int-valued enumeration */
  * two interfaces (see src/core.c unimpi_ensure_loaded / g_refcount). Both
  * vtables are filled by the same backend init for the same library handle. */
 #if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0 mpi_t_tools */
 typedef struct unimpi_mt_vtable {
     int (*t_init_thread)(int required, int *provided);
     int (*t_finalize)(void);

@@ -53,3 +53,8 @@ src/backends/intelmpi.c,win_dynamic,3,0
 src/backends/msmpi.c,neighbor_collectives,3,0
 src/backends/msmpi.c,large_count,3,0
 src/backends/msmpi.c,win_dynamic,3,0
+include/unimpi_mt.h,mpi_t_tools,3,0
+src/backends/openmpi.c,mpi_t_tools,3,0
+src/backends/mpich.c,mpi_t_tools,3,0
+src/backends/intelmpi.c,mpi_t_tools,3,0
+src/backends/msmpi.c,mpi_t_tools,3,0

@@ -25,6 +25,7 @@ set(OUT "${CMAKE_CURRENT_BINARY_DIR}/test_vtable_strict_probe.o")
 
 execute_process(
     COMMAND "${UNIMPI_C_COMPILER}"
+            "-DUNIMPI_USE_STD_NAMES"
             "-DUNIMPI_MPI_TARGET_VERSION=2"
             "-DUNIMPI_MPI_TARGET_SUBVERSION=2"
             "-I${UNIMPI_SOURCE_DIR}/include"

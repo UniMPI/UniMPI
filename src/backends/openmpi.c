@@ -1171,9 +1171,10 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     UNIMPI_DIST_GRAPH = 3;
 
 #if UNIMPI_MPI_AT_LEAST(3,0)
-    /* MPI-T tools-interface bindings. Fall back to NULL (whole slot stays
-     * NULL) for any symbol the backend does not export; the *_available()
-     * helper gates on that. Symbol spellings follow the backend mpi.h. */
+    /* MPI-3.0 mpi_t_tools */
+    /* Fall back to NULL (whole slot stays NULL) for any symbol the backend
+     * does not export; the *_available() helper gates on that. Symbol
+     * spellings follow the backend mpi.h. */
     unimpi_mt.t_init_thread = (int (*)(int, int*))
         unimpi_platform_dlsym(handle, "MPI_T_init_thread");
     unimpi_mt.t_finalize = (int (*)(void))
