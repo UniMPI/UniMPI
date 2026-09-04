@@ -103,6 +103,7 @@ standard rule is covered.
 | MPI I/O extensions | No | Yes | Yes | Yes | Yes | Positioned independent/collective/nonblocking round trips, metadata, sync and atomicity |
 | Examples | No | Smoke | Smoke | Smoke | Smoke | See `examples/README.md` for rank requirements |
 | Benchmarks | No | Smoke | Smoke | Smoke | Smoke | Execution only; no hard performance threshold |
+| MPI-T tools interface | No | Yes | Partial | Partial | Partial | Lifecycle, enum self-check, no-object pvar round trip, survival across `MPI_Finalize`; MPICH-family bind the standard 9/8-arg `get_info` signatures, OpenMPI is bridged from its legacy 13/10-arg signatures, MS-MPI degrades to NULL via `*_available()` |
 
 ## Explicitly not claimed as covered
 
@@ -126,8 +127,6 @@ focused, cross-backend semantic coverage. Important examples include:
   cases;
 - multithreaded concurrent initialization, finalization, and MPI calls;
 - fault tolerance, GPU-aware behavior, and vendor-specific extensions;
-- the MPI_T tool interface (24 functions + handle types), deferred to a
-  later stage;
 - the Fortran-2008 status binding (`MPI_Status_f2f08`/`c2f08`/`f082f`/`f082c`):
   F08-binding-only entry points that export no C symbol to bind.
 
@@ -174,6 +173,25 @@ to be confirmed by running the MS-MPI test suite on Windows
 backend matrix above — nonblocking collectives on MS-MPI export only the
 "documented nine-call subset" — which is why the NBC corner tests must gate on
 `nbc_available()`.
+
+### MPI-T tools interface lifecycle
+
+MPI-T is exposed through its own vtable — the global `unimpi_mt` — separate
+from the main `unimpi` dispatch table. Both are populated by the same backend
+initialization for the same library handle, and the tool interface keeps the
+backend library open with its own reference count. The practical consequence
+is that `MPI_T_*` calls stay usable **before `MPI_Init` and after
+`MPI_Finalize`** — the tool interface is intended for out-of-band inspection.
+Every `MPI_T_*` wrapper forces `unimpi_ensure_loaded()` before forwarding, so
+the interface is available on first use; `MPI_T_init_thread`/`MPI_T_finalize`
+acquire/release the tool-interface reference.
+
+Availability is self-gating: the `mpit_available()` helper in
+`tests/mpi/test_mpi30_t.c` checks the `t_init_thread`/`t_finalize`/
+`t_cvar_get_num`/`t_pvar_get_num` slots and skips the suite when a backend does
+not export MPI-T at all (MS-MPI). Backend-fill, not hardcoding, sets the
+MPI-T error codes and enumeration constants; a backend that exports no
+MPI-T leaves the slots `NULL` and the suite skips rather than failing.
 
 ### MPI_Status field access
 

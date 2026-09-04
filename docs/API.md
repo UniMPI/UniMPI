@@ -559,6 +559,60 @@ focused cross-backend test. Treat it as unverified.
 
 ---
 
+## MPI-T Tools Interface
+
+The MPI Tool Information Interface (MPI-T, `MPI_T_*`, MPI-3.0 cluster
+`mpi_t_tools`) lets a tool inspect and tune an MPI implementation out of band.
+UniMPI exposes it through a **separate vtable** — the global `unimpi_mt` —
+distinct from the main `unimpi` dispatch table. Use the standard `MPI_T_*`
+names (via `UNIMPI_USE_STD_NAMES`):
+
+```c
+#define UNIMPI_USE_STD_NAMES
+#include "unimpi.h"
+
+int provided;
+MPI_T_init_thread(MPI_THREAD_SINGLE, &provided);   /* maps to unimpi_mt.t_init_thread */
+int n;
+MPI_T_pvar_get_num(&n);                            /* maps to unimpi_mt.t_pvar_get_num */
+MPI_T_finalize();
+```
+
+**Coverage (25 functions).** `Init_thread`, `Finalize`, `Cvar_get_num`,
+`Cvar_get_index`, `Cvar_get_info`, `Cvar_handle_alloc`, `Cvar_handle_free`,
+`Cvar_read`, `Cvar_read_index`, `Cvar_write`, `Cvar_write_index`,
+`Pvar_get_num`, `Pvar_get_index`, `Pvar_get_info`, `Pvar_session_create`,
+`Pvar_session_free`, `Pvar_handle_alloc`, `Pvar_handle_free`, `Pvar_start`,
+`Pvar_stop`, `Pvar_read`, `Pvar_write`, `Pvar_readreset`, `Pvar_reset`,
+`Pvar_aggregate`. Each expands via `unimpi_std_macros.h` to
+`unimpi_mpit_<bare>` and forwards to `unimpi_mt.t_<bare>`; the `t_` prefix
+keeps the tool vtable's fields from colliding with the main `unimpi.*` ones.
+
+**Backend-fill, not hardcoding.** MPI-T error codes (`MPI_T_ERR_*`) and
+enumeration constants (`MPI_T_BIND_*`, `MPI_T_SCOPE_*`,
+`MPI_T_VERBOSITY_*`, `MPI_T_PVAR_CLASS_*`, `UNIMPI_T_*_NULL`) are filled per
+backend from its own ABI. MPICH-family expose the canonical MPI-3.0 9/8-arg
+`Cvar_get_info`/`Pvar_get_info` signatures; OpenMPI is adapted through a
+bridge wrapper from its legacy 13/10-arg signatures. A backend that exports
+no MPI-T (e.g. MS-MPI) simply leaves the slots `NULL`.
+
+**Independent lifecycle.** Each `MPI_T_*` wrapper forces
+`unimpi_ensure_loaded()` before forwarding, so the interface is available on
+first use. The backend library's `dlclose` is reference-counted across the
+main and tool vtables, so `MPI_T_*` stays usable **after `MPI_Finalize`**
+(targeted by `MPI_T_init_thread`/`MPI_T_finalize`, which acquire/release the
+tool-interface reference). This matches the standard's intent that the tool
+interface outlives the MPI session.
+
+**Degradation.** The integration suite (`tests/mpi/test_mpi30_t.c`) gates on
+an `mpit_available()` helper that checks the `t_init_thread`/`t_finalize`/
+`t_cvar_get_num`/`t_pvar_get_num` slots; a backend exposing none of them
+skips the suite. Because the macro layer is a direct vtable call, application
+code must check a slot (or a helper) before calling an MPI-T entry point on a
+degrading backend, exactly as with any other missing symbol.
+
+---
+
 ## Error Codes
 
 | Code | Value | Description |
