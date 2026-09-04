@@ -25,6 +25,57 @@ static int status_openmpi_get_error(const MPI_Status *status, int *error) {
     return MPI_SUCCESS;
 }
 
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* OpenMPI's MPI-2.2-era tools interface does not use the MPI-3.0 standard
+ * signatures: MPI_T_cvar_get_info takes 10 args and MPI_T_pvar_get_info takes
+ * 13 (no cvar_handle/var_extra, extra desc/bind/readonly/continuous/atomic
+ * outputs, and a different argument order). The MT vtable exposes the
+ * MPI-3.0 canonical 9/8-arg slots, so bridge the two here and drop the outputs
+ * the canonical signature has no carrier for (cvar_handle, binding, var_extra).
+ * The bound PMPI_* variants are resolved via the backend handle below. */
+static int (*ompi_t_cvar_get_info_native)(int, char*, int*, int*, MPI_Datatype*,
+    MPI_T_enum*, char*, int*, int*, int*) = NULL;
+static int (*ompi_t_pvar_get_info_native)(int, char*, int*, int*, int*,
+    MPI_Datatype*, MPI_T_enum*, char*, int*, int*, int*, int*, int*) = NULL;
+
+static int ompi_bridge_cvar_get_info(int cvar_index, char *name, int *name_len,
+    MPI_Datatype *datatype, MPI_T_enum *enumtype, MPI_T_cvar_handle *cvar_handle,
+    int *verbosity, int *scope, void *var_extra) {
+    int op_verb = 0, op_scope = 0, op_bind = 0, op_desc_len = 256;
+    char op_desc[256] = {0};
+    int rc = ompi_t_cvar_get_info_native(cvar_index, name, name_len,
+        &op_verb, datatype, enumtype, op_desc, &op_desc_len,
+        &op_bind, &op_scope);
+    if (rc == 0) {
+        if (verbosity) *verbosity = op_verb;
+        if (scope) *scope = op_scope;
+    }
+    if (cvar_handle) *cvar_handle = 0;
+    (void)var_extra;
+    return rc;
+}
+
+static int ompi_bridge_pvar_get_info(int pvar_index, char *name, int *name_len,
+    MPI_T_enum *enumtype, MPI_T_pvar_session *binding, int *verbosity,
+    int *var_class, void *var_extra) {
+    int op_verb = 0, op_vclass = 0, op_bind = 0, op_desc_len = 0;
+    int op_ro = 0, op_cont = 0, op_atomic = 0;
+    MPI_Datatype op_dt = 0;
+    char op_desc[256] = {0};
+    int rc = ompi_t_pvar_get_info_native(pvar_index, name, name_len,
+        &op_verb, &op_vclass,
+        &op_dt, enumtype, op_desc, &op_desc_len, &op_bind,
+        &op_ro, &op_cont, &op_atomic);
+    if (rc == 0) {
+        if (verbosity) *verbosity = op_verb;
+        if (var_class) *var_class = op_vclass;
+    }
+    if (binding) *binding = 0;
+    (void)var_extra;
+    return rc;
+}
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
+
 /* OpenMPI uses pointers for all opaque types */
 typedef struct ompi_communicator_t* ompi_comm_t;
 typedef struct ompi_datatype_t* ompi_datatype_t;
@@ -1183,10 +1234,12 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_T_cvar_get_num");
     unimpi_mt.t_cvar_get_index = (int (*)(const char*, int*))
         unimpi_platform_dlsym(handle, "MPI_T_cvar_get_index");
+    ompi_t_cvar_get_info_native = (int (*)(int, char*, int*, int*, MPI_Datatype*,
+        MPI_T_enum*, char*, int*, int*, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_get_info");
     unimpi_mt.t_cvar_get_info = (int (*)(int, char*, int*, MPI_Datatype*,
                                          MPI_T_enum*, MPI_T_cvar_handle*,
-                                         int*, int*, void*))
-        unimpi_platform_dlsym(handle, "MPI_T_cvar_get_info");
+                                         int*, int*, void*))ompi_bridge_cvar_get_info;
     unimpi_mt.t_cvar_handle_alloc = (int (*)(int, void*, MPI_T_cvar_handle*, int*))
         unimpi_platform_dlsym(handle, "MPI_T_cvar_handle_alloc");
     unimpi_mt.t_cvar_handle_free = (int (*)(MPI_T_cvar_handle*))
@@ -1203,9 +1256,11 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_T_pvar_get_num");
     unimpi_mt.t_pvar_get_index = (int (*)(const char*, int, int*))
         unimpi_platform_dlsym(handle, "MPI_T_pvar_get_index");
-    unimpi_mt.t_pvar_get_info = (int (*)(int, char*, int*, MPI_T_enum*,
-                                         MPI_T_pvar_session*, int*, int*, void*))
+    ompi_t_pvar_get_info_native = (int (*)(int, char*, int*, int*, int*,
+        MPI_Datatype*, MPI_T_enum*, char*, int*, int*, int*, int*, int*))
         unimpi_platform_dlsym(handle, "MPI_T_pvar_get_info");
+    unimpi_mt.t_pvar_get_info = (int (*)(int, char*, int*, MPI_T_enum*,
+                                         MPI_T_pvar_session*, int*, int*, void*))ompi_bridge_pvar_get_info;
     unimpi_mt.t_pvar_session_create = (int (*)(MPI_T_pvar_session*))
         unimpi_platform_dlsym(handle, "MPI_T_pvar_session_create");
     unimpi_mt.t_pvar_session_free = (int (*)(MPI_T_pvar_session*))
