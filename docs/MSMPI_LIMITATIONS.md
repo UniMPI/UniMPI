@@ -108,6 +108,34 @@ MS-MPI SDK 头文件 (`mpi.h`) 中**声明**了这些函数：
 
 但**运行时**可能返回错误码或无法正常工作，因为底层缺少完整的支持基础设施（如名称服务守护进程）。
 
+## MPI-3.0 缺符号降级
+
+除了动态进程等显式 stub(见上),MS-MPI 还有一类更普遍的降级问题:**部分 MPI-3.0 新增符号在 `msmpi.dll` 中不存在**,导致 uniMPI 跳转表对应字段为 `NULL`。
+
+### uniMPI 的降级路径
+
+1. **落地为 NULL**:`src/backends/msmpi.c` 对每个符号直接 `dlsym`;`msmpi.dll` 缺少时字段保持 `NULL`,无全局失败、无按符号 stub。
+2. **宏层不拦截 NULL**:标准宏 `MPI_Mprobe` / `MPI_Iallreduce` / `MPI_Fetch_and_op` 等直接展开为 `unimpi.<field>`;字段为 NULL 时调用即空指针崩溃(零开销设计,宏层刻意不加运行时分支)。
+3. **调用方/测试负责降级**:先检测 `unimpi.<fn> != NULL`(或测试的 `*_available()` 辅助),再调用;缺失则优雅跳过。
+
+```c
+if (unimpi.fetch_and_op != NULL) {
+    MPI_Fetch_and_op(...);   /* 安全,符号存在 */
+}
+```
+
+MPI-3.0 测试套件已统一采用该模式并降级为文档化跳过:
+
+| 测试 | 辅助函数 | 检查的字段 |
+|---|---|---|
+| `test_mpi30_collective_corner.c` | `nbc_available` | `ibcast`/`igather`/`iscatter`/`iallreduce` |
+| `test_mpi30_matched_probe.c` | `matched_probe_available` | `mprobe` |
+| `test_mpi30_rma_atomic.c` | `atomics_available` / `request_rma_available` | `fetch_and_op`/`compare_and_swap`/`get_accumulate`/`rput`/`rget`/`raccumulate` |
+
+### 审计状态
+
+对照 `tools/mpi_version_gate.py` 的 `M30_CANONICAL`(MPI-3.0 新增符号全集)静态核查:每一簇在 `src/backends/msmpi.c` 均有 `dlsym` 落地,故 MS-MPI 缺失者一律落到 NULL 并被上述模式覆盖。**确切**的逐符号缺失清单无法在 Linux 主机上实测(无法加载 `msmpi.dll`),属静态核查 + 降级契约;需在 Windows 上运行 MS-MPI 测试套件(`test_msmpi_compatibility.bat`)做最终确认。已知的窄子集:非阻塞集合在 MS-MPI 上仅有文档记录的 9 个,故其 corner 测试必须以 `nbc_available()` 门控。
+
 ## 建议
 
 ### 对于 unimpi 用户

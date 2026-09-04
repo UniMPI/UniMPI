@@ -134,6 +134,47 @@ focused, cross-backend semantic coverage. Important examples include:
 Add or tighten a row only when a focused test demonstrates the behavior. See
 [TESTING.md](TESTING.md) for the required test layers.
 
+## Missing-symbol degradation (MS-MPI)
+
+MS-MPI is a Microsoft port of an older MPICH lineage, so it does not export
+every MPI-3.0 symbol that UniMPI's dispatch table can hold. The degradation
+path is uniform and must be understood when writing MS-MPI-portable code:
+
+1. **Landing on NULL is implicit.** Each backend binding assigns a vtable slot
+   directly from `unimpi_platform_dlsym`. When `msmpi.dll` lacks the symbol the
+   slot is simply left as `NULL` — there is no per-symbol stub and no global
+   failure.
+2. **The standard macros do not intercept a NULL slot.** `MPI_Mprobe`,
+   `MPI_Iallreduce`, `MPI_Fetch_and_op`, etc. expand to `unimpi.<field>`, so
+   calling one that is `NULL` is calling through a null pointer — a crash, not
+   an error return. There is deliberately no runtime branch in the macro layer
+   (zero-overhead design).
+3. **The caller (or the test) degrades by checking the slot first:**
+
+   ```c
+   if (unimpi.fetch_and_op != NULL) {        /* or a helper like *_available() */
+       /* MPI_Fetch_and_op is safe to call */
+   }
+   ```
+
+   The MPI-3.0 test suites follow this pattern via small availability helpers
+   and degrade to a documented skip when a slot is absent: nonblocking
+   collectives (`nbc_available`, `test_mpi30_collective_corner.c`), matched
+   probe (`matched_probe_available`, `test_mpi30_matched_probe.c`), and RMA
+   atomics/requests (`atomics_available` / `request_rma_available`,
+   `test_mpi30_rma_atomic.c`).
+
+Static audit status (per MPI-3.0 canonical cluster from `tools/mpi_version_gate.py`
+`M30_CANONICAL`): every cluster is bound through `dlsym` in `src/backends/msmpi.c`,
+so any that MS-MPI lacks degrades to a NULL slot covered by the pattern above.
+The **exact** per-symbol export set of a given `msmpi.dll` cannot be established
+on a Linux host; it is a static audit plus this documented degradation contract,
+to be confirmed by running the MS-MPI test suite on Windows
+(`test_msmpi_compatibility.bat`). One narrow subset is already documented in the
+backend matrix above — nonblocking collectives on MS-MPI export only the
+"documented nine-call subset" — which is why the NBC corner tests must gate on
+`nbc_available()`.
+
 ### MPI_Status field access
 
 `MPI_Status` is a 24-byte union whose member layout matches the active
