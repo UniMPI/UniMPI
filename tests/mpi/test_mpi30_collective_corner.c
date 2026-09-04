@@ -25,6 +25,17 @@
         return 1; \
     } } while (0)
 
+/* Every sub-test below drives a nonblocking collective, so they all depend on
+ * the same minimal set of vtable slots. MS-MPI, in particular, exports only a
+ * documented subset of the nonblocking collectives (SUPPORT_MATRIX: nine of
+ * seventeen); when a needed slot is absent it lands as NULL and the whole
+ * family must degrade to a documented skip rather than calling a NULL pointer,
+ * matching the matched-probe and RMA-atomic suites. */
+static int nbc_available(void) {
+    return unimpi.ibcast != NULL && unimpi.igather != NULL &&
+           unimpi.iscatter != NULL && unimpi.iallreduce != NULL;
+}
+
 /* In-place Iallreduce: every rank's buffer holds its rank+1 and the in-place
  * reduce-over-self must yield the sum 1+2+...+size on every rank. This is the
  * core in-place semantic -- no separate receive buffer is supplied, so the
@@ -160,6 +171,11 @@ int main(int argc, char **argv) {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     printf("=== MPI-3.0 nonblocking-collective corner tests ===\n");
+    if (!nbc_available()) {
+        if (rank == 0) printf("  nonblocking collectives unavailable; skip\n");
+        MPI_Finalize();
+        return 0;
+    }
     if (test_inplace_iallreduce(MPI_COMM_WORLD)) goto fail;
     if (test_inplace_igather(MPI_COMM_WORLD)) goto fail;
     if (test_inplace_iscatter(MPI_COMM_WORLD)) goto fail;
