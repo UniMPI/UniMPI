@@ -885,4 +885,10 @@ void unimpi_vtable_cleanup(void);
 /* Get current backend type */
 unimpi_backend_type_t unimpi_get_backend_type(void);
 
+/* Idempotent backend loading: dlopen the backend once and fill BOTH the main
+ * unimpi_vtable_t and the MPI-T unimpi_mt_vtable_t (when enabled) for the same
+ * loaded library handle. Safe to call before MPI_Init (MPI-T) and re-enterable.
+ * Declared ungated: this is the single load path used by both interfaces. */
+int unimpi_ensure_loaded(void);
+
 #endif /* UNIMPI_VTABLE_H */

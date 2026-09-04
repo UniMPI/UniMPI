@@ -86,6 +86,10 @@ UNIMPI_API int unimpi_print_backend_info(void);
 
 /* Optional standard MPI macros */
 #ifdef UNIMPI_USE_STD_NAMES
+/* MPI-T tool-interface types/global and backend-filled constants, plus the
+ * MPI_T_* std-name mappings in unimpi_std_macros.h. */
+#include "unimpi_mt.h"
+#include "unimpi_mt_constants.h"
 #include "unimpi_std_macros.h"
 #endif
 

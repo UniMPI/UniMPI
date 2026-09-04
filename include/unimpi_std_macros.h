@@ -619,4 +619,109 @@
 #define MPI_Status_set_elements_x unimpi.status_set_elements_x
 #endif
 
+/* ============================================================
+ * MPI-T tools interface (MPI-3.0)
+ * ============================================================
+ * Function macros map the plain MPI_T_* forwards onto the unimpi_mt.t_*
+ * vtable members; only the lifecycle pair (init_thread/finalize) is wrapped
+ * in src/mpit.c because those carry ensure_loaded/refcount state. Enumeration
+ * macros map the backend-filled UNIMPI_T_* externs (unimpi_mt_constants.h) to
+ * the standard MPI_T_* names. MPI_T_ERR_* error codes are already exposed
+ * under their standard names in unimpi_errors.h, so they need no alias here.
+ * Everything is gated behind #if so target 2 removes the whole MPI-T surface.
+ * ============================================================ */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-T lifecycle */
+#define MPI_T_init_thread     unimpi_mpit_init_thread
+#define MPI_T_finalize        unimpi_mpit_finalize
+
+/* MPI-T control variables. These are pure forwards with no life-cycle state,
+ * so they map straight onto the unimpi_mt vtable members -- the same
+ * zero-cost shape as the main vtable (MPI_Send -> unimpi.send). */
+#define MPI_T_cvar_get_num          unimpi_mt.t_cvar_get_num
+#define MPI_T_cvar_get_index        unimpi_mt.t_cvar_get_index
+#define MPI_T_cvar_get_info         unimpi_mt.t_cvar_get_info
+#define MPI_T_cvar_handle_alloc     unimpi_mt.t_cvar_handle_alloc
+#define MPI_T_cvar_handle_free      unimpi_mt.t_cvar_handle_free
+#define MPI_T_cvar_read             unimpi_mt.t_cvar_read
+#define MPI_T_cvar_read_index       unimpi_mt.t_cvar_read_index
+#define MPI_T_cvar_write            unimpi_mt.t_cvar_write
+#define MPI_T_cvar_write_index      unimpi_mt.t_cvar_write_index
+
+/* MPI-T performance variables (same direct vtable mapping) */
+#define MPI_T_pvar_get_num          unimpi_mt.t_pvar_get_num
+#define MPI_T_pvar_get_index        unimpi_mt.t_pvar_get_index
+#define MPI_T_pvar_get_info         unimpi_mt.t_pvar_get_info
+#define MPI_T_pvar_session_create   unimpi_mt.t_pvar_session_create
+#define MPI_T_pvar_session_free     unimpi_mt.t_pvar_session_free
+#define MPI_T_pvar_handle_alloc     unimpi_mt.t_pvar_handle_alloc
+#define MPI_T_pvar_handle_free      unimpi_mt.t_pvar_handle_free
+#define MPI_T_pvar_start            unimpi_mt.t_pvar_start
+#define MPI_T_pvar_stop             unimpi_mt.t_pvar_stop
+#define MPI_T_pvar_read             unimpi_mt.t_pvar_read
+#define MPI_T_pvar_write            unimpi_mt.t_pvar_write
+#define MPI_T_pvar_readreset        unimpi_mt.t_pvar_readreset
+#define MPI_T_pvar_reset            unimpi_mt.t_pvar_reset
+#define MPI_T_pvar_aggregate        unimpi_mt.t_pvar_aggregate
+
+/* MPI-T pvar classes */
+#define MPI_T_PVAR_CLASS_STATE          UNIMPI_T_PVAR_CLASS_STATE
+#define MPI_T_PVAR_CLASS_LEVEL          UNIMPI_T_PVAR_CLASS_LEVEL
+#define MPI_T_PVAR_CLASS_SIZE           UNIMPI_T_PVAR_CLASS_SIZE
+#define MPI_T_PVAR_CLASS_PERCENTAGE     UNIMPI_T_PVAR_CLASS_PERCENTAGE
+#define MPI_T_PVAR_CLASS_HIGHWATERMARK  UNIMPI_T_PVAR_CLASS_HIGHWATERMARK
+#define MPI_T_PVAR_CLASS_LOWWATERMARK   UNIMPI_T_PVAR_CLASS_LOWWATERMARK
+#define MPI_T_PVAR_CLASS_COUNTER        UNIMPI_T_PVAR_CLASS_COUNTER
+#define MPI_T_PVAR_CLASS_AGGREGATE      UNIMPI_T_PVAR_CLASS_AGGREGATE
+#define MPI_T_PVAR_CLASS_TIMER          UNIMPI_T_PVAR_CLASS_TIMER
+#define MPI_T_PVAR_CLASS_GENERIC        UNIMPI_T_PVAR_CLASS_GENERIC
+#define MPI_T_PVAR_CLASS_INVALID        UNIMPI_T_PVAR_CLASS_INVALID
+
+/* MPI-T object bindings */
+#define MPI_T_BIND_NO_OBJECT        UNIMPI_T_BIND_NO_OBJECT
+#define MPI_T_BIND_MPI_COMM         UNIMPI_T_BIND_MPI_COMM
+#define MPI_T_BIND_MPI_DATATYPE     UNIMPI_T_BIND_MPI_DATATYPE
+#define MPI_T_BIND_MPI_ERRHANDLER   UNIMPI_T_BIND_MPI_ERRHANDLER
+#define MPI_T_BIND_MPI_FILE         UNIMPI_T_BIND_MPI_FILE
+#define MPI_T_BIND_MPI_GROUP        UNIMPI_T_BIND_MPI_GROUP
+#define MPI_T_BIND_MPI_OP           UNIMPI_T_BIND_MPI_OP
+#define MPI_T_BIND_MPI_REQUEST      UNIMPI_T_BIND_MPI_REQUEST
+#define MPI_T_BIND_MPI_WIN          UNIMPI_T_BIND_MPI_WIN
+#define MPI_T_BIND_MPI_MESSAGE      UNIMPI_T_BIND_MPI_MESSAGE
+#define MPI_T_BIND_MPI_INFO         UNIMPI_T_BIND_MPI_INFO
+#define MPI_T_BIND_MPI_SESSION      UNIMPI_T_BIND_MPI_SESSION
+#define MPI_T_BIND_INVALID          UNIMPI_T_BIND_INVALID
+
+/* MPI-T scopes */
+#define MPI_T_SCOPE_CONSTANT        UNIMPI_T_SCOPE_CONSTANT
+#define MPI_T_SCOPE_READONLY        UNIMPI_T_SCOPE_READONLY
+#define MPI_T_SCOPE_LOCAL           UNIMPI_T_SCOPE_LOCAL
+#define MPI_T_SCOPE_GROUP           UNIMPI_T_SCOPE_GROUP
+#define MPI_T_SCOPE_GROUP_EQ        UNIMPI_T_SCOPE_GROUP_EQ
+#define MPI_T_SCOPE_ALL             UNIMPI_T_SCOPE_ALL
+#define MPI_T_SCOPE_ALL_EQ          UNIMPI_T_SCOPE_ALL_EQ
+#define MPI_T_SCOPE_INVALID         UNIMPI_T_SCOPE_INVALID
+
+/* MPI-T sources */
+#define MPI_T_SOURCE_ORDINARY       UNIMPI_T_SOURCE_ORDINARY
+#define MPI_T_SOURCE_DISTRIBUTED    UNIMPI_T_SOURCE_DISTRIBUTED
+
+/* MPI-T verbosity levels */
+#define MPI_T_VERBOSITY_USER_BASIC      UNIMPI_T_VERBOSITY_USER_BASIC
+#define MPI_T_VERBOSITY_USER_DETAIL     UNIMPI_T_VERBOSITY_USER_DETAIL
+#define MPI_T_VERBOSITY_USER_ALL        UNIMPI_T_VERBOSITY_USER_ALL
+#define MPI_T_VERBOSITY_TUNER_BASIC     UNIMPI_T_VERBOSITY_TUNER_BASIC
+#define MPI_T_VERBOSITY_TUNER_DETAIL    UNIMPI_T_VERBOSITY_TUNER_DETAIL
+#define MPI_T_VERBOSITY_TUNER_ALL       UNIMPI_T_VERBOSITY_TUNER_ALL
+#define MPI_T_VERBOSITY_MPIDEV_BASIC    UNIMPI_T_VERBOSITY_MPIDEV_BASIC
+#define MPI_T_VERBOSITY_MPIDEV_DETAIL   UNIMPI_T_VERBOSITY_MPIDEV_DETAIL
+#define MPI_T_VERBOSITY_MPIDEV_ALL      UNIMPI_T_VERBOSITY_MPIDEV_ALL
+#define MPI_T_VERBOSITY_INVALID         UNIMPI_T_VERBOSITY_INVALID
+
+/* MPI-T NULL handles */
+#define MPI_T_PVAR_HANDLE_NULL      UNIMPI_T_PVAR_HANDLE_NULL
+#define MPI_T_CVAR_HANDLE_NULL      UNIMPI_T_CVAR_HANDLE_NULL
+#define MPI_T_SESSION_NULL          UNIMPI_T_SESSION_NULL
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
+
 #endif /* UNIMPI_STD_MACROS_H */

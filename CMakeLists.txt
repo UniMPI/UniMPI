@@ -66,6 +66,9 @@ set(UNIMPI_SOURCES
     src/vtable.c
     src/error.c
     src/predef_attr.c
+    src/mt_globals.c
+    src/mp_constants.c
+    src/mpit.c
 )
 
 if(UNIMPI_PLATFORM_POSIX)

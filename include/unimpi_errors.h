@@ -163,4 +163,27 @@ extern int MPI_MAX_OBJECT_NAME;
 extern int MPI_MAX_PORT_NAME;
 extern int MPI_MAX_DATAREP_STRING;
 
+/* MPI-T tools-interface error codes. Like all MPI_ERR_* above, these are
+ * backend-filled externs: the numeric values differ per implementation
+ * (e.g. MPI_T_ERR_MEMORY is 54 on OpenMPI but 59 on the MPICH family), so none
+ * may be hardcoded. Filled by each backend at init. */
+extern int MPI_T_ERR_MEMORY;
+extern int MPI_T_ERR_NOT_INITIALIZED;
+extern int MPI_T_ERR_CANNOT_INIT;
+extern int MPI_T_ERR_NOT_SUPPORTED;
+extern int MPI_T_ERR_INVALID_INDEX;
+extern int MPI_T_ERR_INVALID_ITEM;
+extern int MPI_T_ERR_INVALID_HANDLE;
+extern int MPI_T_ERR_OUT_OF_HANDLES;
+extern int MPI_T_ERR_OUT_OF_SESSIONS;
+extern int MPI_T_ERR_INVALID_SESSION;
+extern int MPI_T_ERR_CVAR_SET_NOT_NOW;
+extern int MPI_T_ERR_CVAR_SET_NEVER;
+extern int MPI_T_ERR_PVAR_NO_STARTSTOP;
+extern int MPI_T_ERR_PVAR_NO_WRITE;
+extern int MPI_T_ERR_PVAR_NO_ATOMIC;
+extern int MPI_T_ERR_INVALID;
+extern int MPI_T_ERR_INVALID_NAME;
+extern int MPI_T_ERR_INVALID_ENUM;
+
 #endif /* UNIMPI_ERRORS_H */

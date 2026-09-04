@@ -32,6 +32,25 @@ static unimpi_backend_identity_t g_backend_identity = {
 };
 static unimpi_lib_handle_t g_handle = NULL;
 
+/* Reference count for the loaded backend library. Both the MPI main interface
+ * (unimpi_init / init_thread) and the MPI-T tools interface (unimpi_mpit_init_thread)
+ * hold one reference once loaded. The library is dlclose'd only when the count
+ * reaches zero -- i.e. only after BOTH interfaces have finalized -- so MPI_T_*
+ * stays callable after MPI_Finalize (its independent lifecycle). */
+static int g_refcount = 0;
+
+/* MPI-T independent interface init state; separate from g_state so that
+ * MPI_T_* remains usable before MPI_Init and after MPI_Finalize. Only the
+ * MPI-T helpers reference it, so it is gated with them. */
+#if UNIMPI_MPI_AT_LEAST(3,0)
+static int g_mpit_inited = 0;
+#endif
+
+/* Set once the backend library is dlopen'd and BOTH vtables are filled, so
+ * unimpi_ensure_loaded() is idempotent. Cleared whenever the library is
+ * unloaded. */
+static int g_backend_loaded = 0;
+
 /* Version info cache */
 static int g_mpi_version = UNIMPI_MPI_VERSION;
 static int g_mpi_subversion = UNIMPI_MPI_SUBVERSION;
@@ -109,37 +128,66 @@ static int check_can_initialize(void) {
     }
 }
 
-/* Internal initialization function with thread support */
-static int initialize_backend(int *argc, char ***argv,
-                               int thread_mode, int required_level, int *provided_level) {
+/* Idempotently ensure the backend library is loaded and BOTH the main
+ * unimpi_vtable_t and (at target >= 3.0) the MPI-T unimpi_mt_vtable_t are
+ * filled for the SAME loaded handle. Safe to call before MPI_Init (the MPI-T
+ * independent lifecycle). Deliberately not atomic: the underlying g_state
+ * machine carries the same single-threaded assumptions as the rest of the
+ * library, and MPI_Init/MPI_T_init_thread are not certified concurrent (mirror
+ * of the pre-existing MPI_Init double-init race; see design doc). */
+int unimpi_ensure_loaded(void) {
     const char *lib_path;
     int ret;
+
+    if (g_backend_loaded) {
+        return UNIMPI_OK;
+    }
 
     /* Detect backend */
     ret = unimpi_loader_detect_backend(&lib_path);
     if (ret != UNIMPI_OK) {
-        g_state = UNIMPI_STATE_INIT_FAILED;
         return ret;
     }
 
     /* Load backend library */
     ret = unimpi_loader_load(lib_path, &g_handle);
     if (ret != UNIMPI_OK) {
-        g_state = UNIMPI_STATE_INIT_FAILED;
         return ret;
     }
 
-    /* Initialize vtable */
+    /* Initialize vtables */
     ret = unimpi_vtable_init(g_handle);
     if (ret != UNIMPI_OK) {
         unimpi_loader_unload(g_handle);
         g_handle = NULL;
-        g_state = UNIMPI_STATE_INIT_FAILED;
         return ret;
     }
 
     /* Save backend identity */
     save_backend_identity(unimpi_get_backend_type(), lib_path);
+    g_backend_loaded = 1;
+    return UNIMPI_OK;
+}
+
+/* Internal initialization function with thread support */
+static int initialize_backend(int *argc, char ***argv,
+                               int thread_mode, int required_level, int *provided_level) {
+    int ret;
+
+    /* Ensure the backend library is loaded and both vtables are filled
+     * (idempotent: reuses the handle if already loaded). This is the shared
+     * load path used by the MPI interface; MPI_T_init_thread calls
+     * unimpi_ensure_loaded() directly via src/mpit.c. */
+    ret = unimpi_ensure_loaded();
+    if (ret != UNIMPI_OK) {
+        g_state = UNIMPI_STATE_INIT_FAILED;
+        return ret;
+    }
+
+    /* The MPI interface holds one reference to the backend library from here
+     * on; it is released in unimpi_finalize. Release happens before returning
+     * on the MPI_Init failure path below. */
+    g_refcount++;
 
     /* Call MPI_Init or MPI_Init_thread through vtable */
     if (thread_mode && unimpi.init_thread) {
@@ -153,8 +201,12 @@ static int initialize_backend(int *argc, char ***argv,
 
     if (ret != 0) {
         unimpi_vtable_cleanup();
-        unimpi_loader_unload(g_handle);
-        g_handle = NULL;
+        g_refcount--;
+        if (g_refcount <= 0 && g_handle) {
+            unimpi_loader_unload(g_handle);
+            g_handle = NULL;
+            g_backend_loaded = 0;
+        }
         clear_backend_identity();
         g_state = UNIMPI_STATE_INIT_FAILED;
         return UNIMPI_ERR_BACKEND_LOAD;
@@ -262,13 +314,18 @@ int unimpi_init_with(const char *backend_name) {
     ret = unimpi.init(NULL, NULL);
     if (ret != 0) {
         unimpi_vtable_cleanup();
-        unimpi_loader_unload(g_handle);
-        g_handle = NULL;
+        if (g_handle) {
+            unimpi_loader_unload(g_handle);
+            g_handle = NULL;
+        }
         clear_backend_identity();
         g_state = UNIMPI_STATE_INIT_FAILED;
         return UNIMPI_ERR_BACKEND_LOAD;
     }
 
+    /* The MPI interface holds one reference to the backend library. */
+    g_refcount++;
+    g_backend_loaded = 1;
     g_state = UNIMPI_STATE_ACTIVE;
     return UNIMPI_OK;
 }
@@ -296,9 +353,14 @@ int unimpi_finalize(void) {
     /* Cleanup regardless of MPI_Finalize result */
     unimpi_vtable_cleanup();
 
-    if (g_handle) {
+    /* Release the MPI interface's reference. The backend library is only
+     * dlclose'd when BOTH the MPI and MPI-T interfaces have finalized
+     * (g_refcount reaches 0), so MPI_T_* stays callable after MPI_Finalize. */
+    g_refcount--;
+    if (g_refcount <= 0 && g_handle) {
         unimpi_loader_unload(g_handle);
         g_handle = NULL;
+        g_backend_loaded = 0;
     }
 
     clear_backend_identity();
@@ -373,4 +435,34 @@ const char* unimpi_get_library_path(void) {
 int unimpi_is_initialized(void) {
     return (g_state == UNIMPI_STATE_ACTIVE) ? 1 : 0;
 }
+
+#if UNIMPI_MPI_AT_LEAST(3,0)
+/* MPI-T tools-interface lifetime helpers (src/mpit.c). */
+int unimpi_mt_initialized(int *flag) {
+    if (!flag) {
+        return UNIMPI_ERR_INVALID_ARGUMENT;
+    }
+    *flag = g_mpit_inited;
+    return UNIMPI_OK;
+}
+
+int unimpi_mt_ref_acquire(void) {
+    g_refcount++;
+    return UNIMPI_OK;
+}
+
+int unimpi_mt_ref_release(void) {
+    g_refcount--;
+    if (g_refcount <= 0 && g_handle) {
+        unimpi_loader_unload(g_handle);
+        g_handle = NULL;
+        g_backend_loaded = 0;
+    }
+    return UNIMPI_OK;
+}
+
+void unimpi_mt_set_inited(int inited) {
+    g_mpit_inited = inited;
+}
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
