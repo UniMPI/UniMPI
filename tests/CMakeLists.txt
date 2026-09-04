@@ -461,6 +461,13 @@ if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
     if(UNIMPI_REAL_MPI_TESTS_ENABLED)
         add_mpi_test(test_mpi30_matched_probe test_mpi30_matched_probe 2)
     endif()
+    # MPI-T tools interface (lifecycle, post-MPI_Finalize survival, enum
+    # self-check). Single process; availability on the backend is self-gating.
+    add_executable(test_mpi30_t mpi/test_mpi30_t.c)
+    target_link_libraries(test_mpi30_t unimpi)
+    if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+        add_mpi_test(test_mpi30_t test_mpi30_t 1)
+    endif()
     # MPI-3.0 RMA atomic + nonblocking-request semantics (Fetch_and_op /
     # Compare_and_swap / Get_accumulate / Rput / Rget / Raccumulate).
     add_executable(test_mpi30_rma_atomic mpi/test_mpi30_rma_atomic.c)
