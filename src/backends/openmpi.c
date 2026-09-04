@@ -48,6 +48,10 @@ static void init_openmpi_error_codes(void) {
      * MPI_ANY_SOURCE and be rejected as an invalid rank. */
     MPI_PROC_NULL = -2;
     MPI_ROOT = -4;
+    /* OpenMPI's in-place sentinel is (void*)1 (see its mpi.h). Pass the
+     * loaded implementation's own value so MPI_Iallreduce(MPI_IN_PLACE, ...)
+     * reaches the native call correctly. */
+    MPI_IN_PLACE = (void *)1;
     MPI_ERR_BUFFER = 1;
     MPI_ERR_COUNT = 2;
     MPI_ERR_TYPE = 3;

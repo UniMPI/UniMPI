@@ -136,6 +136,12 @@ extern int MPI_BSEND_OVERHEAD;
 extern int MPI_PROC_NULL;
 extern int MPI_ROOT;
 
+/* MPI_IN_PLACE buffer sentinel for in-place collectives. Backend-specific
+ * pointer value (OpenMPI (void*)1, MPICH-family (void*)-1); set by each
+ * backend at init so in-place calls pass the loaded implementation's own
+ * sentinel. */
+extern void *MPI_IN_PLACE;
+
 /* Fortran status size - this is the size of MPI_Status in integers */
 extern int MPI_STATUS_SIZE;
 

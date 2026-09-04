@@ -134,6 +134,7 @@ int MPI_WTIME_IS_GLOBAL = 3;
 int MPI_BSEND_OVERHEAD = 0;
 int MPI_PROC_NULL = -1;
 int MPI_ROOT = -3;
+void *MPI_IN_PLACE = NULL;   /* backend-specific; set at init by each backend */
 
 /* Status field indices */
 int MPI_STATUS_SIZE = 5;

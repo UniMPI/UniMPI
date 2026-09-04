@@ -1027,6 +1027,9 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     MPI_LOCK_EXCLUSIVE = 234;
     MPI_LOCK_SHARED = 235;
 
+    /* MPICH-family in-place sentinel is (void*)-1 (see its mpi.h). */
+    MPI_IN_PLACE = (void *)-1;
+
     /* MS-MPI uses MPICH-compatible request null value */
     UNIMPI_REQUEST_NULL = (MPI_Request)0x2c000000;
 
