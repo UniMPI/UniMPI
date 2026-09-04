@@ -1,6 +1,7 @@
 #include "unimpi_vtable.h"
 #include "unimpi_loader.h"
 #include "unimpi_platform.h"
+#include "unimpi_mt.h"
 #include "unimpi.h"
 #include <stdlib.h>
 #include <string.h>
@@ -94,6 +95,12 @@ int unimpi_vtable_init(unimpi_lib_handle_t handle) {
 
     /* Keep failed or retried initialization attempts at the neutral value. */
     UNIMPI_STATUS_IGNORE = NULL;
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* Start each backend init from a clean MPI-T vtable (all fields NULL).
+     * A backend that does not export a given MPI_T_* symbol leaves its slot
+     * NULL; the *_available() test helper gates on that. */
+    memset(&unimpi_mt, 0, sizeof(unimpi_mt_vtable_t));
+#endif
 
     /* Validate core symbols */
     ret = unimpi_vtable_validate_core(handle);

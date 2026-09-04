@@ -2,6 +2,9 @@
 #include "unimpi_vtable.h"
 #include "unimpi_platform.h"
 #include "unimpi.h"
+#include "unimpi_mt.h"
+#include "unimpi_errors.h"
+#include "unimpi_mt_constants.h"
 #include "intelmpi_wrappers.h"
 #include <limits.h>
 
@@ -1090,6 +1093,124 @@ int unimpi_vtable_init_intelmpi(unimpi_lib_handle_t handle) {
     UNIMPI_GRAPH = 1;
     UNIMPI_CART = 2;
     UNIMPI_DIST_GRAPH = 3;
+
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-T tools-interface bindings. MPI-3.0 is part of the Intel MPI
+     * surface; fall back to NULL for any symbol not exported. */
+    unimpi_mt.t_init_thread = (int (*)(int, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_init_thread");
+    unimpi_mt.t_finalize = (int (*)(void))
+        unimpi_platform_dlsym(handle, "MPI_T_finalize");
+    unimpi_mt.t_cvar_get_num = (int (*)(int*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_get_num");
+    unimpi_mt.t_cvar_get_index = (int (*)(const char*, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_get_index");
+    unimpi_mt.t_cvar_get_info = (int (*)(int, char*, int*, MPI_Datatype*,
+                                         MPI_T_enum*, MPI_T_cvar_handle*,
+                                         int*, int*, void*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_get_info");
+    unimpi_mt.t_cvar_handle_alloc = (int (*)(int, void*, MPI_T_cvar_handle*, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_handle_alloc");
+    unimpi_mt.t_cvar_handle_free = (int (*)(MPI_T_cvar_handle*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_handle_free");
+    unimpi_mt.t_cvar_read = (int (*)(MPI_T_cvar_handle, void*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_read");
+    unimpi_mt.t_cvar_read_index = (int (*)(int, void*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_read_index");
+    unimpi_mt.t_cvar_write = (int (*)(MPI_T_cvar_handle, const void*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_write");
+    unimpi_mt.t_cvar_write_index = (int (*)(int, const void*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_write_index");
+    unimpi_mt.t_pvar_get_num = (int (*)(int*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_get_num");
+    unimpi_mt.t_pvar_get_index = (int (*)(const char*, int, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_get_index");
+    unimpi_mt.t_pvar_get_info = (int (*)(int, char*, int*, MPI_T_enum*,
+                                         MPI_T_pvar_session*, int*, int*, void*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_get_info");
+    unimpi_mt.t_pvar_session_create = (int (*)(MPI_T_pvar_session*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_session_create");
+    unimpi_mt.t_pvar_session_free = (int (*)(MPI_T_pvar_session*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_session_free");
+    unimpi_mt.t_pvar_handle_alloc = (int (*)(MPI_T_pvar_session, int,
+                                             MPI_T_handle, MPI_T_pvar_handle*, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_handle_alloc");
+    unimpi_mt.t_pvar_handle_free = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_handle_free");
+    unimpi_mt.t_pvar_start = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_start");
+    unimpi_mt.t_pvar_stop = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_stop");
+    unimpi_mt.t_pvar_read = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle, void*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_read");
+    unimpi_mt.t_pvar_write = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle, const void*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_write");
+    unimpi_mt.t_pvar_readreset = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle, void*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_readreset");
+    unimpi_mt.t_pvar_reset = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_reset");
+    unimpi_mt.t_pvar_aggregate = (int (*)(MPI_T_pvar_session, MPI_T_pvar_handle))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_aggregate");
+
+    /* MPI_T_ERR_* error codes: Intel MPI exposes the MPICH-family values. */
+    MPI_T_ERR_MEMORY = 59;
+    MPI_T_ERR_NOT_INITIALIZED = 60;
+    MPI_T_ERR_CANNOT_INIT = 61;
+    MPI_T_ERR_INVALID_INDEX = 62;
+    MPI_T_ERR_INVALID_ITEM = 63;
+    MPI_T_ERR_INVALID_HANDLE = 64;
+    MPI_T_ERR_OUT_OF_HANDLES = 65;
+    MPI_T_ERR_OUT_OF_SESSIONS = 66;
+    MPI_T_ERR_INVALID_SESSION = 67;
+    MPI_T_ERR_CVAR_SET_NOT_NOW = 68;
+    MPI_T_ERR_CVAR_SET_NEVER = 69;
+    MPI_T_ERR_PVAR_NO_STARTSTOP = 70;
+    MPI_T_ERR_PVAR_NO_WRITE = 71;
+    MPI_T_ERR_PVAR_NO_ATOMIC = 72;
+    MPI_T_ERR_INVALID_NAME = 73;
+    MPI_T_ERR_INVALID = 74;
+    MPI_T_ERR_NOT_SUPPORTED = 78;
+
+    /* UNIMPI_T_* enums: MPICH-family shifted values. */
+    UNIMPI_T_VERBOSITY_USER_BASIC = 221; /* 221..229 */
+    UNIMPI_T_VERBOSITY_USER_DETAIL = 222;
+    UNIMPI_T_VERBOSITY_USER_ALL = 223;
+    UNIMPI_T_VERBOSITY_TUNER_BASIC = 224;
+    UNIMPI_T_VERBOSITY_TUNER_DETAIL = 225;
+    UNIMPI_T_VERBOSITY_TUNER_ALL = 226;
+    UNIMPI_T_VERBOSITY_MPIDEV_BASIC = 227;
+    UNIMPI_T_VERBOSITY_MPIDEV_DETAIL = 228;
+    UNIMPI_T_VERBOSITY_MPIDEV_ALL = 229;
+    UNIMPI_T_SCOPE_CONSTANT = 60438; /* 60438..60444 */
+    UNIMPI_T_SCOPE_READONLY = 60439;
+    UNIMPI_T_SCOPE_LOCAL = 60440;
+    UNIMPI_T_SCOPE_GROUP = 60441;
+    UNIMPI_T_SCOPE_GROUP_EQ = 60442;
+    UNIMPI_T_SCOPE_ALL = 60443;
+    UNIMPI_T_SCOPE_ALL_EQ = 60444;
+    UNIMPI_T_BIND_NO_OBJECT = 9700; /* 9700..9711 */
+    UNIMPI_T_BIND_MPI_COMM = 9701;
+    UNIMPI_T_BIND_MPI_DATATYPE = 9702;
+    UNIMPI_T_BIND_MPI_ERRHANDLER = 9703;
+    UNIMPI_T_BIND_MPI_FILE = 9704;
+    UNIMPI_T_BIND_MPI_GROUP = 9705;
+    UNIMPI_T_BIND_MPI_OP = 9706;
+    UNIMPI_T_BIND_MPI_REQUEST = 9707;
+    UNIMPI_T_BIND_MPI_WIN = 9708;
+    UNIMPI_T_BIND_MPI_MESSAGE = 9709;
+    UNIMPI_T_BIND_MPI_INFO = 9710;
+    UNIMPI_T_BIND_MPI_SESSION = 9711;
+    UNIMPI_T_PVAR_CLASS_STATE = 240; /* 240..249 */
+    UNIMPI_T_PVAR_CLASS_LEVEL = 241;
+    UNIMPI_T_PVAR_CLASS_SIZE = 242;
+    UNIMPI_T_PVAR_CLASS_PERCENTAGE = 243;
+    UNIMPI_T_PVAR_CLASS_HIGHWATERMARK = 244;
+    UNIMPI_T_PVAR_CLASS_LOWWATERMARK = 245;
+    UNIMPI_T_PVAR_CLASS_COUNTER = 246;
+    UNIMPI_T_PVAR_CLASS_AGGREGATE = 247;
+    UNIMPI_T_PVAR_CLASS_TIMER = 248;
+    UNIMPI_T_PVAR_CLASS_GENERIC = 249;
+#endif
 
     return UNIMPI_OK;
 }
