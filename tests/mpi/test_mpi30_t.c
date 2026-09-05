@@ -66,25 +66,27 @@ static int test_enum_selfcheck(void) {
         char name[256];
         if (MPI_T_pvar_get_info(i, name, &name_len, &et, NULL, &verb, &vclass, NULL) != 0)
             continue;
-        int expected = -1;
-        switch (vclass) {
-            case 0: expected = UNIMPI_T_PVAR_CLASS_STATE; break;
-            case 1: expected = UNIMPI_T_PVAR_CLASS_LEVEL; break;
-            case 2: expected = UNIMPI_T_PVAR_CLASS_SIZE; break;
-            case 3: expected = UNIMPI_T_PVAR_CLASS_PERCENTAGE; break;
-            case 4: expected = UNIMPI_T_PVAR_CLASS_HIGHWATERMARK; break;
-            case 5: expected = UNIMPI_T_PVAR_CLASS_LOWWATERMARK; break;
-            case 6: expected = UNIMPI_T_PVAR_CLASS_COUNTER; break;
-            case 7: expected = UNIMPI_T_PVAR_CLASS_AGGREGATE; break;
-            case 8: expected = UNIMPI_T_PVAR_CLASS_TIMER; break;
-            case 9: expected = UNIMPI_T_PVAR_CLASS_GENERIC; break;
-            /* anything else maps to the backend's invalid sentinel (0-filled
-             * on backends that do not define one) */
-            default: expected = UNIMPI_T_PVAR_CLASS_INVALID; break;
-        }
-        if (vclass != expected) {
-            fprintf(stderr, "FAIL pvar[%d] '%s' vclass=%d but UNIMPI_T_PVAR_CLASS_* exposes %d\n",
-                    i, name, vclass, expected);
+        int classes[10];
+        int k, valid = 0;
+        classes[0] = UNIMPI_T_PVAR_CLASS_STATE;
+        classes[1] = UNIMPI_T_PVAR_CLASS_LEVEL;
+        classes[2] = UNIMPI_T_PVAR_CLASS_SIZE;
+        classes[3] = UNIMPI_T_PVAR_CLASS_PERCENTAGE;
+        classes[4] = UNIMPI_T_PVAR_CLASS_HIGHWATERMARK;
+        classes[5] = UNIMPI_T_PVAR_CLASS_LOWWATERMARK;
+        classes[6] = UNIMPI_T_PVAR_CLASS_COUNTER;
+        classes[7] = UNIMPI_T_PVAR_CLASS_AGGREGATE;
+        classes[8] = UNIMPI_T_PVAR_CLASS_TIMER;
+        classes[9] = UNIMPI_T_PVAR_CLASS_GENERIC;
+        for (k = 0; k < 10; k++)
+            if (vclass == classes[k]) { valid = 1; break; }
+        /* The returned var class must be one of the backend-exposed
+         * UNIMPI_T_PVAR_CLASS_* values. No position/ordinal assumption: on
+         * OpenMPI these are 0..9, on the MPICH family 240..249, and the
+         * backend-fill must agree with what get_info reports. */
+        if (!valid) {
+            fprintf(stderr, "FAIL pvar[%d] '%s' vclass=%d not in UNIMPI_T_PVAR_CLASS_*\n",
+                    i, name, vclass);
             return 1;
         }
         printf("  enum self-check OK (pvar[%d] '%s')\n", i, name);
