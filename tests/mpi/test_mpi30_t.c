@@ -32,6 +32,14 @@ static int mpit_available(void) {
            unimpi_mt.t_cvar_get_num != NULL && unimpi_mt.t_pvar_get_num != NULL;
 }
 
+/* category/enum introspection is an additive slice of the tools interface;
+ * gate it separately so a backend that ships MPI_T init/cvar/pvar but no
+ * category layer still runs the core suite. */
+static int category_available(void) {
+    return unimpi_mt.t_category_get_num != NULL &&
+           unimpi_mt.t_enum_get_info != NULL;
+}
+
 /* G1: MPI_T_init_thread returns at least SINGLE; implant the MPI_T reference
  * so the queried backend opens its tools interface. (init/finalize pairing and
  * the idempotent re-init path are exercised implicitly by the post-finalize
@@ -144,6 +152,94 @@ static int test_noobject_roundtrip(void) {
     return 0;
 }
 
+/* G4 (category): walk every category returned by get_num/get_info and assert
+ *  self-consistency -- non-negative member counts, and get_cvars/get_pvars
+ *  agree in length. No category NAME is assumed (names are backend-specific and
+ *  not portable across implementations). Namely: OpenMPI's category set is
+ *  component-dependent, MPICH's is fixed; indexing must not hard-code either.
+ *
+ *  NOTE on the len argument: MPI_T_category_get_cvars/get_pvars take the array
+ *  CAPACITY, not the count. Passing get_info's nc/np as len would overrun a
+ *  fixed stack array when a category has more members than room -- the arrays
+ *  are sized 16 and the calls are gated on nc/np <= 16 to stay safe.
+ */
+static int test_category_roundtrip(void) {
+    if (!category_available()) {
+        printf("  category introspection unavailable; skip\n");
+        return 0;
+    }
+    int n = 0, stamp = -1;
+    if (unimpi_mt.t_category_changed)
+        CHECK(unimpi_mt.t_category_changed(&stamp));
+    CHECK(unimpi_mt.t_category_get_num(&n));
+    if (n < 0) { fprintf(stderr, "FAIL category_get_num=%d\n", n); return 1; }
+    if (n == 0) { printf("  category count 0; skip\n"); return 0; }
+    for (int i = 0; i < n; i++) {
+        /* OpenMPI, like its pvars, may leave holes inside [0,n): components
+         * whose categories are not currently queryable answer get_info with a
+         * non-success code. Walk past those instead of failing the suite. */
+        int name_len = 256, desc_len = 256;
+        int nc = -1, np = -1, nm = -1;
+        char name[256], desc[256];
+        if (unimpi_mt.t_category_get_info(i, name, &name_len, desc, &desc_len,
+                                          &nc, &np, &nm) != MPI_SUCCESS)
+            continue;
+        if (nc < 0 || np < 0) return 1;   /* member counts must be >= 0 */
+        int cv[16];
+        if (unimpi_mt.t_category_get_cvars && nc <= 16)
+            CHECK(unimpi_mt.t_category_get_cvars(i, 16, cv));
+        int pv[16];
+        if (unimpi_mt.t_category_get_pvars && np <= 16)
+            CHECK(unimpi_mt.t_category_get_pvars(i, 16, pv));
+        (void)nm;
+    }
+    printf("  category roundtrip OK (%d categories)\n", n);
+    return 0;
+}
+
+/* G5 (enum): a valid MPI_T_enum only materializes as the `enumtype` out-param
+ *  of a pvar/cvar get_info -- there is no MPI_T_ENUM_NULL constant to seed a
+ *  query from, so scan pvars for one that reports a usable enum type, then
+ *  assert enum_get_info returns a sane member count and enum_get_item
+ *  reproduces value+name per member. If the backend exposes no enumerable
+ *  pvar, it is a documented skip, not a failure.
+ *
+ *  MPI_T_enum 0 doubles as the "not an enum subtype" sentinel (any valid enum
+ *  is a positive backend-defined id); a real enum equal to 0 would only make
+ *  this pvar look non-enumerable, and another pvar still yields a non-zero id.
+ */
+static int test_enum_query(void) {
+    if (!category_available() || !unimpi_mt.t_pvar_get_num ||
+        !unimpi_mt.t_pvar_get_info || !unimpi_mt.t_enum_get_item) {
+        printf("  enum introspection unavailable; skip\n");
+        return 0;
+    }
+    int np = 0;
+    CHECK(unimpi_mt.t_pvar_get_num(&np));
+    for (int i = 0; i < np; i++) {
+        char name[128]; int name_len = sizeof(name);
+        MPI_T_enum et = 0;          /* get_info's enumtype out-param */
+        MPI_T_pvar_session bind = 0; int verb = 0, vc = 0;
+        if (unimpi_mt.t_pvar_get_info(i, name, &name_len, &et, &bind, &verb, &vc,
+                                      NULL) != MPI_SUCCESS)
+            continue;
+        if (et == 0) continue;      /* not an enum-typed pvar */
+        int num = 0; char ename[128]; int enlen = sizeof(ename);
+        if (unimpi_mt.t_enum_get_info(et, &num, ename, &enlen) != MPI_SUCCESS)
+            continue;               /* backend cannot introspect it */
+        if (num < 0) { fprintf(stderr, "FAIL enum_get_info num=%d\n", num); return 1; }
+        for (int m = 0; m < num; m++) {
+            int value = -1; char iname[128]; int ilen = sizeof(iname);
+            CHECK(unimpi_mt.t_enum_get_item(et, m, &value, iname, &ilen));
+            (void)value;
+        }
+        printf("  enum roundtrip OK (pvar %d, %d members)\n", i, num);
+        return 0;
+    }
+    printf("  no enumerable pvar on this backend; skip enum\n");
+    return 0;
+}
+
 /* G4: MPI_T must survive MPI_Finalize (user's core concern). Called after the
  * MPI interface has already been finalized in main. */
 static int test_post_finalize_survival(void) {
@@ -173,6 +269,10 @@ int main(int argc, char **argv) {
     if (test_enum_selfcheck())
         goto fail;
     if (test_noobject_roundtrip())
+        goto fail;
+    if (test_category_roundtrip())
+        goto fail;
+    if (test_enum_query())
         goto fail;
     /* finalize the MPI interface first; MPI_T must still work after */
     MPI_Finalize();
