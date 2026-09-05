@@ -193,6 +193,21 @@ not export MPI-T at all (MS-MPI). Backend-fill, not hardcoding, sets the
 MPI-T error codes and enumeration constants; a backend that exports no
 MPI-T leaves the slots `NULL` and the suite skips rather than failing.
 
+**OpenMPI `get_info` bridge (known tradeoff).** OpenMPI's tools interface
+predates the MPI-3.0 signatures: `MPI_T_cvar_get_info`/`MPI_T_pvar_get_info`
+take 10/13 arguments, carry extra outputs (`desc`, `bind`, and for pvar
+`readonly`/`continuous`/`atomic`) while omitting the canonical
+`cvar_handle`/`binding`/`var_extra`. UniMPI binds the canonical 9/8-arg slots
+and bridges OpenMPI's native calls, preserving the common outputs (verbosity,
+scope, var_class, datatype, enumtype) but dropping OpenMPI's `desc`/`bind`
+(and pvar's `binding`/`readonly`/`continuous`/`atomic`) because the canonical
+slots have no carrier for them. `cvar_handle` is set to `0`
+(`MPI_T_CVAR_HANDLE_NULL`), matching the standard's "argument unused"
+semantics, so that is not a functional loss. Tools needing the
+description/binding metadata cannot get it on the OpenMPI backend through
+UniMPI. (Verified against OpenMPI 4.x: real prototypes are 10/13-arg, and
+`MPI_T_cvar_get_info` natively returns non-empty `desc`/`bind`/`scope`.)
+
 ### MPI_Status field access
 
 `MPI_Status` is a 24-byte union whose member layout matches the active
