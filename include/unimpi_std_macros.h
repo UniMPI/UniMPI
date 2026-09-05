@@ -664,6 +664,18 @@
 #define MPI_T_pvar_reset            unimpi_mt.t_pvar_reset
 #define MPI_T_pvar_aggregate        unimpi_mt.t_pvar_aggregate
 
+/* MPI-T category / enum introspection. Also pure forwards with no state, so
+ * they map straight onto the unimpi_mt vtable members. */
+#define MPI_T_category_get_num       unimpi_mt.t_category_get_num
+#define MPI_T_category_get_index     unimpi_mt.t_category_get_index
+#define MPI_T_category_get_info      unimpi_mt.t_category_get_info
+#define MPI_T_category_get_cvars     unimpi_mt.t_category_get_cvars
+#define MPI_T_category_get_pvars     unimpi_mt.t_category_get_pvars
+#define MPI_T_category_get_categories unimpi_mt.t_category_get_categories
+#define MPI_T_category_changed       unimpi_mt.t_category_changed
+#define MPI_T_enum_get_info          unimpi_mt.t_enum_get_info
+#define MPI_T_enum_get_item          unimpi_mt.t_enum_get_item
+
 /* MPI-T pvar classes */
 #define MPI_T_PVAR_CLASS_STATE          UNIMPI_T_PVAR_CLASS_STATE
 #define MPI_T_PVAR_CLASS_LEVEL          UNIMPI_T_PVAR_CLASS_LEVEL

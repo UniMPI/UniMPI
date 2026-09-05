@@ -58,6 +58,20 @@ typedef struct unimpi_mt_vtable {
                             void *value);
     int (*t_pvar_reset)(MPI_T_pvar_session session, MPI_T_pvar_handle handle);
     int (*t_pvar_aggregate)(MPI_T_pvar_session session, MPI_T_pvar_handle handle);
+    /* --- MPI-3.0 category / enum introspection (read-only queries) --- */
+    int (*t_category_get_num)(int *num_cat);
+    int (*t_category_get_index)(const char *name, int *category_index);
+    int (*t_category_get_info)(int cat_index, char *name, int *name_len,
+                               char *desc, int *desc_len, int *num_cvars,
+                               int *num_pvars, int *num_categories);
+    int (*t_category_get_cvars)(int cat_index, int len, int indices[]);
+    int (*t_category_get_pvars)(int cat_index, int len, int indices[]);
+    int (*t_category_get_categories)(int cat_index, int len, int indices[]);
+    int (*t_category_changed)(int *stamp);
+    int (*t_enum_get_info)(MPI_T_enum enumtype, int *num, char *name,
+                           int *name_len);
+    int (*t_enum_get_item)(MPI_T_enum enumtype, int index, int *value,
+                           char *name, int *name_len);
 } unimpi_mt_vtable_t;
 
 extern unimpi_mt_vtable_t unimpi_mt;   /* born all-NULL; filled by backend init */
