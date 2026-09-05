@@ -94,6 +94,9 @@ REGISTRY = {
         "t_pvar_session_create", "t_pvar_session_free", "t_pvar_handle_alloc",
         "t_pvar_handle_free", "t_pvar_start", "t_pvar_stop", "t_pvar_read",
         "t_pvar_write", "t_pvar_readreset", "t_pvar_reset", "t_pvar_aggregate",
+        "t_category_get_num", "t_category_get_index", "t_category_get_info",
+        "t_category_get_cvars", "t_category_get_pvars", "t_category_get_categories",
+        "t_category_changed", "t_enum_get_info", "t_enum_get_item",
     ],
 }
 
@@ -134,6 +137,9 @@ M30_CANONICAL = set("""
     t_pvar_get_info t_pvar_session_create t_pvar_session_free
     t_pvar_handle_alloc t_pvar_handle_free t_pvar_start t_pvar_stop
     t_pvar_read t_pvar_write t_pvar_readreset t_pvar_reset t_pvar_aggregate
+    t_category_get_num t_category_get_index t_category_get_info
+    t_category_get_cvars t_category_get_pvars t_category_get_categories
+    t_category_changed t_enum_get_info t_enum_get_item
 """.split())
 
 FAILURES = []
