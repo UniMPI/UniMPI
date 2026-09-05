@@ -147,6 +147,18 @@ code_style:
       done
   allow_failure: true  # Don't block merge, just inform
 
+# MPI version-gating truth tables + guards (anti-drift). Runs the gate's own
+# self-test plus every reconcile subcommand so a gating regression never slips
+# through silently. Stdlib-only Python, no MPI runtime needed.
+version_gate:
+  stage: quality
+  image: ubuntu:22.04
+  script:
+    - python3 tools/test_gate.py
+    - python3 tools/mpi_version_gate.py check --require-guards
+    - python3 tools/mpi_version_gate.py mpi3
+    - python3 tools/mpi_version_gate.py base
+
 # Static analysis with cppcheck
 static_analysis:
   stage: quality

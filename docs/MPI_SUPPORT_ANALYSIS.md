@@ -214,15 +214,23 @@ When adding an API:
 | MPI_Pready | ❌ | MPI-4 |
 | MPI_Parrived | ❌ | MPI-4 |
 
-### ❌ Tools Interface (MPI-4) (0/5 - 0%)
+### ⚠️ Tools Interface (MPI-3)
+
+The tools interface was introduced in **MPI-3.0**, not MPI-4. UniMPI binds the
+core cvar/pvar surface as the *independent* `unimpi_mt` vtable (25 `t_*`
+slots, see `include/unimpi_mt.h`); it stays usable across `MPI_Init`/
+`MPI_Finalize` via a reference-counted backend load. Per-backend availability
+varies: OpenMPI yes, MPICH-family partial, MS-MPI absent (skipped by
+`mpit_available()`). Category / enum introspection (`MPI_T_category_*`,
+`MPI_T_enum_*`) is not yet bound.
 
 | Function | Status | Notes |
 |----------|--------|-------|
-| MPI_T_init_thread | ❌ | MPI-4 |
-| MPI_T_finalize | ❌ | MPI-4 |
-| MPI_T_category_get_info | ❌ | MPI-4 |
-| MPI_T_pvar_read/write | ❌ | MPI-4 |
-| MPI_T_cvar_get_info | ❌ | MPI-4 |
+| MPI_T_init_thread | ✅ | MPI-3 - t_init_thread |
+| MPI_T_finalize | ✅ | MPI-3 - t_finalize |
+| MPI_T_pvar_read/write | ✅ | MPI-3 - t_pvar_read / t_pvar_write |
+| MPI_T_cvar_get_info | ✅ | MPI-3 - t_cvar_get_info (OpenMPI bridged from its legacy 10-arg form) |
+| MPI_T_category_get_info | ❌ | MPI-3 - not yet bound (no t_category_* slot) |
 
 ## Summary
 
@@ -238,7 +246,8 @@ When adding an API:
 - ✅ Message probing (including MPI-3 matched probes)
 
 ### Gaps
-- ❌ MPI-4 new features (sessions, partitioned, tools)
+- ❌ MPI-4 new features (sessions, partitioned)
+- ⚠️ MPI-T category/enum introspection (MPI-3)
 - ⚠️ Non-blocking collectives (MPI-3) partial
 - ⚠️ Shared memory windows (MPI-3)
 - ⚠️ I/O incomplete

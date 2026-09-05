@@ -429,7 +429,7 @@ def run_check_mpi3(args):
     present_ungated = sorted(present - gated)
 
     total = len(M30_CANONICAL)
-    print("mpi3: canonical MPI-3.0 C functions (excl. MPI_T, F08): %d" % total)
+    print("mpi3: canonical MPI-3.0 C functions (incl. MPI_T, excl. F08): %d" % total)
     print("mpi3: present in vtable: %d (%.1f%%)" % (len(present), 100.0 * len(present) / total))
     print("mpi3: properly gated in a 3.0 cluster: %d" % len(gated_here))
     if present_ungated:

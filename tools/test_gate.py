@@ -54,10 +54,14 @@ def main():
     expect(rc != 0, "unknown cluster name must make check fail (got %d)" % rc)
 
     # --- Case 3: valid cluster but wrong declared version must fail --------
+    # alltoallw is not a cluster anymore (folded into nonblocking_collectives in
+    # Task 47), so use the 3-member win_alloc_shared cluster (all members are
+    # 3,0) and declare a mismatching version so the failure is for the right
+    # reason (declared != max member version), not for an unknown cluster name.
     bad2 = os.path.join(d, "bad-version.csv")
     with open(bad2, "w") as fh:
         fh.write("文件,簇名,生效主版,生效次版\n"
-                 "include/unimpi_vtable.h,alltoallw,2,1\n")
+                 "include/unimpi_vtable.h,win_alloc_shared,2,1\n")
     rc = run_check(bad2)
     expect(rc != 0, "wrong cluster version must make check fail (got %d)" % rc)
 
@@ -79,29 +83,36 @@ def main():
     expect(rc != 0, "a member outside the protected span must fail (got %d)" % rc)
 
     # --- Case 5: guard present must pass (with --require-guards) -----------
+    # Uses the 3-member win_alloc_shared cluster, all inside the 3,0 guard, so
+    # the fixture is a valid "must pass" for a current cluster (alltoallw is no
+    # longer a cluster name -- folded into nonblocking_collectives in Task 47).
     guard_ok = os.path.join(d, "guard_ok.c")
     with open(guard_ok, "w") as fh:
         fh.write("int unrelated;\n"
                  "#if UNIMPI_MPI_AT_LEAST(3,0)\n"
-                 "/* MPI-3.0 alltoallw */\n"
-                 "int (*alltoallw)(const void *a);\n"
+                 "/* MPI-3.0 win_alloc_shared */\n"
+                 "int (*win_allocate)(void);\n"
+                 "int (*win_allocate_shared)(void);\n"
+                 "int (*win_create_dynamic)(void);\n"
                  "#endif\n")
     gc_ok = os.path.join(d, "guard_ok.csv")
     with open(gc_ok, "w") as fh:
         fh.write("文件,簇名,生效主版,生效次版\n"
-                 "%s,alltoallw,3,0\n" % guard_ok)
+                 "%s,win_alloc_shared,3,0\n" % guard_ok)
     rc = run_check(gc_ok, "--require-guards")
     expect(rc == 0, "a present, correctly-versioned guard must pass (got %d)" % rc)
 
-    # --- Case 6: guard missing / wrong version must fail -------------------
+    # --- Case 6: guard missing must fail -----------------------------------
     guard_bad = os.path.join(d, "guard_bad.c")
     with open(guard_bad, "w") as fh:
         fh.write("int unrelated;\n"
-                 "int (*alltoallw)(const void *a);\n")  # no guard at all
+                 "int (*win_allocate)(void);\n"           # no guard at all
+                 "int (*win_allocate_shared)(void);\n"
+                 "int (*win_create_dynamic)(void);\n")
     gc_bad = os.path.join(d, "guard_bad.csv")
     with open(gc_bad, "w") as fh:
         fh.write("文件,簇名,生效主版,生效次版\n"
-                 "%s,alltoallw,3,0\n" % guard_bad)
+                 "%s,win_alloc_shared,3,0\n" % guard_bad)
     rc = run_check(gc_bad, "--require-guards")
     expect(rc != 0, "a missing guard must make check fail (got %d)" % rc)
 
@@ -109,13 +120,15 @@ def main():
     guard_wrong = os.path.join(d, "guard_wrong.c")
     with open(guard_wrong, "w") as fh:
         fh.write("#if UNIMPI_MPI_AT_LEAST(2,1)\n"
-                 "/* MPI-2.1 alltoallw */\n"
-                 "int (*alltoallw)(const void *a);\n"
+                 "/* MPI-2.1 win_alloc_shared */\n"
+                 "int (*win_allocate)(void);\n"
+                 "int (*win_allocate_shared)(void);\n"
+                 "int (*win_create_dynamic)(void);\n"
                  "#endif\n")
     gc_wrong = os.path.join(d, "guard_wrong.csv")
     with open(gc_wrong, "w") as fh:
         fh.write("文件,簇名,生效主版,生效次版\n"
-                 "%s,alltoallw,3,0\n" % guard_wrong)
+                 "%s,win_alloc_shared,3,0\n" % guard_wrong)
     rc = run_check(gc_wrong, "--require-guards")
     expect(rc != 0, "a guard with the wrong version must fail (got %d)" % rc)
 
