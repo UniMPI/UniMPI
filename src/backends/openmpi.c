@@ -1298,6 +1298,7 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     MPI_T_ERR_OUT_OF_SESSIONS = 61;
     MPI_T_ERR_INVALID_SESSION = 62;
     MPI_T_ERR_CVAR_SET_NOT_NOW = 63;
+    MPI_T_ERR_CVAR_SET_NEVER = 64;
     MPI_T_ERR_PVAR_NO_STARTSTOP = 65;
     MPI_T_ERR_PVAR_NO_WRITE = 66;
     MPI_T_ERR_PVAR_NO_ATOMIC = 67;

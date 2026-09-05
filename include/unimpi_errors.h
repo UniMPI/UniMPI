@@ -4,6 +4,8 @@
 #ifndef UNIMPI_ERRORS_H
 #define UNIMPI_ERRORS_H
 
+#include "unimpi_version.h"   /* UNIMPI_MPI_AT_LEAST for the MPI-T gate below */
+
 /* Standard MPI error codes - initialized at runtime based on backend */
 extern int MPI_SUCCESS;
 extern int MPI_ERR_BUFFER;
@@ -163,10 +165,13 @@ extern int MPI_MAX_OBJECT_NAME;
 extern int MPI_MAX_PORT_NAME;
 extern int MPI_MAX_DATAREP_STRING;
 
+#if UNIMPI_MPI_AT_LEAST(3,0)
 /* MPI-T tools-interface error codes. Like all MPI_ERR_* above, these are
  * backend-filled externs: the numeric values differ per implementation
  * (e.g. MPI_T_ERR_MEMORY is 54 on OpenMPI but 59 on the MPICH family), so none
- * may be hardcoded. Filled by each backend at init. */
+ * may be hardcoded. Filled by each backend at init. Defined (never at target-2)
+ * in src/mp_constants.c; gated here so a target-2 build does not expose the
+ * MPI-T surface and see only a declaration with no definition. */
 extern int MPI_T_ERR_MEMORY;
 extern int MPI_T_ERR_NOT_INITIALIZED;
 extern int MPI_T_ERR_CANNOT_INIT;
@@ -185,5 +190,6 @@ extern int MPI_T_ERR_PVAR_NO_ATOMIC;
 extern int MPI_T_ERR_INVALID;
 extern int MPI_T_ERR_INVALID_NAME;
 extern int MPI_T_ERR_INVALID_ENUM;
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
 #endif /* UNIMPI_ERRORS_H */
