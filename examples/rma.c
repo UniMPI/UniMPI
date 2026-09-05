@@ -1,5 +1,6 @@
 /* rma.c - Portable fence-and-put Remote Memory Access example. */
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "unimpi.h"
 
@@ -46,6 +47,8 @@ int main(int argc, char **argv) {
         return ret == UNIMPI_OK ? 2 : 1;
     }
 
+#if UNIMPI_MPI_AT_LEAST(3,0)
+    /* MPI-3.0: allocate the window memory directly through MPI. */
     if (check_mpi_call(
             MPI_Win_allocate((MPI_Aint)sizeof(*window_value),
                              (int)sizeof(*window_value), MPI_INFO_NULL,
@@ -53,6 +56,22 @@ int main(int argc, char **argv) {
             "MPI_Win_allocate") != 0) {
         return 1;
     }
+#else
+    /* MPI-2.2 has no MPI_Win_allocate: back the same one-sided window with a
+     * local buffer + MPI_Win_create, preserving the fence/put/free semantics. */
+    window_value = malloc(sizeof(*window_value));
+    if (window_value == NULL) {
+        fprintf(stderr, "rma example: out of memory\n");
+        return 1;
+    }
+    if (check_mpi_call(
+            MPI_Win_create(window_value, (MPI_Aint)sizeof(*window_value),
+                           sizeof(*window_value), MPI_INFO_NULL,
+                           MPI_COMM_WORLD, &window),
+            "MPI_Win_create") != 0) {
+        return 1;
+    }
+#endif
 
     *window_value = -1;
     origin_value = 1000 + rank;
