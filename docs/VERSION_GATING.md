@@ -101,8 +101,8 @@ Both definitions must be given together; they are a matched pair.
 ## Single-source consistency requirement (CRITICAL)
 
 The vtable struct layout — the **set and offsets of its fields** — depends on
-the target version. A 2.2 build has a smaller struct (297 fields) than a 3.1
-build (338 fields). If you compile the library at one target and a consumer at
+the target version. A 2.2 build has a smaller struct (297 fields) than a 3.0
+build (364 fields). If you compile the library at one target and a consumer at
 another, the consumer will read the vtable at the wrong offsets and crash or
 misbehave.
 
@@ -208,7 +208,7 @@ and run at the target under test:
 ./build/tests/test_vtable_layout    # or build22
 ```
 
-- Default (3.1): `VTABLE_SIZE=2704`, `VTABLE_COUNT=338`
+- Target 3.0: `VTABLE_SIZE=2912`, `VTABLE_COUNT=364`
 - Target 2.2: `VTABLE_SIZE=2376`, `VTABLE_COUNT=297`
 
 ### Gate checker

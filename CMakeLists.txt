@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(unimpi VERSION 0.1.0 LANGUAGES C)
+project(unimpi VERSION 0.2.0 LANGUAGES C)
 
 # Pre-release tag: "alpha", "beta", "rc", or "" for a final release. Together
 # with project(VERSION ...) this is the single source of truth for the library

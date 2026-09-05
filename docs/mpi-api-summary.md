@@ -1,7 +1,7 @@
 # Standard-Name API Quick Reference
 
 This is a UniMPI usage reference, not a complete MPI standard reference. The
-current standard-name header provides 311 direct `MPI_*` aliases plus separate
+current standard-name header provides 361 direct `MPI_*` aliases plus separate
 control wrappers, function-like macros, and constants. Availability at compile
 time does not prove that every backend exports or semantically verifies an
 operation.

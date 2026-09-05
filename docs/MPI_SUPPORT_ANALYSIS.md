@@ -10,8 +10,8 @@ The maintained verification contract is
 
 ## Inventory
 
-- 338 MPI function-pointer fields in `unimpi_vtable_t`.
-- 311 direct standard-name aliases in `unimpi_std_macros.h`.
+- 364 MPI function-pointer fields in `unimpi_vtable_t` (target 3.0).
+- 361 direct standard-name aliases in `unimpi_std_macros.h`.
 - Separate control wrappers for initialization, finalization, state queries,
   backend identity, diagnostics, and UniMPI errors.
 - Four backend adapters: Open MPI, MPICH, Intel MPI, and MS-MPI.

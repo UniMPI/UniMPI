@@ -5,7 +5,14 @@ All notable changes to UniMPI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.2.0-alpha] - 2026-09-05
+
+**MPI-3.0 basic support:** the full MPI-3.0 C-callable roster is now exposed —
+99 / 99 canonical C-callable entities (100%) — covering neighbor collectives,
+nonblocking collectives, one-sided RMA atomics, `_x` large-count queries,
+communicator helpers, and the MPI_T tools interface (incl. category / enum
+introspection), under the `UNIMPI_MPI_TARGET_VERSION>=3` gate; the default
+target remains MPI-2.2 (305 / 305).
 
 ### Added
 - MPI-3.0 core support: neighbor collectives, large-count (`_x`) datatype

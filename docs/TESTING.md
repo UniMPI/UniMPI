@@ -156,9 +156,9 @@ Add the artifact-audit check to the validation matrix when a target-version
 build is under test:
 
 ```bash
-# 3.1 (default) build
+# 3.0 (target) build
 strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_join|MPI_Iallreduce'   # -> 12
-./build/tests/test_vtable_layout                                           # 2704 / 338
+./build/tests/test_vtable_layout                                           # 2912 / 364
 
 # 2.2 build (-DUNIMPI_MPI_TARGET_VERSION=2 -DUNIMPI_MPI_TARGET_SUBVERSION=2)
 strings libunimpi.a | grep -cE 'MPI_Ibcast|MPI_Comm_create_group|MPI_Win_sync'   # -> 0
