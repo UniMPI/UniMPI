@@ -103,7 +103,7 @@ standard rule is covered.
 | MPI I/O extensions | No | Yes | Yes | Yes | Yes | Positioned independent/collective/nonblocking round trips, metadata, sync and atomicity |
 | Examples | No | Smoke | Smoke | Smoke | Smoke | See `examples/README.md` for rank requirements |
 | Benchmarks | No | Smoke | Smoke | Smoke | Smoke | Execution only; no hard performance threshold |
-| MPI-T tools interface | No | Yes | Partial | Partial | Partial | Lifecycle, enum self-check, no-object pvar round trip, survival across `MPI_Finalize`; MPICH-family bind the standard 9/8-arg `get_info` signatures, OpenMPI is bridged from its legacy 13/10-arg signatures, MS-MPI degrades to NULL via `*_available()` |
+| MPI-T tools interface | No | Yes | Partial | Partial | Partial | Lifecycle, enum self-check, no-object pvar round trip, category `get_num`/`get_info`/`get_cvars`/`get_pvars` traversal, enum `get_info`/`get_item` round trip (skip w/o enumerable pvar), survival across `MPI_Finalize`; MPICH-family bind the standard 9/8-arg `get_info` signatures, OpenMPI is bridged from its legacy 13/10-arg signatures, MS-MPI degrades to NULL via `*_available()` |
 
 ## Explicitly not claimed as covered
 

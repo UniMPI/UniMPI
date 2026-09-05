@@ -222,7 +222,8 @@ slots, see `include/unimpi_mt.h`); it stays usable across `MPI_Init`/
 `MPI_Finalize` via a reference-counted backend load. Per-backend availability
 varies: OpenMPI yes, MPICH-family partial, MS-MPI absent (skipped by
 `mpit_available()`). Category / enum introspection (`MPI_T_category_*`,
-`MPI_T_enum_*`) is not yet bound.
+`MPI_T_enum_*`) is bound across all four backends, gated on the MPI-3.0
+`unimpi_mt` slice.
 
 | Function | Status | Notes |
 |----------|--------|-------|
@@ -230,7 +231,7 @@ varies: OpenMPI yes, MPICH-family partial, MS-MPI absent (skipped by
 | MPI_T_finalize | ✅ | MPI-3 - t_finalize |
 | MPI_T_pvar_read/write | ✅ | MPI-3 - t_pvar_read / t_pvar_write |
 | MPI_T_cvar_get_info | ✅ | MPI-3 - t_cvar_get_info (OpenMPI bridged from its legacy 10-arg form) |
-| MPI_T_category_get_info | ❌ | MPI-3 - not yet bound (no t_category_* slot) |
+| MPI_T_category_* / MPI_T_enum_* | ✅ | MPI-3 - bound in all four backends (t_category_* / t_enum_* slots) |
 
 ## Summary
 
@@ -247,7 +248,6 @@ varies: OpenMPI yes, MPICH-family partial, MS-MPI absent (skipped by
 
 ### Gaps
 - ❌ MPI-4 new features (sessions, partitioned)
-- ⚠️ MPI-T category/enum introspection (MPI-3)
 - ⚠️ Non-blocking collectives (MPI-3) partial
 - ⚠️ Shared memory windows (MPI-3)
 - ⚠️ I/O incomplete
