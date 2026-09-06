@@ -21,7 +21,7 @@ int main(void) {
 
     /* 1. numeric components */
     assert(UNIMPI_VERSION_MAJOR == 0);
-    assert(UNIMPI_VERSION_MINOR == 1);
+    assert(UNIMPI_VERSION_MINOR == 2);
     assert(UNIMPI_VERSION_PATCH == 0);
     printf("compile-time: %d.%d.%d\n",
            UNIMPI_VERSION_MAJOR, UNIMPI_VERSION_MINOR, UNIMPI_VERSION_PATCH);
@@ -30,12 +30,12 @@ int main(void) {
     assert(strcmp(UNIMPI_VERSION_PRERELEASE, "alpha") == 0);
 
     /* 3. canonical string matches <major>.<minor>.<patch>-<prerelease> */
-    assert(strcmp(UNIMPI_VERSION_STRING, "0.1.0-alpha") == 0);
+    assert(strcmp(UNIMPI_VERSION_STRING, "0.2.0-alpha") == 0);
     printf("string: %s\n", UNIMPI_VERSION_STRING);
 
     /* 4. numeric encoding */
     assert(UNIMPI_VERSION_NUMERICAL ==
-           ((0u << 24) | (1u << 16) | (0u << 0)));
+           ((0u << 24) | (2u << 16) | (0u << 0)));
     printf("numerical: 0x%08x\n", UNIMPI_VERSION_NUMERICAL);
 
     /* 5. runtime parity with the compile-time macro (single source of truth) */

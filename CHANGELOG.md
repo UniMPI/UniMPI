@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v0.2.0-alpha] - 2026-09-05
 
 **MPI-3.0 basic support:** the full MPI-3.0 C-callable roster is now exposed —
-99 / 99 canonical C-callable entities (100%) — covering neighbor collectives,
+96 / 96 canonical C-callable entities (100%; the three `MPI_T_*_get_index`
+lookups are MPI-3.1, not 3.0) — covering neighbor collectives,
 nonblocking collectives, one-sided RMA atomics, `_x` large-count queries,
 communicator helpers, and the MPI_T tools interface (incl. category / enum
 introspection), under the `UNIMPI_MPI_TARGET_VERSION>=3` gate; the default

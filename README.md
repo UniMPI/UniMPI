@@ -2,8 +2,9 @@
 
 **Current release:** [v0.2.0-alpha](CHANGELOG.md) (2026-09-05) - MPI-2.2 base
 surface **305 / 305 canonical entities exposed (100%)**, plus **MPI-3.0 basic
-support (99 / 99 canonical C-callable entities, incl. the MPI_T tools
-interface)** under the `UNIMPI_MPI_TARGET_VERSION>=3` build gate.
+support (96 / 96 canonical C-callable entities; the three `MPI_T_*_get_index`
+lookups are MPI-3.1, not 3.0, per the MPI-3.1 report)** under the
+`UNIMPI_MPI_TARGET_VERSION>=3` build gate.
 
 UniMPI is a C99 runtime-dispatch layer for MPI. An application links to UniMPI
 once, then loads Open MPI, MPICH, Intel MPI, or Microsoft MPI at runtime.
