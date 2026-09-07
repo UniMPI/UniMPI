@@ -26,6 +26,7 @@ tests; a symbol or vtable field is not automatically a support guarantee.
 
 ## Operations and development
 
+- [PERFORMANCE.md](PERFORMANCE.md) — dispatch cost model and common-misconception corrections.
 - [BENCHMARKS.md](BENCHMARKS.md) — benchmark CLI and measurement methodology.
 - [CI_CD.md](CI_CD.md) — GitHub Actions backend matrix.
 - [WINDOWS.md](WINDOWS.md) — Windows/MS-MPI setup.

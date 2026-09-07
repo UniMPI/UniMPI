@@ -34,6 +34,20 @@ UniMPI adds a function-pointer dispatch step. End-to-end cost depends on the MPI
 operation, backend, compiler, hardware, and process placement; the project does
 not claim an unmeasured fixed nanosecond overhead.
 
+## Performance
+
+Dispatch is a macro layer (`#define MPI_Send unimpi.send`, 361 direct
+standard-name aliases) over a global table populated once at `MPI_Init` via
+`dlsym`. Steady-state calls add no symbol lookup and no wrapper frame — on top
+of what a dynamically linked native MPI already pays through the PLT, UniMPI
+adds a single `mov` + indirect `call`, on the order of a few cycles. For any
+real MPI work (buffering, matching, or data movement) the dispatch cost is a
+rounding error.
+
+See [PERFORMANCE.md](docs/PERFORMANCE.md) for the full cost model, the reasons
+this is not a "slow abstraction layer", and how to measure the paired
+direct-vs-vtable delta on your own hardware ([BENCHMARKS.md](docs/BENCHMARKS.md)).
+
 ## Build
 
 ```bash
