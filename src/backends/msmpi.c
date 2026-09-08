@@ -1066,8 +1066,6 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_T_finalize");
     unimpi_mt.t_cvar_get_num = (int (*)(int*))
         unimpi_platform_dlsym(handle, "MPI_T_cvar_get_num");
-    unimpi_mt.t_cvar_get_index = (int (*)(const char*, int*))
-        unimpi_platform_dlsym(handle, "MPI_T_cvar_get_index");
     unimpi_mt.t_cvar_get_info = (int (*)(int, char*, int*, MPI_Datatype*,
                                          MPI_T_enum*, MPI_T_cvar_handle*,
                                          int*, int*, void*))
@@ -1086,8 +1084,6 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_T_cvar_write_index");
     unimpi_mt.t_pvar_get_num = (int (*)(int*))
         unimpi_platform_dlsym(handle, "MPI_T_pvar_get_num");
-    unimpi_mt.t_pvar_get_index = (int (*)(const char*, int, int*))
-        unimpi_platform_dlsym(handle, "MPI_T_pvar_get_index");
     unimpi_mt.t_pvar_get_info = (int (*)(int, char*, int*, MPI_T_enum*,
                                          MPI_T_pvar_session*, int*, int*, void*))
         unimpi_platform_dlsym(handle, "MPI_T_pvar_get_info");
@@ -1117,8 +1113,6 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     /* MPI-3.0 category / enum introspection. */
     unimpi_mt.t_category_get_num = (int (*)(int*))
         unimpi_platform_dlsym(handle, "MPI_T_category_get_num");
-    unimpi_mt.t_category_get_index = (int (*)(const char*, int*))
-        unimpi_platform_dlsym(handle, "MPI_T_category_get_index");
     unimpi_mt.t_category_get_info = (int (*)(int, char*, int*, char*, int*,
         int*, int*, int*))unimpi_platform_dlsym(handle, "MPI_T_category_get_info");
     unimpi_mt.t_category_get_cvars = (int (*)(int, int, int[]))
@@ -1192,6 +1186,16 @@ int unimpi_vtable_init_msmpi(unimpi_lib_handle_t handle) {
     UNIMPI_T_PVAR_CLASS_AGGREGATE = 247;
     UNIMPI_T_PVAR_CLASS_TIMER = 248;
     UNIMPI_T_PVAR_CLASS_GENERIC = 249;
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 mpi_t_get_index */
+    unimpi_mt.t_cvar_get_index = (int (*)(const char*, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_cvar_get_index");
+    unimpi_mt.t_pvar_get_index = (int (*)(const char*, int, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_pvar_get_index");
+    unimpi_mt.t_category_get_index = (int (*)(const char*, int*))
+        unimpi_platform_dlsym(handle, "MPI_T_category_get_index");
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 #endif
 
     return UNIMPI_OK;

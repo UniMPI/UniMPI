@@ -87,16 +87,19 @@ REGISTRY = {
     ],
     "mpi_t_tools": [
         "t_init_thread", "t_finalize",
-        "t_cvar_get_num", "t_cvar_get_index", "t_cvar_get_info",
+        "t_cvar_get_num", "t_cvar_get_info",
         "t_cvar_handle_alloc", "t_cvar_handle_free", "t_cvar_read",
         "t_cvar_read_index", "t_cvar_write", "t_cvar_write_index",
-        "t_pvar_get_num", "t_pvar_get_index", "t_pvar_get_info",
+        "t_pvar_get_num", "t_pvar_get_info",
         "t_pvar_session_create", "t_pvar_session_free", "t_pvar_handle_alloc",
         "t_pvar_handle_free", "t_pvar_start", "t_pvar_stop", "t_pvar_read",
         "t_pvar_write", "t_pvar_readreset", "t_pvar_reset", "t_pvar_aggregate",
-        "t_category_get_num", "t_category_get_index", "t_category_get_info",
+        "t_category_get_num", "t_category_get_info",
         "t_category_get_cvars", "t_category_get_pvars", "t_category_get_categories",
         "t_category_changed", "t_enum_get_info", "t_enum_get_item",
+    ],
+    "mpi_t_get_index": [
+        "t_cvar_get_index", "t_pvar_get_index", "t_category_get_index",
     ],
 }
 
@@ -131,15 +134,27 @@ M30_CANONICAL = set("""
     comm_get_info comm_set_info
     get_elements_x status_set_elements_x type_get_extent_x
     type_get_true_extent_x type_size_x type_create_hindexed_block
-    t_init_thread t_finalize t_cvar_get_num t_cvar_get_index t_cvar_get_info
+    t_init_thread t_finalize t_cvar_get_num t_cvar_get_info
     t_cvar_handle_alloc t_cvar_handle_free t_cvar_read t_cvar_read_index
-    t_cvar_write t_cvar_write_index t_pvar_get_num t_pvar_get_index
-    t_pvar_get_info t_pvar_session_create t_pvar_session_free
+    t_cvar_write t_cvar_write_index t_pvar_get_num t_pvar_get_info
+    t_pvar_session_create t_pvar_session_free
     t_pvar_handle_alloc t_pvar_handle_free t_pvar_start t_pvar_stop
     t_pvar_read t_pvar_write t_pvar_readreset t_pvar_reset t_pvar_aggregate
-    t_category_get_num t_category_get_index t_category_get_info
+    t_category_get_num t_category_get_info
     t_category_get_cvars t_category_get_pvars t_category_get_categories
     t_category_changed t_enum_get_info t_enum_get_item
+""".split())
+
+# ---------------------------------------------------------------------------
+# Canonical MPI-3.1 C-callable function roster. MPI-3.1 adds exactly these to
+# the 3.0 surface (per MPI-3.1 report, Annex B.1.2). Only the three MPI-T
+# get_index lookups are part of the implemented UniMPI surface so far; the
+# other 3.1 additions (MPI_Aint_add/diff, MPI_File_i*_all) are not yet exposed
+# and are deliberately NOT listed here (a future 3.1-support task adds them
+# together with their vtable fields and bindings).
+# ---------------------------------------------------------------------------
+M31_CANONICAL = set("""
+    t_cvar_get_index t_pvar_get_index t_category_get_index
 """.split())
 
 FAILURES = []
@@ -346,7 +361,7 @@ def load_base_22(evo_path=DEF_EVO):
 def extract_always_present_fields(vtable_path):
     """Return fields NOT wrapped in an `#if UNIMPI_MPI_AT_LEAST` guard.
 
-    A field at AT_LEAST-depth 0 is part of the always-present base surface,
+    A field at UNIMPI_MPI_AT_LEAST-depth 0 is part of the always-present base surface,
     regardless of any other (platform / feature) preprocessor guard around it.
     """
     with open(vtable_path, "r", encoding="utf-8-sig") as fh:
@@ -400,12 +415,13 @@ def extract_all_fields(vtable_path):
 
 
 def run_check_mpi3(args):
-    """Reconcile the canonical MPI-3.0 C roster against the vtable.
+    """Reconcile the canonical MPI-3.0 + MPI-3.1 C rosters against the vtable.
 
     Reports, per standard function: present-in-vtable, properly gated in a 3.0
-    cluster, present-but-not-clustered (gating audit), or missing entirely.
-    Also checks the gated registry never drifts outside the canonical roster.
-    A function that is absent from the whole vtable is a hard coverage gap.
+    or 3.1 cluster, present-but-not-clustered (gating audit), or missing
+    entirely. Also checks the gated registry never drifts outside the combined
+    canonical roster. A function that is absent from the whole vtable is a hard
+    coverage gap.
     """
     vtable_path = resolve_file_path(args.vtable)
     if not os.path.isfile(vtable_path):
@@ -422,22 +438,30 @@ def run_check_mpi3(args):
     for members in REGISTRY.values():
         gated.update(members)
 
-    # Registry hygiene: every gated member must be a canonical MPI-3.0 function.
-    stray = gated - M30_CANONICAL
+    # Registry hygiene: every gated member must be a canonical MPI-3.0 *or*
+    # MPI-3.1 function. The 3.1 additions not yet implemented are absent from
+    # M31_CANONICAL by design and would be caught here as stray if a 3.1 cluster
+    # ever registers them before their vtable fields and bindings land.
+    canonical = M30_CANONICAL | M31_CANONICAL
+    stray = gated - canonical
     if stray:
         for f in sorted(stray):
             fail("mpi3: gated registry member '%s' is not in the canonical "
-                 "MPI-3.0 roster (check REGISTRY / M30_CANONICAL)" % f)
+                 "MPI-3.0/3.1 roster (check REGISTRY / M30_CANONICAL / "
+                 "M31_CANONICAL)" % f)
 
-    present = M30_CANONICAL & all_fields
-    missing = M30_CANONICAL - all_fields
-    gated_here = M30_CANONICAL & gated
+    present = canonical & all_fields
+    missing = canonical - all_fields
+    gated_here = canonical & gated
     present_ungated = sorted(present - gated)
 
-    total = len(M30_CANONICAL)
-    print("mpi3: canonical MPI-3.0 C functions (incl. MPI_T, excl. F08): %d" % total)
+    total = len(canonical)
+    print("mpi3: canonical MPI-3.0 + 3.1 C functions (incl. MPI_T, excl. F08): %d"
+          % total)
+    print("mpi3:   MPI-3.0 roster: %d, MPI-3.1 roster: %d"
+          % (len(M30_CANONICAL), len(M31_CANONICAL)))
     print("mpi3: present in vtable: %d (%.1f%%)" % (len(present), 100.0 * len(present) / total))
-    print("mpi3: properly gated in a 3.0 cluster: %d" % len(gated_here))
+    print("mpi3: properly gated in a 3.x cluster: %d" % len(gated_here))
     if present_ungated:
         print("mpi3: present but NOT clustered/gated (exposed; gating audit):")
         for f in present_ungated:
@@ -452,7 +476,7 @@ def run_check_mpi3(args):
         print("mpi3: FAILED (%d coverage gap(s), %d registry stray(s))"
               % (len(missing), len(stray)))
         sys.exit(1)
-    print("mpi3: passed (all canonical MPI-3.0 C functions exposed)")
+    print("mpi3: passed (all canonical MPI-3.0/3.1 C functions exposed)")
 
 
 def run_check_base(args):

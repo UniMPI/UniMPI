@@ -639,7 +639,6 @@
  * so they map straight onto the unimpi_mt vtable members -- the same
  * zero-cost shape as the main vtable (MPI_Send -> unimpi.send). */
 #define MPI_T_cvar_get_num          unimpi_mt.t_cvar_get_num
-#define MPI_T_cvar_get_index        unimpi_mt.t_cvar_get_index
 #define MPI_T_cvar_get_info         unimpi_mt.t_cvar_get_info
 #define MPI_T_cvar_handle_alloc     unimpi_mt.t_cvar_handle_alloc
 #define MPI_T_cvar_handle_free      unimpi_mt.t_cvar_handle_free
@@ -650,7 +649,6 @@
 
 /* MPI-T performance variables (same direct vtable mapping) */
 #define MPI_T_pvar_get_num          unimpi_mt.t_pvar_get_num
-#define MPI_T_pvar_get_index        unimpi_mt.t_pvar_get_index
 #define MPI_T_pvar_get_info         unimpi_mt.t_pvar_get_info
 #define MPI_T_pvar_session_create   unimpi_mt.t_pvar_session_create
 #define MPI_T_pvar_session_free     unimpi_mt.t_pvar_session_free
@@ -667,7 +665,6 @@
 /* MPI-T category / enum introspection. Also pure forwards with no state, so
  * they map straight onto the unimpi_mt vtable members. */
 #define MPI_T_category_get_num       unimpi_mt.t_category_get_num
-#define MPI_T_category_get_index     unimpi_mt.t_category_get_index
 #define MPI_T_category_get_info      unimpi_mt.t_category_get_info
 #define MPI_T_category_get_cvars     unimpi_mt.t_category_get_cvars
 #define MPI_T_category_get_pvars     unimpi_mt.t_category_get_pvars
@@ -735,5 +732,12 @@
 #define MPI_T_CVAR_HANDLE_NULL      UNIMPI_T_CVAR_HANDLE_NULL
 #define MPI_T_PVAR_SESSION_NULL          UNIMPI_T_PVAR_SESSION_NULL
 #endif /* UNIMPI_MPI_AT_LEAST(3,0) */
+
+/* MPI-3.1 MPI-T index lookups (mpi_t_get_index) */
+#if UNIMPI_MPI_AT_LEAST(3,1)
+#define MPI_T_cvar_get_index        unimpi_mt.t_cvar_get_index
+#define MPI_T_pvar_get_index        unimpi_mt.t_pvar_get_index
+#define MPI_T_category_get_index     unimpi_mt.t_category_get_index
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 
 #endif /* UNIMPI_STD_MACROS_H */

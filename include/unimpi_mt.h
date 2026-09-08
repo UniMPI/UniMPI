@@ -25,7 +25,6 @@ typedef struct unimpi_mt_vtable {
     int (*t_init_thread)(int required, int *provided);
     int (*t_finalize)(void);
     int (*t_cvar_get_num)(int *num_cvar);
-    int (*t_cvar_get_index)(const char *name, int *cvar_index);
     int (*t_cvar_get_info)(int cvar_index, char *name, int *name_len,
                            MPI_Datatype *datatype, MPI_T_enum *enumtype,
                            MPI_T_cvar_handle *cvar_handle, int *verbosity,
@@ -38,7 +37,6 @@ typedef struct unimpi_mt_vtable {
     int (*t_cvar_write)(MPI_T_cvar_handle handle, const void *cvar_value);
     int (*t_cvar_write_index)(int cvar_index, const void *cvar_value);
     int (*t_pvar_get_num)(int *num_pvar);
-    int (*t_pvar_get_index)(const char *name, int var_class, int *pvar_index);
     int (*t_pvar_get_info)(int pvar_index, char *name, int *name_len,
                            MPI_T_enum *enumtype, MPI_T_pvar_session *binding,
                            int *verbosity, int *var_class, void *var_extra);
@@ -60,7 +58,6 @@ typedef struct unimpi_mt_vtable {
     int (*t_pvar_aggregate)(MPI_T_pvar_session session, MPI_T_pvar_handle handle);
     /* --- MPI-3.0 category / enum introspection (read-only queries) --- */
     int (*t_category_get_num)(int *num_cat);
-    int (*t_category_get_index)(const char *name, int *category_index);
     int (*t_category_get_info)(int cat_index, char *name, int *name_len,
                                char *desc, int *desc_len, int *num_cvars,
                                int *num_pvars, int *num_categories);
@@ -72,6 +69,12 @@ typedef struct unimpi_mt_vtable {
                            int *name_len);
     int (*t_enum_get_item)(MPI_T_enum enumtype, int index, int *value,
                            char *name, int *name_len);
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 mpi_t_get_index */
+    int (*t_cvar_get_index)(const char *name, int *cvar_index);
+    int (*t_pvar_get_index)(const char *name, int var_class, int *pvar_index);
+    int (*t_category_get_index)(const char *name, int *category_index);
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 } unimpi_mt_vtable_t;
 
 extern unimpi_mt_vtable_t unimpi_mt;   /* born all-NULL; filled by backend init */
