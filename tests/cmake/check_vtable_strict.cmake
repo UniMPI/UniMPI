@@ -1,10 +1,12 @@
-# Negative-compile gate check for the MPI-3.0 vtable layout.
+# Negative-compile gate check for the MPI-3.0/3.1 vtable layout.
 #
-# Proves that the MPI-3.0 vtable fields are PHYSICALLY removed when building
-# against a 2.2 target. It compiles tests/internal/test_vtable_strict.c with
-# -DUNIMPI_MPI_TARGET_VERSION=2 -DUNIMPI_MPI_TARGET_SUBVERSION=2; that TU
-# references gated fields (unimpi.ibcast etc.) which must NOT compile. A clean
-# compile here means the guard is broken; a compile error is the expected pass.
+# Proves that the MPI-3.0 and MPI-3.1 vtable fields are PHYSICALLY removed
+# when building against a 2.2 target. It compiles
+# tests/internal/test_vtable_strict.c with -DUNIMPI_MPI_TARGET_VERSION=2
+# -DUNIMPI_MPI_TARGET_SUBVERSION=2; that TU references gated fields
+# (unimpi.ibcast, unimpi.aint_add, unimpi_mt.t_cvar_get_index, ...) which must
+# NOT compile. A clean compile here means a guard is broken; a compile error
+# is the expected pass.
 #
 # Usage:
 #   cmake -DUNIMPI_SOURCE_DIR=/path/to/source \
@@ -37,11 +39,11 @@ execute_process(
 
 if(result EQUAL 0)
     message(FATAL_ERROR
-        "test_vtable_strict: MPI-3.0 vtable fields COMPILED at target 2.2 "
-        "(e.g. unimpi.ibcast still present) -> version guards are BROKEN.\n"
-        "Compiler output:\n${out}${err}")
+        "test_vtable_strict: gated fields COMPILED at target 2.2 "
+        "(e.g. unimpi.ibcast / unimpi.aint_add still present) -> version "
+        "guards are BROKEN.\nCompiler output:\n${out}${err}")
 endif()
 
 message(STATUS
     "test_vtable_strict: compile correctly FAILED at target 2.2 "
-    "(MPI-3.0 fields absent -> gates active)")
+    "(MPI-3.0/3.1 fields absent -> gates active)")

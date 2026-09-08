@@ -50,7 +50,7 @@ macro:
 
 `UNIMPI_MPI_AT_LEAST(maj,min)` is true when the chosen **target** version is
 `>= maj.min`. Every gated element is wrapped in `#if UNIMPI_MPI_AT_LEAST(3,0)`.
-At the default target (3.1) every gate is open; at target 2.2 every `AT_LEAST(3,0)`
+At the default target (3.1) every gate is open; at target 2.2 every `UNIMPI_MPI_AT_LEAST(3,0)`
 gate is closed and its contents vanish from the compiled artifact.
 
 ### Do not confuse the target with the facade-capability constants
@@ -282,7 +282,7 @@ The same mechanism generalizes to MPI-4 / MPI-5. Future clusters (e.g. MPI-4
 later additions surfaced in `MPI_VERSION_EVOLUTION.md`) would be guarded with
 `UNIMPI_MPI_AT_LEAST(4,0)` / `UNIMPI_MPI_AT_LEAST(5,0)` and registered in
 `tools/versioned_clusters.csv` plus `tools/api_versions.csv`. The target-version
-machinery (`unimpi_version.h`, the `AT_LEAST` gate, CMake PUBLIC propagation,
+machinery (`unimpi_version.h`, the `UNIMPI_MPI_AT_LEAST` gate, CMake PUBLIC propagation,
 the checker) already supports this; no MPI-4/5 surface is implemented in this
 phase.
 

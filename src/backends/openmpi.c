@@ -1368,6 +1368,35 @@ int unimpi_vtable_init_openmpi(unimpi_lib_handle_t handle) {
     unimpi_mt.t_category_get_index = (int (*)(const char*, int*))
         unimpi_platform_dlsym(handle, "MPI_T_category_get_index");
 #endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 aint_add_diff */
+    /* MPI_Aint_add/diff are pure pointer arithmetic whose result the standard
+     * fixes; some backends export a C symbol (MPICH-family) while others
+     * (OpenMPI) expose macros with no dlsym-able symbol. Bind the symbol when
+     * present and fall back to the UniMPI arithmetic implementation so the
+     * slot is never NULL. */
+    unimpi.aint_add = (MPI_Aint (*)(MPI_Aint, MPI_Aint))
+        unimpi_platform_dlsym(handle, "MPI_Aint_add");
+    if (unimpi.aint_add == NULL)
+        unimpi.aint_add = unimpi_aint_add;
+    unimpi.aint_diff = (MPI_Aint (*)(MPI_Aint, MPI_Aint))
+        unimpi_platform_dlsym(handle, "MPI_Aint_diff");
+    if (unimpi.aint_diff == NULL)
+        unimpi.aint_diff = unimpi_aint_diff;
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 nonblocking_io_all */
+    unimpi.file_iread_all = (int (*)(MPI_File, void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iread_all");
+    unimpi.file_iwrite_all = (int (*)(MPI_File, const void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iwrite_all");
+    unimpi.file_iread_at_all = (int (*)(MPI_File, MPI_Offset, void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iread_at_all");
+    unimpi.file_iwrite_at_all = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_File_iwrite_at_all");
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 #endif
 
     return UNIMPI_OK;

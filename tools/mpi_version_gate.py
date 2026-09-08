@@ -101,61 +101,26 @@ REGISTRY = {
     "mpi_t_get_index": [
         "t_cvar_get_index", "t_pvar_get_index", "t_category_get_index",
     ],
+    "aint_add_diff": [
+        "aint_add", "aint_diff",
+    ],
+    "nonblocking_io_all": [
+        "file_iread_all", "file_iwrite_all", "file_iread_at_all",
+        "file_iwrite_at_all",
+    ],
 }
 
 # ---------------------------------------------------------------------------
-# Canonical MPI-3.0 C-callable function roster (bare names, no MPI_ prefix).
-#
-# This is the authoritative "what must the 3.0 surface expose" set, used by the
-# `mpi3` subcommand to mechanically reconcile the vtable against the standard.
-# It deliberately EXCLUDES only the Fortran-2008 bindings
-# (MPI_Status_f2f08/c2f08/f082f/f082c) -- they export no C symbol to bind and
-# cannot live in the C vtable.
-# It INCLUDES the MPI-3.0 one-sided RMA expansion, nonblocking + neighbor
-# collectives, matched probe, _x large-count queries, communicator helpers, and
-# the MPI_T tool interface (t_* names; fields live in unimpi_mt.h, folded into
-# the reconcile set by run_check_mpi3).
-# Types (MPI_Count, MPI_Message) are not functions and are not listed here.
+# Canonical MPI-3.0/3.1 C-callable rosters are NOT maintained here as literals:
+# the `mpi3` subcommand derives both from api_versions.csv (the version truth),
+# so a function added to the CSV and to REGISTRY but not to a roster is caught
+# as drift rather than silently misreported. The rosters deliberately exclude
+# only the Fortran-2008 status bindings (MPI_Status_f2f08/c2f08/f082f/f082c),
+# which export no C symbol to bind and are not versioned in the CSV either.
+# MPI_T t_* fields live in unimpi_mt.h and are folded into the reconcile set by
+# run_check_mpi3. Types (MPI_Count, MPI_Message) are not functions and are not
+# roster members.
 # ---------------------------------------------------------------------------
-M30_CANONICAL = set("""
-    win_allocate win_allocate_shared win_create_dynamic win_attach win_detach
-    win_shared_query win_flush win_flush_all win_flush_local win_flush_local_all
-    win_lock_all win_unlock_all win_sync win_get_info win_set_info
-    get_accumulate fetch_and_op compare_and_swap rput rget raccumulate
-    rget_accumulate
-    ibarrier ibcast igather igatherv iscatter iscatterv iallgather iallgatherv
-    ialltoall ialltoallv ialltoallw ireduce iallreduce ireduce_scatter
-    ireduce_scatter_block iscan iexscan
-    neighbor_allgather neighbor_allgatherv neighbor_alltoall neighbor_alltoallv
-    neighbor_alltoallw ineighbor_allgather ineighbor_allgatherv
-    ineighbor_alltoall ineighbor_alltoallv ineighbor_alltoallw
-    mprobe improbe mrecv imrecv
-    comm_idup comm_create_group comm_split_type comm_dup_with_info
-    comm_get_info comm_set_info
-    get_elements_x status_set_elements_x type_get_extent_x
-    type_get_true_extent_x type_size_x type_create_hindexed_block
-    t_init_thread t_finalize t_cvar_get_num t_cvar_get_info
-    t_cvar_handle_alloc t_cvar_handle_free t_cvar_read t_cvar_read_index
-    t_cvar_write t_cvar_write_index t_pvar_get_num t_pvar_get_info
-    t_pvar_session_create t_pvar_session_free
-    t_pvar_handle_alloc t_pvar_handle_free t_pvar_start t_pvar_stop
-    t_pvar_read t_pvar_write t_pvar_readreset t_pvar_reset t_pvar_aggregate
-    t_category_get_num t_category_get_info
-    t_category_get_cvars t_category_get_pvars t_category_get_categories
-    t_category_changed t_enum_get_info t_enum_get_item
-""".split())
-
-# ---------------------------------------------------------------------------
-# Canonical MPI-3.1 C-callable function roster. MPI-3.1 adds exactly these to
-# the 3.0 surface (per MPI-3.1 report, Annex B.1.2). Only the three MPI-T
-# get_index lookups are part of the implemented UniMPI surface so far; the
-# other 3.1 additions (MPI_Aint_add/diff, MPI_File_i*_all) are not yet exposed
-# and are deliberately NOT listed here (a future 3.1-support task adds them
-# together with their vtable fields and bindings).
-# ---------------------------------------------------------------------------
-M31_CANONICAL = set("""
-    t_cvar_get_index t_pvar_get_index t_category_get_index
-""".split())
 
 FAILURES = []
 
@@ -439,16 +404,20 @@ def run_check_mpi3(args):
         gated.update(members)
 
     # Registry hygiene: every gated member must be a canonical MPI-3.0 *or*
-    # MPI-3.1 function. The 3.1 additions not yet implemented are absent from
-    # M31_CANONICAL by design and would be caught here as stray if a 3.1 cluster
-    # ever registers them before their vtable fields and bindings land.
-    canonical = M30_CANONICAL | M31_CANONICAL
+    # MPI-3.1 function. The rosters are DERIVED from api_versions.csv (the
+    # version truth) rather than maintained as literals here, so a function
+    # added to the CSV and REGISTRY but missing from a roster is caught as
+    # drift instead of silently misreported. (The F08 status bindings export
+    # no C symbol and are not versioned in the CSV, so they never enter.)
+    entities = load_api_versions(args.api)
+    canonical30 = {n for n, (maj, mn) in entities.items() if (maj, mn) == (3, 0)}
+    canonical31 = {n for n, (maj, mn) in entities.items() if (maj, mn) == (3, 1)}
+    canonical = canonical30 | canonical31
     stray = gated - canonical
     if stray:
         for f in sorted(stray):
             fail("mpi3: gated registry member '%s' is not in the canonical "
-                 "MPI-3.0/3.1 roster (check REGISTRY / M30_CANONICAL / "
-                 "M31_CANONICAL)" % f)
+                 "MPI-3.0/3.1 roster (check REGISTRY / api_versions.csv)" % f)
 
     present = canonical & all_fields
     missing = canonical - all_fields
@@ -459,7 +428,7 @@ def run_check_mpi3(args):
     print("mpi3: canonical MPI-3.0 + 3.1 C functions (incl. MPI_T, excl. F08): %d"
           % total)
     print("mpi3:   MPI-3.0 roster: %d, MPI-3.1 roster: %d"
-          % (len(M30_CANONICAL), len(M31_CANONICAL)))
+          % (len(canonical30), len(canonical31)))
     print("mpi3: present in vtable: %d (%.1f%%)" % (len(present), 100.0 * len(present) / total))
     print("mpi3: properly gated in a 3.x cluster: %d" % len(gated_here))
     if present_ungated:
@@ -573,6 +542,8 @@ def main(argv=None):
                                      "against the vtable (present/gated/missing)")
     m3.add_argument("--vtable", default=os.path.join("include", "unimpi_vtable.h"),
                     help="path to include/unimpi_vtable.h")
+    m3.add_argument("--api", default=os.path.join(HERE, "api_versions.csv"),
+                    help="path to api_versions.csv (roster source of truth)")
     m3.set_defaults(func=run_check_mpi3)
 
     args = parser.parse_args(argv)

@@ -733,11 +733,25 @@
 #define MPI_T_PVAR_SESSION_NULL          UNIMPI_T_PVAR_SESSION_NULL
 #endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
-/* MPI-3.1 MPI-T index lookups (mpi_t_get_index) */
 #if UNIMPI_MPI_AT_LEAST(3,1)
+/* MPI-3.1 mpi_t_get_index */
 #define MPI_T_cvar_get_index        unimpi_mt.t_cvar_get_index
 #define MPI_T_pvar_get_index        unimpi_mt.t_pvar_get_index
 #define MPI_T_category_get_index     unimpi_mt.t_category_get_index
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+/* MPI-3.1 aint_add_diff */
+#define MPI_Aint_add      unimpi.aint_add
+#define MPI_Aint_diff     unimpi.aint_diff
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+/* MPI-3.1 nonblocking_io_all */
+#define MPI_File_iread_all       unimpi.file_iread_all
+#define MPI_File_iwrite_all      unimpi.file_iwrite_all
+#define MPI_File_iread_at_all    unimpi.file_iread_at_all
+#define MPI_File_iwrite_at_all   unimpi.file_iwrite_at_all
 #endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 
 #endif /* UNIMPI_STD_MACROS_H */

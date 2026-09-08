@@ -468,6 +468,18 @@ if(NOT (UNIMPI_MPI_TARGET_VERSION LESS 3))
     if(UNIMPI_REAL_MPI_TESTS_ENABLED)
         add_mpi_test(test_mpi30_t test_mpi30_t 1)
     endif()
+    # MPI-3.1 additions (address arithmetic + nonblocking collective file I/O).
+    # These call API that `#if` removes below a 3.1 target, so (unlike the
+    # 3.0 tests above) they need their own gate: major > 3, or major == 3 with
+    # minor >= 1. A bare 3.0 target must not build them.
+    if(UNIMPI_MPI_TARGET_VERSION GREATER 3 OR
+       (UNIMPI_MPI_TARGET_VERSION EQUAL 3 AND UNIMPI_MPI_TARGET_SUBVERSION GREATER 0))
+        add_executable(test_mpi31_core mpi/test_mpi31_core.c)
+        target_link_libraries(test_mpi31_core unimpi)
+        if(UNIMPI_REAL_MPI_TESTS_ENABLED)
+            add_mpi_test(test_mpi31_core test_mpi31_core 2)
+        endif()
+    endif()
     # MPI-3.0 RMA atomic + nonblocking-request semantics (Fetch_and_op /
     # Compare_and_swap / Get_accumulate / Rput / Rget / Raccumulate).
     add_executable(test_mpi30_rma_atomic mpi/test_mpi30_rma_atomic.c)

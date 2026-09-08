@@ -466,3 +466,18 @@ void unimpi_mt_set_inited(int inited) {
 }
 #endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
+#if UNIMPI_MPI_AT_LEAST(3,1)
+/* MPI-3.1 aint_add_diff */
+/* aint_add and aint_diff (the vtable slot names) are pure pointer arithmetic
+ * whose result the MPI standard fixes, so a fixed local implementation is
+ * equivalent across backends; backends bind their own symbol when they export
+ * one and fall back to these otherwise. Gated to 3.1 so a target-2.2/3.0
+ * facade does not export MPI-3.1 functions (VERSION_GATING.md). */
+MPI_Aint unimpi_aint_add(MPI_Aint base, MPI_Aint disp) {
+    return (MPI_Aint)((char *)base + disp);
+}
+MPI_Aint unimpi_aint_diff(MPI_Aint addr1, MPI_Aint addr2) {
+    return (MPI_Aint)((char *)addr1 - (char *)addr2);
+}
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+

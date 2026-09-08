@@ -661,6 +661,14 @@ typedef struct {
     int (*file_iread_shared)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
     int (*file_iwrite_shared)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
 
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 nonblocking_io_all */
+    int (*file_iread_all)(MPI_File fh, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iwrite_all)(MPI_File fh, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iread_at_all)(MPI_File fh, MPI_Offset offset, void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+    int (*file_iwrite_at_all)(MPI_File fh, MPI_Offset offset, const void *buf, int count, MPI_Datatype datatype, MPI_Request *request);
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
     /* Parallel I/O - Views */
     int (*file_set_view)(MPI_File fh, MPI_Offset disp, MPI_Datatype etype, MPI_Datatype filetype, const char *datarep, MPI_Info info);
     int (*file_get_view)(MPI_File fh, MPI_Offset *disp, MPI_Datatype *etype, MPI_Datatype *filetype, char *datarep);
@@ -700,6 +708,12 @@ typedef struct {
     /* Memory */
     int (*alloc_mem)(MPI_Aint size, MPI_Info info, void *baseptr);
     int (*free_mem)(void *baseptr);
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 aint_add_diff */
+    MPI_Aint (*aint_add)(MPI_Aint base, MPI_Aint disp);
+    MPI_Aint (*aint_diff)(MPI_Aint addr1, MPI_Aint addr2);
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 
     /* Reduction operations */
     int (*op_create)(void (*user_fn)(void *, void *, int *, MPI_Datatype *), int commute, MPI_Op *op);

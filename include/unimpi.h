@@ -93,6 +93,19 @@ UNIMPI_API int unimpi_print_backend_info(void);
 #include "unimpi_std_macros.h"
 #endif
 
+#if UNIMPI_MPI_AT_LEAST(3,1)
+/* MPI-3.1 aint_add_diff */
+/* aint_add and aint_diff (the vtable slot names) are provided by UniMPI
+ * rather than bound through the backend vtable: they are pure pointer
+ * arithmetic whose result the standard fixes, and some backends (OpenMPI)
+ * expose them only as macros with no dlsym-able C symbol. Backends assign
+ * these to the vtable slot when they have no symbol of their own, so the slot
+ * is never NULL. Gated to 3.1 so the declarations vanish from a target-2.2/3.0
+ * facade (VERSION_GATING.md). */
+MPI_Aint unimpi_aint_add(MPI_Aint base, MPI_Aint disp);
+MPI_Aint unimpi_aint_diff(MPI_Aint addr1, MPI_Aint addr2);
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
 #ifdef __cplusplus
 }
 #endif

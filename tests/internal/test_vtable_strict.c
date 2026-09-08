@@ -28,6 +28,17 @@ static void *p_op_commutative = (void *)&unimpi.op_commutative;
 static void *p_mt_init = (void *)&unimpi_mt.t_init_thread;
 static void *p_mt_cvar = (void *)&unimpi_mt.t_cvar_read;
 static void *p_mt_pvar = (void *)&unimpi_mt.t_pvar_aggregate;
+/* MPI-3.1 additions: address arithmetic, nonblocking collective file I/O and
+ * the MPI-T get_index lookups. None may exist at a 2.2 target either. */
+static void *p_aint_add = (void *)&unimpi.aint_add;
+static void *p_aint_diff = (void *)&unimpi.aint_diff;
+static void *p_file_iread_all = (void *)&unimpi.file_iread_all;
+static void *p_file_iwrite_all = (void *)&unimpi.file_iwrite_all;
+static void *p_file_iread_at_all = (void *)&unimpi.file_iread_at_all;
+static void *p_file_iwrite_at_all = (void *)&unimpi.file_iwrite_at_all;
+static void *p_mt_cvar_get_index = (void *)&unimpi_mt.t_cvar_get_index;
+static void *p_mt_pvar_get_index = (void *)&unimpi_mt.t_pvar_get_index;
+static void *p_mt_category_get_index = (void *)&unimpi_mt.t_category_get_index;
 
 int main(void) {
     (void)p_matched_probe;
@@ -42,5 +53,14 @@ int main(void) {
     (void)p_mt_init;
     (void)p_mt_cvar;
     (void)p_mt_pvar;
+    (void)p_aint_add;
+    (void)p_aint_diff;
+    (void)p_file_iread_all;
+    (void)p_file_iwrite_all;
+    (void)p_file_iread_at_all;
+    (void)p_file_iwrite_at_all;
+    (void)p_mt_cvar_get_index;
+    (void)p_mt_pvar_get_index;
+    (void)p_mt_category_get_index;
     return 0;
 }

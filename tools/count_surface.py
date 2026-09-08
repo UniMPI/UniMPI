@@ -65,7 +65,7 @@ def main():
     print("direct standard-name aliases (unique): %d" % unique)
     print("direct standard-name aliases (raw #define count): %d (incl. 2 "
           "conditional dup: MPI_File_get/set_errhandler)" % raw)
-    print("note: %d fields is the target-3.0 (MPI_AT_LEAST(3,0)=1) total; a "
+    print("note: %d fields is the target-3.0 (UNIMPI_MPI_AT_LEAST(3,0)=1) total; a "
           "target-2.2 build carries fewer (run test_vtable_layout for the "
           "exact value)." % fields)
 
