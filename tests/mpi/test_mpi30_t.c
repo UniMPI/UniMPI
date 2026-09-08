@@ -70,9 +70,14 @@ static int test_enum_selfcheck(void) {
     CHECK(MPI_T_pvar_get_num(&n));
     for (int i = 0; i < n && i < 4096; i++) {
         int name_len = 256, verb = 0, vclass = 0;
+        int bind = 0, ro = 0, cont = 0, atom = 0;
+        int desc_len = 256;
         MPI_T_enum et = 0;
+        MPI_Datatype dt = 0;
         char name[256];
-        if (MPI_T_pvar_get_info(i, name, &name_len, &et, NULL, &verb, &vclass, NULL) != 0)
+        char desc[256];
+        if (MPI_T_pvar_get_info(i, name, &name_len, &verb, &vclass, &dt, &et,
+                                desc, &desc_len, &bind, &ro, &cont, &atom) != 0)
             continue;
         int classes[10];
         int k, valid = 0;
@@ -118,8 +123,14 @@ static int test_noobject_roundtrip(void) {
     CHECK(MPI_T_pvar_get_num(&n));
     for (int i = 0; i < n && i < 4096; i++) {
         int name_len = 64, verb = 0, vclass = 0;
+        int bind = 0, ro = 0, cont = 0, atom = 0;
+        int desc_len = 192;
+        MPI_T_enum et = 0;
+        MPI_Datatype dt = 0;
         char name[64];
-        if (MPI_T_pvar_get_info(i, name, &name_len, NULL, NULL, &verb, &vclass, NULL) != 0)
+        char desc[192];
+        if (MPI_T_pvar_get_info(i, name, &name_len, &verb, &vclass, &dt, &et,
+                                desc, &desc_len, &bind, &ro, &cont, &atom) != 0)
             continue;
         /* only try simple non-trivial classes */
         if (vclass != UNIMPI_T_PVAR_CLASS_STATE &&
@@ -218,10 +229,14 @@ static int test_enum_query(void) {
     CHECK(unimpi_mt.t_pvar_get_num(&np));
     for (int i = 0; i < np; i++) {
         char name[128]; int name_len = sizeof(name);
+        int verb = 0, vc = 0, bind = 0, ro = 0, cont = 0, atom = 0;
+        int desc_len = sizeof(name);
         MPI_T_enum et = 0;          /* get_info's enumtype out-param */
-        MPI_T_pvar_session bind = 0; int verb = 0, vc = 0;
-        if (unimpi_mt.t_pvar_get_info(i, name, &name_len, &et, &bind, &verb, &vc,
-                                      NULL) != MPI_SUCCESS)
+        MPI_Datatype dt = 0;
+        char desc[128];
+        if (unimpi_mt.t_pvar_get_info(i, name, &name_len, &verb, &vc, &dt, &et,
+                                      desc, &desc_len, &bind, &ro, &cont,
+                                      &atom) != MPI_SUCCESS)
             continue;
         if (et == 0) continue;      /* not an enum-typed pvar */
         int num = 0; char ename[128]; int enlen = sizeof(ename);

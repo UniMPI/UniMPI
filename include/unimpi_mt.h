@@ -12,7 +12,11 @@ typedef intptr_t MPI_T_pvar_session;
 typedef intptr_t MPI_T_pvar_handle;
 typedef intptr_t MPI_T_cvar_handle;
 typedef intptr_t MPI_T_handle;      /* binding object type = opaque MPI handle */
-typedef int MPI_T_enum;             /* standard: int-valued enumeration */
+/* MPI_T_enum is an opaque handle in every real backend: both MPICH and
+ * OpenMPI typedef it to a pointer (struct MPIR_T_enum_s* / struct
+ * mca_base_var_enum_t*), so an intptr_t representation keeps the get_info ABI
+ * aligned. The MPI standard allows int or pointer. */
+typedef intptr_t MPI_T_enum;
 
 /* Independent MPI-T tools-interface vtable. Lives separately from the main
  * unimpi_vtable_t so MPI_T_* calls stay usable before MPI_Init and after
@@ -25,10 +29,12 @@ typedef struct unimpi_mt_vtable {
     int (*t_init_thread)(int required, int *provided);
     int (*t_finalize)(void);
     int (*t_cvar_get_num)(int *num_cvar);
+    /* Standard MPI-3.0+ signatures: 10/13 args (identical in 3.x/4.x),
+     * carrying desc/desc_len/bind (and pvar's readonly/continuous/atomic). */
     int (*t_cvar_get_info)(int cvar_index, char *name, int *name_len,
-                           MPI_Datatype *datatype, MPI_T_enum *enumtype,
-                           MPI_T_cvar_handle *cvar_handle, int *verbosity,
-                           int *scope, void *var_extra);
+                           int *verbosity, MPI_Datatype *datatype,
+                           MPI_T_enum *enumtype, char *desc, int *desc_len,
+                           int *bind, int *scope);
     int (*t_cvar_handle_alloc)(int cvar_index, void *obj_handle,
                                MPI_T_cvar_handle *handle, int *count);
     int (*t_cvar_handle_free)(MPI_T_cvar_handle *handle);
@@ -38,8 +44,10 @@ typedef struct unimpi_mt_vtable {
     int (*t_cvar_write_index)(int cvar_index, const void *cvar_value);
     int (*t_pvar_get_num)(int *num_pvar);
     int (*t_pvar_get_info)(int pvar_index, char *name, int *name_len,
-                           MPI_T_enum *enumtype, MPI_T_pvar_session *binding,
-                           int *verbosity, int *var_class, void *var_extra);
+                           int *verbosity, int *var_class,
+                           MPI_Datatype *datatype, MPI_T_enum *enumtype,
+                           char *desc, int *desc_len, int *bind, int *readonly,
+                           int *continuous, int *atomic);
     int (*t_pvar_session_create)(MPI_T_pvar_session *session);
     int (*t_pvar_session_free)(MPI_T_pvar_session *session);
     int (*t_pvar_handle_alloc)(MPI_T_pvar_session session, int pvar_index,
