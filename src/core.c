@@ -44,7 +44,7 @@ static int g_refcount = 0;
  * MPI-T helpers reference it, so it is gated with them. */
 #if UNIMPI_MPI_AT_LEAST(3,0)
 static int g_mpit_inited = 0;
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
 /* Set once the backend library is dlopen'd and BOTH vtables are filled, so
  * unimpi_ensure_loaded() is idempotent. Cleared whenever the library is

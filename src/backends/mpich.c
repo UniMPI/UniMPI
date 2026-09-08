@@ -223,7 +223,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Mrecv");
     unimpi.imrecv = (int (*)(void*, int, MPI_Datatype, MPI_Message*, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Imrecv");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Persistent communication */
     unimpi.send_init = (int (*)(const void*, int, MPI_Datatype, int, int, MPI_Comm, MPI_Request*))
@@ -374,7 +374,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Get_elements_x");
     unimpi.status_set_elements_x = (int (*)(MPI_Status*, MPI_Datatype, MPI_Count))
         unimpi_platform_dlsym(handle, "MPI_Status_set_elements_x");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
     unimpi.type_extent = (int (*)(MPI_Datatype, MPI_Aint*))
         unimpi_platform_dlsym(handle, "MPI_Type_extent");
     unimpi.type_lb = (int (*)(MPI_Datatype, MPI_Aint*))
@@ -442,7 +442,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Iscan");
     unimpi.iexscan = (int (*)(const void*, void*, int, MPI_Datatype, MPI_Op, MPI_Comm, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Iexscan");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
 #if UNIMPI_MPI_AT_LEAST(3,0)
     /* MPI-3.0 neighbor_collectives */
@@ -479,7 +479,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
             unimpi_platform_dlsym(handle, "MPI_Ineighbor_alltoallw");
     if (mpich_ineighbor_alltoallw)
         unimpi.ineighbor_alltoallw = mpich_wrap_ineighbor_alltoallw;
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Group operations */
     unimpi.group_size = (int (*)(MPI_Group, int*))
@@ -530,7 +530,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_get_info");
     unimpi.comm_set_info = (int (*)(MPI_Comm, MPI_Info))
         unimpi_platform_dlsym(handle, "MPI_Comm_set_info");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Intercommunicator Operations (MPI-2.2) */
     unimpi.intercomm_create = (int (*)(MPI_Comm, int, MPI_Comm, int, int, MPI_Comm*))
@@ -605,7 +605,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_allocate_shared");
     unimpi.win_create_dynamic = (int (*)(MPI_Info, MPI_Comm, MPI_Win*))
         unimpi_platform_dlsym(handle, "MPI_Win_create_dynamic");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
     unimpi.win_set_name = (int (*)(MPI_Win, const char*))
         unimpi_platform_dlsym(handle, "MPI_Win_set_name");
     unimpi.win_get_name = (int (*)(MPI_Win, char*, int*))
@@ -636,7 +636,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Raccumulate");
     unimpi.rget_accumulate = (int (*)(const void*, int, MPI_Datatype, void*, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Rget_accumulate");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* RMA Synchronization */
     unimpi.win_fence = (int (*)(int, MPI_Win))
@@ -659,7 +659,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_sync");
     unimpi.win_flush_local = (int (*)(int, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_flush_local");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 #if UNIMPI_MPI_AT_LEAST(3,0)
     /* MPI-3.0 win_dynamic */
     unimpi.win_attach = (int (*)(MPI_Win, void*, MPI_Aint))
@@ -674,7 +674,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Win_get_info");
     unimpi.win_set_info = (int (*)(MPI_Win, MPI_Info))
         unimpi_platform_dlsym(handle, "MPI_Win_set_info");
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
     unimpi.win_start = (int (*)(MPI_Group, int, MPI_Win))
         unimpi_platform_dlsym(handle, "MPI_Win_start");
     unimpi.win_complete = (int (*)(MPI_Win))
@@ -1260,7 +1260,7 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
     unimpi.comm_idup = (int (*)(MPI_Comm, MPI_Comm*, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_Comm_idup");
 #endif /* UNIMPI_MPI_AT_LEAST(3,1) */
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     return UNIMPI_OK;
 }

@@ -33,7 +33,7 @@ typedef int MPI_Fint;
 /* MPI_Count - MPI-3.0 large-count type (>= 64-bit unsigned). Non-handle,
  * passed by value; must remain 64-bit to match every backend's MPI_Count. */
 typedef unsigned long long MPI_Count;
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
 /* MPI attribute callback function types (comm/type/win) */
 typedef int (MPI_Comm_copy_attr_function)(MPI_Comm oldcomm, int comm_keyval, void *extra_state,
@@ -288,7 +288,7 @@ typedef struct {
     int (*improbe)(int source, int tag, MPI_Comm comm, int *flag, MPI_Message *message, MPI_Status *status);
     int (*mrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, MPI_Status *status);
     int (*imrecv)(void *buf, int count, MPI_Datatype datatype, MPI_Message *message, MPI_Request *request);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Message probing */
     int (*probe)(int source, int tag, MPI_Comm comm, MPI_Status *status);
@@ -406,7 +406,7 @@ typedef struct {
                  MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
     int (*iexscan)(const void *sendbuf, void *recvbuf, int count,
                    MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
 #if UNIMPI_MPI_AT_LEAST(3,0)
     /* MPI-3.0 neighbor_collectives */
@@ -444,7 +444,7 @@ typedef struct {
                                const MPI_Datatype *sendtypes, void *recvbuf,
                                const int *recvcounts, const MPI_Aint *rdispls,
                                const MPI_Datatype *recvtypes, MPI_Comm comm, MPI_Request *request);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Group operations */
     int (*group_size)(MPI_Group group, int *size);
@@ -478,7 +478,7 @@ typedef struct {
     int (*comm_create_group)(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm);
     int (*comm_get_info)(MPI_Comm comm, MPI_Info *info_used);
     int (*comm_set_info)(MPI_Comm comm, MPI_Info info);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Intercommunicator Operations (MPI-2.2) */
     int (*intercomm_create)(MPI_Comm local_comm, int local_leader,
@@ -541,7 +541,7 @@ typedef struct {
     int (*win_allocate)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
     int (*win_allocate_shared)(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win);
     int (*win_create_dynamic)(MPI_Info info, MPI_Comm comm, MPI_Win *win);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
     int (*win_free)(MPI_Win *win);
     int (*win_set_name)(MPI_Win win, const char *win_name);
     int (*win_get_name)(MPI_Win win, char *win_name, int *resultlen);
@@ -577,7 +577,7 @@ typedef struct {
                            void *result_addr, int result_count, MPI_Datatype result_datatype,
                            int target_rank, MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype,
                            MPI_Op op, MPI_Win win, MPI_Request *request);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* RMA Synchronization */
     int (*win_fence)(int assert, MPI_Win win);
@@ -596,7 +596,7 @@ typedef struct {
     int (*win_flush_all)(MPI_Win win);
     int (*win_flush_local)(int rank, MPI_Win win);
     int (*win_sync)(MPI_Win win);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
 #if UNIMPI_MPI_AT_LEAST(3,0)
     /* MPI-3.0 win_dynamic */
@@ -606,7 +606,7 @@ typedef struct {
     int (*win_flush_local_all)(MPI_Win win);
     int (*win_get_info)(MPI_Win win, MPI_Info *info_used);
     int (*win_set_info)(MPI_Win win, MPI_Info info);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Parallel I/O - File operations */
     int (*file_open)(MPI_Comm comm, const char *filename, int amode, MPI_Info info, MPI_File *fh);
@@ -868,7 +868,7 @@ typedef struct {
                                       MPI_Datatype oldtype, MPI_Datatype *newtype);
     int (*get_elements_x)(const MPI_Status *status, MPI_Datatype datatype, MPI_Count *count);
     int (*status_set_elements_x)(MPI_Status *status, MPI_Datatype datatype, MPI_Count count);
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
     int (*type_get_name)(MPI_Datatype datatype, char *type_name, int *resultlen);
     int (*type_set_name)(MPI_Datatype datatype, const char *type_name);
     int (*type_extent)(MPI_Datatype datatype, MPI_Aint *extent);

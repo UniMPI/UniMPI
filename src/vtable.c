@@ -100,7 +100,7 @@ int unimpi_vtable_init(unimpi_lib_handle_t handle) {
      * A backend that does not export a given MPI_T_* symbol leaves its slot
      * NULL; the *_available() test helper gates on that. */
     memset(&unimpi_mt, 0, sizeof(unimpi_mt_vtable_t));
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     /* Validate core symbols */
     ret = unimpi_vtable_validate_core(handle);

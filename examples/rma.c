@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
             "MPI_Win_create") != 0) {
         return 1;
     }
-#endif
+#endif /* UNIMPI_MPI_AT_LEAST(3,0) */
 
     *window_value = -1;
     origin_value = 1000 + rank;
