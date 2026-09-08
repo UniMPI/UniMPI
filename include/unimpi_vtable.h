@@ -478,7 +478,6 @@ typedef struct {
     int (*comm_create_group)(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm);
     int (*comm_get_info)(MPI_Comm comm, MPI_Info *info_used);
     int (*comm_set_info)(MPI_Comm comm, MPI_Info info);
-    int (*comm_idup)(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request);
 #endif
 
     /* Intercommunicator Operations (MPI-2.2) */
@@ -713,6 +712,11 @@ typedef struct {
     /* MPI-3.1 aint_add_diff */
     MPI_Aint (*aint_add)(MPI_Aint base, MPI_Aint disp);
     MPI_Aint (*aint_diff)(MPI_Aint addr1, MPI_Aint addr2);
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 comm_idup */
+    int (*comm_idup)(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request);
 #endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 
     /* Reduction operations */

@@ -6,12 +6,13 @@
 
 /* MPI-3.1 additions integration suite (Annex B.1.2).
  *
- * Exercises all nine MPI-3.1 additions through the standard names:
+ * Exercises all ten MPI-3.1 additions through the standard names:
  *   - MPI_Aint_add / MPI_Aint_diff (address arithmetic, pure scalar pass-through)
  *   - MPI_File_iread_all / MPI_File_iwrite_all / MPI_File_iread_at_all /
  *     MPI_File_iwrite_at_all (nonblocking collective file I/O)
  *   - MPI_T_cvar_get_index / MPI_T_pvar_get_index / MPI_T_category_get_index
  *     (by-name variable lookups)
+ *   - MPI_Comm_idup (nonblocking communicator duplication)
  *
  * Address arithmetic is self-consistent (no backend value assumed), so it holds
  * across MPICH-family, Intel-MPI, MS-MPI and OpenMPI regardless of their
@@ -302,6 +303,28 @@ static int test_mpi_t_get_index(void) {
     return rc;
 }
 
+static int test_comm_idup(MPI_Comm comm) {
+    int rank = -1, newrank = -1, rc = 0;
+    MPI_Comm newcomm;
+    MPI_Request req;
+    /* Nonblocking comm duplicate: all ranks participate, because a backend
+     * (OpenMPI) only completes the idup request once the whole communicator
+     * has issued it. Wait it out, then confirm the duplicate reports the same
+     * rank as the original. */
+    CHECK(MPI_Comm_rank(comm, &rank));
+    CHECK(MPI_Comm_idup(comm, &newcomm, &req));
+    CHECK(MPI_Wait(&req, MPI_STATUS_IGNORE));
+    CHECK(MPI_Comm_rank(newcomm, &newrank));
+    if (newrank != rank) {
+        fprintf(stderr, "FAIL rank %d Comm_idup newcomm rank=%d\n",
+                rank, newrank);
+        rc = 1;
+    }
+    printf("  Comm_idup OK (rank %d)\n", rank);
+    MPI_Comm_free(&newcomm);
+    return rc;
+}
+
 int main(int argc, char **argv) {
     int rank = 0, rc = 0;
     MPI_Init(&argc, &argv);
@@ -311,6 +334,7 @@ int main(int argc, char **argv) {
     if (rank == 0 && test_aint_add_diff()) rc = 1;
     if (test_file_nonblocking_all(rank)) rc = 1;  /* collective; barrier inside */
     if (rank == 0 && test_mpi_t_get_index()) rc = 1;
+    if (test_comm_idup(MPI_COMM_WORLD)) rc = 1;  /* collective; all ranks dup */
     MPI_Barrier(MPI_COMM_WORLD);   /* all ranks exit together; no rank hangs */
     if (rank == 0 && rc == 0)
         printf("=== All MPI-3.1 additions tests passed ===\n");

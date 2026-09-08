@@ -530,8 +530,6 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_Comm_get_info");
     unimpi.comm_set_info = (int (*)(MPI_Comm, MPI_Info))
         unimpi_platform_dlsym(handle, "MPI_Comm_set_info");
-    unimpi.comm_idup = (int (*)(MPI_Comm, MPI_Comm*, MPI_Request*))
-        unimpi_platform_dlsym(handle, "MPI_Comm_idup");
 #endif
 
     /* Intercommunicator Operations (MPI-2.2) */
@@ -1255,6 +1253,12 @@ int unimpi_vtable_init_mpich(unimpi_lib_handle_t handle) {
         unimpi_platform_dlsym(handle, "MPI_File_iread_at_all");
     unimpi.file_iwrite_at_all = (int (*)(MPI_File, MPI_Offset, const void*, int, MPI_Datatype, MPI_Request*))
         unimpi_platform_dlsym(handle, "MPI_File_iwrite_at_all");
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+    /* MPI-3.1 comm_idup */
+    unimpi.comm_idup = (int (*)(MPI_Comm, MPI_Comm*, MPI_Request*))
+        unimpi_platform_dlsym(handle, "MPI_Comm_idup");
 #endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 #endif
 

@@ -1,6 +1,6 @@
 /* tests/mpi/test_mpi30_core.c
  * MPI-3.0 core feature integration test: neighbor collectives, large-count
- * (_x) datatype query, dynamic windows, Comm_idup.
+ * (_x) datatype query, dynamic windows.
  *
  * Runs only when UniMPI's target is >= MPI-3.0 (see tests/CMakeLists.txt);
  * uses API that an MPI-2.2 target #if's out of the vtable and std macros.
@@ -109,24 +109,6 @@ static int test_neighbor_cart_alltoallw(MPI_Comm comm) {
     return 0;
 }
 
-static int test_comm_idup(MPI_Comm comm) {
-    MPI_Comm newcomm;
-    MPI_Request req;
-    /* Nonblocking comm duplicate: wait it out and confirm usable size/rank. */
-    int newrank = -1;
-    CHECK(MPI_Comm_idup(comm, &newcomm, &req));
-    CHECK(MPI_Wait(&req, MPI_STATUS_IGNORE));
-    CHECK(MPI_Comm_rank(newcomm, &newrank));
-    if (newrank < 0) {
-        fprintf(stderr, "FAIL rank %d Comm_idup newcomm rank=%d\n",
-                newrank < 0 ? 0 : newrank, newrank);
-        return 1;
-    }
-    printf("  Comm_idup OK\n");
-    MPI_Comm_free(&newcomm);
-    return 0;
-}
-
 static int test_large_count_and_type_x(MPI_Comm comm) {
     MPI_Count sz = 0, lb = 0, ext = 0, true_ext = 0;
     CHECK(MPI_Type_size_x(MPI_INT, &sz));
@@ -193,7 +175,6 @@ int main(int argc, char **argv) {
     printf("=== MPI-3.0 core tests ===\n");
     if (test_neighbor_allgather(MPI_COMM_WORLD)) goto fail;
     if (test_neighbor_cart_alltoallw(MPI_COMM_WORLD)) goto fail;
-    if (test_comm_idup(MPI_COMM_WORLD)) goto fail;
     if (test_large_count_and_type_x(MPI_COMM_WORLD)) goto fail;
     if (test_win_dynamic()) goto fail;
     printf("=== All MPI-3.0 core tests passed ===\n");

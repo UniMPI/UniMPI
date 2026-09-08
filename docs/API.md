@@ -2,10 +2,12 @@
 
 Reference for UniMPI's public control API and commonly used runtime-dispatch
 fields. The vtable contains 370 MPI function-pointer fields (the language-level
-total; 364 are exposed at a 3.0 target and the six MPI-3.1 additions --
-`MPI_Aint_add`/`MPI_Aint_diff` and the four `File_*_all` -- only at 3.1+) and
-the standard-name header contains 367 direct aliases (358 at a 3.0 target;
-three of the ones excluded are the MPI-3.1 `MPI_T_*_get_index`). Run
+total; 363 are exposed at a 3.0 target -- the seven MPI-3.1 additions
+[`MPI_Aint_add`/`MPI_Aint_diff`, the four `File_*_all`, and `MPI_Comm_idup`]
+are gated at 3.1+) and the standard-name header contains 367 direct aliases
+(357 at a 3.0 target; the ten MPI-3.1 aliases -- the three
+`MPI_T_*_get_index`, aint (2), `File_*_all` (4) and `MPI_Comm_idup` -- are
+gated at 3.1+). Run
 `tools/count_surface.py` for the current numbers. This document is not a
 claim
 of complete MPI-standard coverage; consult

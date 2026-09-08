@@ -12,11 +12,13 @@ MPI conformance or runtime availability.
 ## Current API inventory
 
 - `unimpi_vtable_t` contains 370 MPI function-pointer fields (the language-level
-  total; 364 are exposed at a 3.0 target -- the six MPI-3.1 additions are gated
-  at 3.1+).
+  total; 363 are exposed at a 3.0 target -- the seven MPI-3.1 additions
+  [`MPI_Aint_add`/`MPI_Aint_diff` (aint, 2), the four `File_*_all` nonblocking
+  I/O, and `MPI_Comm_idup`] are gated at 3.1+).
 - `unimpi_std_macros.h` contains 367 direct standard-name aliases of the form
-  `MPI_* -> unimpi.<field>` (358 at a 3.0 target; the MPI-3.1
-  `MPI_T_*_get_index` / aint / `File_*_all` aliases are gated at 3.1+).
+  `MPI_* -> unimpi.<field>` (357 at a 3.0 target; the ten MPI-3.1 aliases --
+  the three `MPI_T_*_get_index`, aint (2), `File_*_all` (4) and
+  `MPI_Comm_idup` -- are gated at 3.1+).
 - Initialization, finalization, constants, and a small number of function-like
   convenience macros are defined separately.
 
@@ -95,7 +97,7 @@ standard rule is covered.
 | Request completion and persistent setup | No | Yes | Yes | Yes | Yes | Request-handle arrays and per-element status arrays are adapted in place for the native stride; payload completion, zero counts and `Startall` are exercised |
 | Blocking collectives | No | Yes | Yes | Yes | Yes | Barrier, broadcast, gather/scatter, all-to-all and reductions subset |
 | Nonblocking collectives | No | Yes | Yes | Yes | Partial | Open MPI exercises all 17 calls; MPICH and Intel exercise the full set including `Ialltoallw`, adapted in memory for the native 4-byte datatype-handle stride; MS-MPI requires its documented nine-call subset |
-| Neighbor collectives | No | Yes | Yes | Yes | Yes | MPI-3.0 dist-graph ring round trip: `Neighbor_allgather`, the neighbor `alltoall(v/w)` family and `Comm_idup`; datatype arrays adapted for the MPICH-family 4-byte stride |
+| Neighbor collectives | No | Yes | Yes | Yes | Yes | MPI-3.0 dist-graph ring round trip: `Neighbor_allgather` and the neighbor `alltoall(v/w)` family; `Comm_idup` is covered in the MPI-3.1 suite; datatype arrays adapted for the MPICH-family 4-byte stride |
 | Core datatypes and pack/unpack | No | Yes | Yes | Yes | Yes | Representative derived datatypes |
 | Large-count (_x) types | No | Yes | Yes | Yes | Yes | MPI-3.0 `Type_size_x` / `get_extent_x` / `get_true_extent_x`, `Get_elements_x` / `Status_set_elements_x`, `Type_create_hindexed_block` (64-bit `MPI_Count`) |
 | Communicators and groups | No | Yes | Yes | Yes | Yes | Representative create/split/compare/group operations |

@@ -78,3 +78,9 @@ src/backends/openmpi.c,nonblocking_io_all,3,1
 src/backends/mpich.c,nonblocking_io_all,3,1
 src/backends/intelmpi.c,nonblocking_io_all,3,1
 src/backends/msmpi.c,nonblocking_io_all,3,1
+include/unimpi_vtable.h,comm_idup,3,1
+include/unimpi_std_macros.h,comm_idup,3,1
+src/backends/openmpi.c,comm_idup,3,1
+src/backends/mpich.c,comm_idup,3,1
+src/backends/intelmpi.c,comm_idup,3,1
+src/backends/msmpi.c,comm_idup,3,1

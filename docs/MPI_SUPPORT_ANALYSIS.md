@@ -10,8 +10,12 @@ The maintained verification contract is
 
 ## Inventory
 
-- 364 MPI function-pointer fields in `unimpi_vtable_t` (target 3.0).
-- 361 direct standard-name aliases in `unimpi_std_macros.h`.
+- 370 MPI function-pointer fields in `unimpi_vtable_t` (language-level total;
+  363 exposed at a 3.0 target -- the seven MPI-3.1 additions [aint (2),
+  `File_*_all` (4), `MPI_Comm_idup`] are gated at 3.1+).
+- 367 direct standard-name aliases in `unimpi_std_macros.h` (357 at a 3.0
+  target; the ten MPI-3.1 aliases -- the three `MPI_T_*_get_index`, aint (2),
+  `File_*_all` (4), `MPI_Comm_idup` -- are gated at 3.1+).
 - Separate control wrappers for initialization, finalization, state queries,
   backend identity, diagnostics, and UniMPI errors.
 - Four backend adapters: Open MPI, MPICH, Intel MPI, and MS-MPI.
@@ -22,11 +26,13 @@ focused integration tests determine the supported runtime subset.
 
 The counts above are for the **default target (3.1)**. The exposed surface
 narrows with the target version selected at build time
-(`UNIMPI_MPI_TARGET_VERSION`/`UNIMPI_MPI_TARGET_SUBVERSION`): the 6 MPI-3.0
+(`UNIMPI_MPI_TARGET_VERSION`/`UNIMPI_MPI_TARGET_SUBVERSION`): the 3.0-gated
 clusters (matched probe, nonblocking collectives, comm info, shared windows,
-RMA atomics, RMA sync) are physically
-removed below a 3.0 target, so a 2.2 build has 297 vtable fields and a matching
-alias surface. The MPI-2 base (including `Alltoallw`, `Comm_join`,
+RMA atomics, RMA sync, neighbor collectives, large count, dynamic windows,
+MPI-T) and the 3.1-gated additions (aint, `File_*_all`,
+`MPI_T_*_get_index`, `MPI_Comm_idup`) are physically removed below their
+target, so a 2.2 build has 299 vtable fields and a matching alias surface.
+The MPI-2 base (including `Alltoallw`, `Comm_join`,
 `Op_commutative`) is always present. Runtime capability is still
 decided by the dlopen'd backend, independent of the compile-time target. See
 [VERSION_GATING.md](VERSION_GATING.md).

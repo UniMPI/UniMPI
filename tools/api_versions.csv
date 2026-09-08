@@ -63,7 +63,7 @@ win_shared_query,3,0
 win_flush_local_all,3,0
 win_get_info,3,0
 win_set_info,3,0
-comm_idup,3,0
+comm_idup,3,1
 t_init_thread,3,0
 t_finalize,3,0
 t_cvar_get_num,3,0

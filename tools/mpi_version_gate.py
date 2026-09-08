@@ -60,7 +60,7 @@ REGISTRY = {
     ],
     "comm_3x": [
         "comm_dup_with_info", "comm_split_type", "comm_create_group",
-        "comm_get_info", "comm_set_info", "comm_idup",
+        "comm_get_info", "comm_set_info",
     ],
     "win_alloc_shared": ["win_allocate", "win_allocate_shared", "win_create_dynamic"],
     "rma_atomics": [
@@ -107,6 +107,9 @@ REGISTRY = {
     "nonblocking_io_all": [
         "file_iread_all", "file_iwrite_all", "file_iread_at_all",
         "file_iwrite_at_all",
+    ],
+    "comm_idup": [
+        "comm_idup",
     ],
 }
 

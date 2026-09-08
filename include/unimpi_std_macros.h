@@ -313,7 +313,6 @@
 #define MPI_Comm_create_group unimpi.comm_create_group
 #define MPI_Comm_get_info unimpi.comm_get_info
 #define MPI_Comm_set_info unimpi.comm_set_info
-#define MPI_Comm_idup unimpi.comm_idup
 #endif
 #define MPI_Comm_compare unimpi.comm_compare
 
@@ -752,6 +751,11 @@
 #define MPI_File_iwrite_all      unimpi.file_iwrite_all
 #define MPI_File_iread_at_all    unimpi.file_iread_at_all
 #define MPI_File_iwrite_at_all   unimpi.file_iwrite_at_all
+#endif /* UNIMPI_MPI_AT_LEAST(3,1) */
+
+#if UNIMPI_MPI_AT_LEAST(3,1)
+/* MPI-3.1 comm_idup */
+#define MPI_Comm_idup unimpi.comm_idup
 #endif /* UNIMPI_MPI_AT_LEAST(3,1) */
 
 #endif /* UNIMPI_STD_MACROS_H */
