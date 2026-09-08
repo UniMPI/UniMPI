@@ -1,25 +1,28 @@
 # UniMPI
 
-**Current release:** [v0.2.0-alpha](CHANGELOG.md) (2026-09-05) - MPI-2.2 base
-surface **305 / 305 canonical entities exposed (100%)**, plus **MPI-3.0 basic
-support (96 / 96 canonical C-callable entities; the three `MPI_T_*_get_index`
-lookups are MPI-3.1, not 3.0, per the MPI-3.1 report)** under the
-`UNIMPI_MPI_TARGET_VERSION>=3` build gate.
+**Current release:** [v0.2.1-alpha](CHANGELOG.md) (2026-09-08) - the full
+MPI-2.2 base surface **305 / 305 canonical entities exposed (100%)**, the full
+MPI-3.0 C-callable roster **95 / 95**, and the ten MPI-3.1 additions
+(`Comm_idup`, `Aint_add`/`Aint_diff`, the four `File_*_all` nonblocking I/O,
+and the three `MPI_T_*_get_index` lookups) **10 / 10**, each under its
+`UNIMPI_MPI_AT_LEAST(maj,min)` build gate.
 
 UniMPI is a C99 runtime-dispatch layer for MPI. An application links to UniMPI
 once, then loads Open MPI, MPICH, Intel MPI, or Microsoft MPI at runtime.
 
-The current interface contains **364 MPI function-pointer fields** (at target
-3.0; fewer under a lower gate) and **361 direct standard-name aliases**,
-covering the full MPI-2.2 base surface plus
-**MPI-3.0 basic support** — the entire MPI-3.0 C-callable roster (neighbor
+The current interface contains **370 MPI function-pointer fields** (the
+language-level total at a 3.1 target) and **367 direct standard-name aliases**,
+covering the full MPI-2.2 base surface plus MPI-3.0 basic support (neighbor
 collectives, nonblocking collectives, one-sided RMA atomics, `_x` large-count
 queries, communicator helpers, and the MPI_T tools interface incl. category /
-enum introspection). MPI-3.0 fields are gated behind
-`UNIMPI_MPI_AT_LEAST(3,0)` and only appear when the user builds with
-`-DUNIMPI_MPI_TARGET_VERSION=3`; the default target is MPI-2.2, which is the
-guaranteed base. See the [support matrix](docs/SUPPORT_MATRIX.md) for what is
-exercised on each backend.
+enum introspection and the `get_info` slots bound with the standard 10/13-arg
+signatures) and the MPI-3.1 additions. Fields are gated behind
+`UNIMPI_MPI_AT_LEAST(3,0)` / `UNIMPI_MPI_AT_LEAST(3,1)` and only appear when
+the target version includes them: 370 fields at 3.1, **363 at 3.0**, **299 at
+the default target 2.2** (the guaranteed base). Run `tools/count_surface.py`
+for the current counts, or `test_vtable_layout` for a specific target build's
+exact `UNIMPI_VTABLE_COUNT`. See the
+[support matrix](docs/SUPPORT_MATRIX.md) for what is exercised on each backend.
 
 ## What it provides
 
@@ -36,7 +39,7 @@ not claim an unmeasured fixed nanosecond overhead.
 
 ## Performance
 
-Dispatch is a macro layer (`#define MPI_Send unimpi.send`, 361 direct
+Dispatch is a macro layer (`#define MPI_Send unimpi.send`, 367 direct
 standard-name aliases) over a global table populated once at `MPI_Init` via
 `dlsym`. Steady-state calls add no symbol lookup and no wrapper frame — on top
 of what a dynamically linked native MPI already pays through the PLT, UniMPI

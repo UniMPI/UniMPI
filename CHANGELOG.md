@@ -5,6 +5,39 @@ All notable changes to UniMPI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.1-alpha] - 2026-09-08
+
+**MPI-3.1 support.** The ten MPI-3.1 additions are now exposed (`Comm_idup`,
+`Aint_add`/`Aint_diff`, the four `File_*_all` nonblocking I/O, and the three
+`MPI_T_*_get_index` lookups), 10 / 10 canonical; the MPI-3.0 roster is
+re-tallied to 95 / 95 now that `Comm_idup` and the `MPI_T_*_get_index` set are
+correctly classified as MPI-3.1 (they were previously mislabeled in the
+version truth). The MPI-2.2 base remains 305 / 305. Canonical 3.0 + 3.1 C
+surface reconciles 105 / 105 in the vtable.
+
+### Added
+- MPI-3.1 six-function series: `Comm_idup`, `Aint_add`/`Aint_diff`, and the
+  `File_iread_all`/`File_iwrite_all`/`File_iread_at_all`/`File_iwrite_at_all`
+  nonblocking-I/O pair, bound across the OpenMPI/MPICH/Intel-MPI/MS-MPI
+  backends under `UNIMPI_MPI_AT_LEAST(3,1)`, with an MPI-3.1 integration test.
+- `MPI_T_cvar_get_index`/`MPI_T_pvar_get_index`/`MPI_T_enum_get_index` as the
+  three MPI-T lookup additions (MPI-3.1), completing the `unimpi_mt` vtable to
+  25 `t_*` slots; the MPI-T `get_info` slots carry the standard 10-/13-argument
+  signatures and are bound directly from each backend's own
+  `MPI_T_*_get_info` export (no bridge).
+- Version-truth corrections: `Comm_idup` and the three `MPI_T_*_get_index`
+  entities are recorded as MPI-3.1 (not 3.0) in the gate registry and CSV, so
+  a 3.0 build no longer dangles unsupported lookups; `tools/mpi_version_gate.py
+  check` and `check --require-guards` pass (14 clusters, 105 entities).
+- Gate hygiene: every `UNIMPI_MPI_AT_LEAST` cluster now ends with a matching
+  `#endif` trailing comment naming its version pair, and stale free-text
+  comments above the `#if` lines were dropped (comment-normalization only; no
+  semantic change). Verified counts: 370 vtable fields / 367 aliases at 3.1,
+  363 / 357 at 3.0, 299 at 2.2.
+- Performance documentation: a dispatch cost model and misconception
+  corrections (docs/PERFORMANCE.md), driven by the paired direct-vs-vtable
+  benchmark.
+
 ## [v0.2.0-alpha] - 2026-09-05
 
 **MPI-3.0 basic support:** the full MPI-3.0 C-callable roster is now exposed —

@@ -19,7 +19,7 @@ Three design choices keep the hot path minimal.
    #define MPI_Send unimpi.send
    ```
 
-   (361 direct standard-name aliases — see `tools/count_surface.py`.)
+   (367 direct standard-name aliases — see `tools/count_surface.py`.)
    `MPI_Send(buf, ...)` is never a call into a UniMPI
    wrapper function — the macro expands the call site directly into a member
    access on the global dispatch table `unimpi`, followed by an indirect call.
