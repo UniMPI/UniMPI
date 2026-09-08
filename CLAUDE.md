@@ -6,262 +6,181 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **unimpi** is a Universal MPI wrapper library that provides runtime backend loading for OpenMPI, MPICH, Intel-MPI, and MS-MPI. It allows writing MPI code once and running it with any supported MPI implementation without recompiling.
 
-**Key Characteristics:**
-- Zero-overhead design (single function pointer indirection, <1ns overhead)
-- Runtime backend detection and loading via `dlopen`/`dlsym`
-- Full MPI-3 API coverage (400+ functions)
-- Cross-platform: Linux, macOS, Windows
-- Dual API style: function pointer (`unimpi.send`) or standard MPI macros (`MPI_Send`)
+An application links to UniMPI once and picks the MPI implementation at runtime via `dlopen`/`dlsym` (or the Windows loader). UniMPI is a C99 library and does not need MPI headers at build time.
+
+**Key characteristics:**
+- Runtime backend detection and loading (one load at init), zero steady-state symbol lookup
+- Dispatch is a macro layer over one global vtable: direct `unimpi.<field>` calls or standard `MPI_*` names under `UNIMPI_USE_STD_NAMES`
+- No MPI header dependency, no ABI_binding to a specific vendor; handle values are `intptr_t`
+- Dual API style: function-pointer (`unimpi.send`) and standard MPI macros (`MPI_Send`)
+- **Version-gated surface**: MPI-3.0 / MPI-3.1 clusters appear only when built for that target (default is MPI-2.2)
 
 ## Architecture
 
 ### Core Components
 
 ```
-include/unimpi.h          # Public API header
-include/unimpi_vtable.h    # Vtable structure with 400+ function pointers
-include/unimpi_platform.h  # Platform abstraction (dlopen, dlclose, dlsym)
-include/unimpi_loader.h    # Backend detection and loading
+include/unimpi.h            # Public API header (control wrappers + MPI_T std-name layer)
+include/unimpi_vtable.h     # Main vtable struct, ~370 function-pointer fields, version-gated
+include/unimpi_mt.h         # MPI-T tools vtable (unimpi_mt, separate from unimpi)
+include/unimpi_std_macros.h # Standard MPI_* naming macros (direct vtable aliases)
+include/unimpi_platform.h   # Platform abstraction (dlopen, dlclose, dlsym)
+include/unimpi_loader.h     # Backend detection and loading
+include/unimpi_version.h.in # CMake-generated; defines UNIMPI_MPI_TARGET_VERSION/SUBVERSION and UNIMPI_MPI_AT_LEAST
 
-src/core.c                 # Initialization and cleanup
-src/loader.c              # Backend auto-detection, library loading
-src/vtable.c              # Vtable management and backend dispatch
-src/platform_posix.c       # POSIX implementation (dlfcn.h)
-src/platform_windows.c     # Windows implementation (LoadLibrary)
+src/core.c                  # Initialization, finalization, lifecycle, UNIMPI_ERR_* handling
+src/mpit.c                  # MPI-T wrapper layer (unimpi_mt_* forwarding)
+src/mt_globals.c            # MPI-T globals
+src/vtable.c                # Vtable init, per-backend dispatch
+src/mp_constants.c          # Backend-specific communicator/Op constant values
+src/loader.c                # Backend auto-detection, library loading
+src/platform_posix.c        # POSIX implementation (dlfcn.h)
+src/platform_windows.c      # Windows implementation (LoadLibrary)
 
 src/backends/
-  openmpi.c               # OpenMPI-specific initialization
-  mpich.c                 # MPICH initialization (also base for Intel-MPI)
-  intelmpi.c              # Intel-MPI specific (derived from MPICH)
-  msmpi.c                 # MS-MPI initialization (Windows, MPICH-derived)
+  openmpi.c / mpich.c / intelmpi.c / msmpi.c + *_wrappers.c   # Per-backend init, dlsym binding, bridges
 ```
+
+### Two vtables
+
+- **Main dispatch table** — `unimpi` (global `unimpi_vtable_t`). Holds every MPI function pointer, populated once at init by the active backend. Fields are version-gated clusters: MPI-3.0 entities (`matched_probe`, `nonblocking_collectives`, `neighbor_collectives`, `comm_3x`, `win_alloc_shared`, `rma_atomics`, `rma_sync_3x`, `large_count`, `win_dynamic`, `mpi_t_tools`) are compiled only for target >= 3.0; the MPI-3.1 additions (`aint_add_diff`, `nonblocking_io_all`, `comm_idup`, `mpi_t_get_index`) only for target >= 3.1.
+- **MPI-T tools vtable** — `unimpi_mt` (global `unimpi_mt_t`). Independent of `unimpi`, carries the `t_*` slots for `MPI_T_*`. It **stays usable after `MPI_Finalize`** via a reference-counted backend load (see `docs/API.md` MPI-T section). `unimpi_ensure_loaded()` is the force-load hook both vtables use.
 
 ### Initialization Flow
 
-The library follows a strict initialization sequence:
+1. **Environment Check** (`src/loader.c:unimpi_loader_detect_backend`): `UNIMPI_BACKEND`, then `UNIMPI_LIBRARY`, then platform default.
+2. **Library Loading** (`src/loader.c:unimpi_loader_load`): rejects standard-MPI-ABI libraries; platform `dlopen`/`LoadLibrary`.
+3. **Backend Identification** (`src/loader.c:unimpi_loader_identify_backend`): OpenMPI via `ompi_mpi_comm_world`, Intel-MPI via `__I_MPI___cpu_core_type`, MPICH via `MPIR_Err_create_code`/`MPIR_Dup_fn`, MS-MPI via `MSMPI_Get_version` (Windows only).
+4. **Vtable Population** (`src/vtable.c:unimpi_vtable_init`): validates core symbols (`MPI_Init`, `MPI_Comm_size`, `MPI_Comm_rank`), dispatches to the backend init, which assigns each slot via `unimpi_platform_dlsym`.
 
-1. **Environment Check** (`src/loader.c:unimpi_loader_detect_backend`)
-   - Check `UNIMPI_BACKEND` environment variable (manual selection)
-   - Check `UNIMPI_LIBRARY` environment variable (custom path)
-   - Auto-detect based on platform
+**Backend detection priority**: `UNIMPI_BACKEND` → `UNIMPI_LIBRARY` → auto (OpenMPI → Intel-MPI → MPICH → MS-MPI on Windows).
 
-2. **Library Loading** (`src/loader.c:unimpi_loader_load`)
-   - Reject standard MPI ABI libraries (not supported)
-   - Platform-specific `dlopen`/`LoadLibrary`
-   - Returns handle for symbol resolution
+### Backend-specific ABI values
 
-3. **Backend Identification** (`src/loader.c:unimpi_loader_identify_backend`)
-   - OpenMPI: Check for `ompi_mpi_comm_world` symbol
-   - Intel-MPI: Check for `__I_MPI___cpu_core_type` symbol
-   - MPICH: Check for `MPIR_Err_create_code` or `MPIR_Dup_fn` symbols
-   - MS-MPI: Check for `MSMPI_Get_version` symbol (Windows only)
+Handle and communicator *values* differ by backend and are resolved at runtime, never hardcoded in application code:
 
-4. **Platform Support Check** (`src/loader.c:unimpi_loader_check_platform_support`)
-   - Windows: Only MS-MPI supported
-   - macOS: OpenMPI and MPICH supported
-   - Linux: OpenMPI, MPICH, and Intel-MPI supported
+- OpenMPI: pointers (`ompi_mpi_comm_world`)
+- MPICH/Intel-MPI: small ints (`MPI_COMM_WORLD = 91`)
+- MS-MPI: magic values (`0x44000000` WORLD, `0x44000001` SELF)
 
-5. **Vtable Population** (`src/vtable.c:unimpi_vtable_init`)
-   - Validate core symbols (MPI_Init, MPI_Finalize, MPI_Comm_size, MPI_Comm_rank)
-   - Dispatch to backend-specific initialization
-   - Each backend fills 400+ function pointers via `unimpi_platform_dlsym`
-   - Set communicator constants specific to backend ABI
+`MPI_Status` is a 24-byte union whose member layout matches the active backend (OpenMPI fields at offset 0; legacy MPICH/Intel-MPI/MS-MPI at offset 8). **Never read `status.MPI_SOURCE` / `.MPI_TAG` / `.MPI_ERROR` directly** — use UniMPI's layout-aware accessors `MPI_Status_get_source/_tag/_error` (`unimpi.status_get_source` &c). These are bound per backend; see `docs/API.md`.
 
-### Backend Detection Priority
+### Missing-symbol degradation
 
-1. `UNIMPI_BACKEND` environment variable (manual selection)
-2. `UNIMPI_LIBRARY` environment variable (custom path)
-3. Auto-detection: OpenMPI → Intel-MPI → MPICH → MS-MPI (Windows only)
+Backend binding assigns a slot directly from `dlsym`; a symbol the backend lacks simply leaves the slot `NULL` (no stub, no global failure). The macro layer does **not** intercept a NULL slot — calling one is a null-pointer crash by design (zero-overhead). Degrading backends (notably MS-MPI) must be gated by the **caller**: check the slot (or a `*_available()` helper) before calling; test suites follow the `mpit_available()` / `nbc_available()` pattern. See `docs/SUPPORT_MATRIX.md` "Missing-symbol degradation (MS-MPI)".
 
-### Key Implementation Details
+## The version-gating system (critical to understand before editing)
 
-**Communicator Values (backend-specific):**
-- OpenMPI: Uses pointers (e.g., `ompi_mpi_comm_world`)
-- MPICH/Intel-MPI: Uses integers (`MPI_COMM_WORLD = 91`)
-- MS-MPI: Uses hardcoded values (`0x44000000` for WORLD, `0x44000001` for SELF)
+MPI features are physically compiled in/out by target version. **Always keep the three surfaces in lockstep**:
 
-**Vtable Population:** Each backend fills the global `unimpi_vtable_t unimpi` structure with function pointers loaded from the backend library.
+1. `include/unimpi_vtable.h` — the vtable fields (the `VERSION_GATING` principle: exposing a field or macro is not a claim of runtime behavior; the table is the compile-time surface).
+2. `include/unimpi_std_macros.h` — the standard `MPI_*` aliases (same clusters, same gates).
+3. The four `src/backends/*.c` — the dlsym bindings (same gates).
 
-## Build Commands
+- Each gate block is one cluster guarded with `#if UNIMPI_MPI_AT_LEAST(maj,min)` ... `#endif`, anchored by an in-block header comment `/* MPI-maj.min <cluster> */`.
+- `UNIMPI_MPI_TARGET_VERSION` / `UNIMPI_MPI_TARGET_SUBVERSION` (CMake cache vars) and the `UNIMPI_MPI_AT_LEAST` macro come from the **CMake-generated** `include/unimpi_version.h` (source `.in`).
+- `tools/versioned_clusters.csv` is the audit registry (file, cluster, version). `tools/mpi_version_gate.py` is the validator:
+  - `python3 tools/mpi_version_gate.py check` — data consistency;
+  - `python3 tools/mpi_version_gate.py check --require-guards` — every cluster has a real `#if UNIMPI_MPI_AT_LEAST` guard (this is what catches a "gate drift" — a cluster whose edition changed but the guard didn't);
+  - `python3 tools/mpi_version_gate.py base` — the always-present MPI-2.2 baseline (305/305 entities).
+  - `tools/count_surface.py` — reports current vtable field / alias counts (370 fields / 367 aliases at the 3.1 target).
+- **Always run `check --require-guards` after editing any gated file**, and re-verify a fresh target build (see Build below). A "gate pass" counts 14 clusters / 105 entities.
+
+> **Editing rule**: when you touch a gated region, keep the #if/#endif pairing and the in-block cluster header comment. The pairing must stay mechanical — if you introduce a stray `#if`, `--require-guards` will fail.
+
+## Build
 
 ### Quick Build (Linux/macOS)
+
 ```bash
 cmake -B build .
 cmake --build build
 ```
 
-### Windows (MinGW)
+The **default target is MPI-2.2** (`UNIMPI_MPI_TARGET_VERSION=2`). To build the MPI-3.0 or MPI-3.1 surface:
+
 ```bash
-cmake -B build -G "MinGW Makefiles"
-cmake --build build
+cmake -B build30 . -DUNIMPI_MPI_TARGET_VERSION=3 -DUNIMPI_MPI_TARGET_SUBVERSION=0
+cmake --build build30
 ```
 
-### Windows (Visual Studio)
-```cmd
-cmake -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config Release
-```
+`UNIMPI_VTABLE_COUNT` (in `unimpi_vtable.h`) is the runtime `sizeof(vtable)/8`; it changes per target **and** per build. Do not hardcode the count in tests.
 
 ### Build Options
+
 ```bash
-# Minimal build (no examples/tests)
-cmake -B build . -DUNIMPI_BUILD_EXAMPLES=OFF -DUNIMPI_BUILD_TESTS=OFF
-
-# Debug build
+cmake -B build . -DUNIMPI_BUILD_EXAMPLES=OFF -DUNIMPI_BUILD_TESTS=OFF   # minimal
 cmake -B build . -DCMAKE_BUILD_TYPE=Debug
-
-# Enable standard MPI macros by default
-cmake -B build . -DUNIMPI_ENABLE_STD_MACROS=ON
-
-# Enable real MPI tests (requires mpirun/mpiexec)
-cmake -B build . -DUNIMPI_BUILD_MPI_TESTS=ON
+cmake -B build . -DUNIMPI_ENABLE_STD_MACROS=ON    # enable standard MPI_* names by default
+cmake -B build . -DUNIMPI_BUILD_MPI_TESTS=ON      # real MPI tests (needs mpirun/mpiexec)
 ```
+
+### Windows
+
+- MS-MPI (MPICH-derived) is the only supported Windows backend; `msmpi.dll` lives in `C:\Windows\System32`.
+- MinGW: `cmake -B build -G "MinGW Makefiles"; cmake --build build`
+- Visual Studio: `cmake -B build -G "Visual Studio 17 2022" -A x64; cmake --build build --config Release`
+- No `dlopen` — uses `LoadLibrary`/`GetProcAddress`.
 
 ## Test Commands
 
-### Run All Tests
+### All fake/unit tests (no MPI runtime needed)
+
 ```bash
-cd build && ctest --output-on-failure
+cmake -S . -B build-unit -DUNIMPI_BUILD_TESTS=ON -DUNIMPI_BUILD_MPI_TESTS=OFF
+cmake --build build-unit --parallel
+ctest --test-dir build-unit -L unit --output-on-failure
 ```
 
-### Run Single Test
-```bash
-# Unit tests (no MPI runtime needed)
-./build/tests/test_error
-./build/tests/test_loader
+### Real MPI tests (requires mpirun and `UNIMPI_LIBRARY` pointing at a matching library)
 
-# MPI tests (requires mpirun/mpiexec)
-mpirun -np 2 ./build/tests/test_p2p
-mpirun -np 4 ./build/tests/test_collective
-mpiexec -np 2 ./build/tests/test_datatype
+```bash
+cmake -S . -B build-mpi -DUNIMPI_BUILD_TESTS=ON -DUNIMPI_BUILD_MPI_TESTS=ON \
+  -DMPIEXEC_EXECUTABLE=/path/to/mpirun
+cmake --build build-mpi --parallel
+UNIMPI_LIBRARY=/absolute/path/to/libmpi.so \
+  ctest --test-dir build-mpi -L integration --output-on-failure --timeout 180
 ```
 
-### Test with Specific Backend
+### Single test
+
 ```bash
-# Linux/macOS
+ctest --test-dir build -R test_loader          # by name
+./build/tests/test_vtable_layout               # direct binary run
+mpirun -np 2 ./build/tests/test_p2p            # MPI test with N ranks
+```
+
+### Backend selection
+
+```bash
 UNIMPI_BACKEND=openmpi mpirun -np 4 ./build/examples/minimal
-UNIMPI_BACKEND=mpich mpirun -np 4 ./build/examples/minimal
-
-# Windows
-set UNIMPI_BACKEND=msmpi
-mpiexec -np 4 .\build\examples\minimal.exe
+UNIMPI_LIBRARY=/usr/lib/x86_64-linux-gnu/libmpi.so mpirun -np 4 ./build/examples/minimal
 ```
 
-## Backend Development Guidelines
+The launcher must come from the same MPI installation as the library.
 
-### Adding a New Backend
+## Docs as contract
 
-1. **Add backend detection** in `src/loader.c`:
-   - Add symbol check in `unimpi_loader_identify_backend()`
-   - Add library name to `unimpi_backends[]` array
+The `docs/` set is the maintained contract — never write a claim there that a test does not demonstrate, and update it when behavior changes:
 
-2. **Create backend file** `src/backends/<new>.c`:
-   - Implement `unimpi_vtable_init_<new>()`
-   - Load all MPI function symbols
-   - Set communicator constants if backend-specific
+- `docs/SUPPORT_MATRIX.md` — separates "slot exists" / "backend exports symbol" / "test passed" and states the verification boundary per category. **Add or tighten a matrix row only after a focused test demonstrates the behavior.**
+- `docs/API.md` — public control API + recommended usage; documents the MPI-T vtable and the layout-aware status accessors.
+- `docs/VERSION_GATING.md` — the target-slice mechanism.
+- `docs/TESTING.md` — test labels, process-count requirements, backend matrix.
 
-3. **Update vtable dispatch** in `src/vtable.c`:
-   - Add forward declaration
-   - Add case in switch statement
+## Coding Standards
 
-4. **Test with all MPI function categories**:
-   - Point-to-point, Collectives, Datatypes
-   - RMA (one-sided), Parallel I/O, Dynamic processes
+- **Indentation**: 4 spaces (no tabs); **Braces**: K&R; **Line length**: max 100.
+- **Naming**: functions `snake_case`; macros `UPPER_CASE`; types `snake_case_t`; global vtable `unimpi`.
+- **Applications use native MPI style** (`MPI_*`) — `UNIMPI_*` prefixes are for internal implementation only; the public API presents as standard MPI.
+- **Commit messages**: English conventional commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `perf:`, `chore:`). This is a hard repo rule for all contributors.
+- **Git**: avoid push to `internal` unless asked; work is staged/committed locally.
 
-### Backend-Specific Constants
+## Adding an MPI function (checklist)
 
-Different MPI implementations use different internal representations:
-
-```c
-// OpenMPI: pointers to internal structures
-// MPICH: small integers (91, 92)
-// MS-MPI: hardcoded magic numbers (0x44000000)
-```
-
-Always verify communicator values match the backend when implementing new backends.
-
-## Platform Considerations
-
-### Windows/MS-MPI
-- Library: `msmpi.dll` in `C:\Windows\System32`
-- Communicator values: `0x44000000` (WORLD), `0x44000001` (SELF)
-- Build with MinGW or Visual Studio
-- No `dlopen` - uses `LoadLibrary`/`GetProcAddress`
-
-### Linux
-- Standard `dlopen`/`dlsym` with `-ldl`
-- Library paths vary by distribution
-- Versioned libraries (`.so.40` for OpenMPI v4.x)
-
-### macOS
-- Same as Linux but with `.dylib` suffix
-- Homebrew paths for MPI installations
-
-## API Styles
-
-### Standard MPI Style (Recommended)
-```c
-#define UNIMPI_USE_STD_NAMES
-#include "unimpi.h"
-
-MPI_Init(&argc, &argv);
-MPI_Send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
-MPI_Finalize();
-```
-
-### Function Pointer Style
-```c
-#include "unimpi.h"
-
-unimpi.init(&argc, &argv);
-unimpi.send(buf, count, MPI_INT, dest, tag, UNIMPI_COMM_WORLD);
-unimpi.finalize();
-```
-
-Use standard style for portability, function pointer style for debugging or explicit control.
-
-## Development Guidelines
-
-### Always Use Native MPI Style in Applications
-**Important**: Applications using unimpi should always use native MPI naming style (`MPI_*`) rather than unimpi-specific prefixes (`UNIMPI_*`).
-
-**Correct:**
-```c
-#include "unimpi.h"  // This header automatically provides MPI_* macros
-
-MPI_Send(buf, count, MPI_INT, dest, tag, MPI_COMM_WORLD);
-MPI_Bcast(buf, count, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-MPI_Reduce(sendbuf, recvbuf, count, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-```
-
-**Incorrect:**
-```c
-// Don't use UNIMPI_* prefixes in application code
-unimpi.send(buf, count, UNIMPI_INT, dest, tag, UNIMPI_COMM_WORLD);
-```
-
-The `UNIMPI_*` prefixes are for internal implementation only. The public API should always present as standard MPI to users.
-
-### Coding Standards
-
-- **Indentation**: 4 spaces (no tabs)
-- **Braces**: K&R style
-- **Line length**: Max 100 characters
-- **Naming**:
-  - Functions: `snake_case`
-  - Macros: `UPPER_CASE`
-  - Types: `snake_case_t`
-  - Global vtable: `unimpi`
-
-### Commit Messages
-
-Follow conventional commits format:
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation
-- `test:` - Tests
-- `refactor:` - Code refactoring
-- `perf:` - Performance
-- `chore:` - Maintenance
-
-Example: `test: add extended P2P communication tests (ssend, rsend, sendrecv, waitall, test)`
+1. Add the vtable field in `include/unimpi_vtable.h` under the correct version-gated cluster, guarded by `UNIMPI_MPI_AT_LEAST(maj,min)`, with the in-block `/* MPI-maj.min <cluster> */` anchor comment.
+2. Add the standard alias in `include/unimpi_std_macros.h` in the same gate.
+3. Register the cluster (or an existing one, if adding to it) in `tools/versioned_clusters.csv` under the correct file→cluster→version.
+4. Bind it in every backend that exports it (`src/backends/<backend>.c` + `*_wrappers.c` if a bridge is needed); leave adjacent slots `NULL` where a backend lacks it.
+5. Run the gate validator (`check`, `check --require-guards`) and `count_surface.py`.
+6. Add fake/unit coverage and focused real-backend tests; update `docs/SUPPORT_MATRIX.md` only after they pass.
