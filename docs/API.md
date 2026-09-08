@@ -1,8 +1,12 @@
 # API Reference
 
 Reference for UniMPI's public control API and commonly used runtime-dispatch
-fields. The vtable contains 364 MPI function-pointer fields (target 3.0) and
-the standard-name header contains 361 direct aliases. This document is not a
+fields. The vtable contains 370 MPI function-pointer fields (the language-level
+total; 364 are exposed at a 3.0 target and the six MPI-3.1 additions --
+`MPI_Aint_add`/`MPI_Aint_diff` and the four `File_*_all` -- only at 3.1+) and
+the standard-name header contains 367 direct aliases (358 at a 3.0 target;
+three of the ones excluded are the MPI-3.1 `MPI_T_*_get_index`). Run
+`tools/count_surface.py` for the current numbers. This document is not a
 claim
 of complete MPI-standard coverage; consult
 [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md) before depending on a category.
@@ -592,10 +596,13 @@ keeps the tool vtable's fields from colliding with the main `unimpi.*` ones.
 **Backend-fill, not hardcoding.** MPI-T error codes (`MPI_T_ERR_*`) and
 enumeration constants (`MPI_T_BIND_*`, `MPI_T_SCOPE_*`,
 `MPI_T_VERBOSITY_*`, `MPI_T_PVAR_CLASS_*`, `UNIMPI_T_*_NULL`) are filled per
-backend from its own ABI. MPICH-family expose the canonical MPI-3.0 9/8-arg
-`Cvar_get_info`/`Pvar_get_info` signatures; OpenMPI is adapted through a
-bridge wrapper from its legacy 13/10-arg signatures. A backend that exports
-no MPI-T (e.g. MS-MPI) simply leaves the slots `NULL`.
+backend from its own ABI. The `Cvar_get_info`/`Pvar_get_info` vtable slots
+carry the exact standard signatures (10/13-arg, identical in MPI-3.x and
+MPI-4.x), so every MPI-3.0-capable backend (MPICH-family and OpenMPI) binds
+them straight from its own `MPI_T_*_get_info` export with no bridge and
+carries all standard outputs (`desc`/`desc_len`/`bind`, plus pvar's
+`readonly`/`continuous`/`atomic`). A backend that exports no MPI-T at all
+(e.g. MS-MPI) simply leaves the slots `NULL`.
 
 **Independent lifecycle.** Each `MPI_T_*` wrapper forces
 `unimpi_ensure_loaded()` before forwarding, so the interface is available on

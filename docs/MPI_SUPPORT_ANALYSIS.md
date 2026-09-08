@@ -230,7 +230,7 @@ varies: OpenMPI yes, MPICH-family partial, MS-MPI absent (skipped by
 | MPI_T_init_thread | ✅ | MPI-3 - t_init_thread |
 | MPI_T_finalize | ✅ | MPI-3 - t_finalize |
 | MPI_T_pvar_read/write | ✅ | MPI-3 - t_pvar_read / t_pvar_write |
-| MPI_T_cvar_get_info | ✅ | MPI-3 - t_cvar_get_info (OpenMPI bridged from its legacy 10-arg form) |
+| MPI_T_cvar_get_info | ✅ | MPI-3 - t_cvar_get_info (standard 10-arg signature, bound directly in all MPI-T backends) |
 | MPI_T_category_* / MPI_T_enum_* | ✅ | MPI-3 - bound in all four backends (t_category_* / t_enum_* slots) |
 
 ## Summary

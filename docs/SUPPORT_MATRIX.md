@@ -11,9 +11,12 @@ MPI conformance or runtime availability.
 
 ## Current API inventory
 
-- `unimpi_vtable_t` contains 364 MPI function-pointer fields (target 3.0).
-- `unimpi_std_macros.h` contains 361 direct standard-name aliases of the form
-  `MPI_* -> unimpi.<field>`.
+- `unimpi_vtable_t` contains 370 MPI function-pointer fields (the language-level
+  total; 364 are exposed at a 3.0 target -- the six MPI-3.1 additions are gated
+  at 3.1+).
+- `unimpi_std_macros.h` contains 367 direct standard-name aliases of the form
+  `MPI_* -> unimpi.<field>` (358 at a 3.0 target; the MPI-3.1
+  `MPI_T_*_get_index` / aint / `File_*_all` aliases are gated at 3.1+).
 - Initialization, finalization, constants, and a small number of function-like
   convenience macros are defined separately.
 
@@ -103,7 +106,7 @@ standard rule is covered.
 | MPI I/O extensions | No | Yes | Yes | Yes | Yes | Positioned independent/collective/nonblocking round trips, metadata, sync and atomicity |
 | Examples | No | Smoke | Smoke | Smoke | Smoke | See `examples/README.md` for rank requirements |
 | Benchmarks | No | Smoke | Smoke | Smoke | Smoke | Execution only; no hard performance threshold |
-| MPI-T tools interface | No | Yes | Partial | Partial | Partial | Lifecycle, enum self-check, no-object pvar round trip, category `get_num`/`get_info`/`get_cvars`/`get_pvars` traversal, enum `get_info`/`get_item` round trip (skip w/o enumerable pvar), survival across `MPI_Finalize`; MPICH-family bind the standard 9/8-arg `get_info` signatures, OpenMPI is bridged from its legacy 13/10-arg signatures, MS-MPI degrades to NULL via `*_available()` |
+| MPI-T tools interface | No | Yes | Partial | Partial | Partial | Lifecycle, enum self-check, no-object pvar round trip, category `get_num`/`get_info`/`get_cvars`/`get_pvars` traversal, enum `get_info`/`get_item` round trip (skip w/o enumerable pvar), survival across `MPI_Finalize`; the three MPI-3.0-capable backends bind the standard 10/13-arg `get_info` signatures (identical across MPI-3.x/4.x) directly into the matching vtable slots, MS-MPI exports no MPI-T and degrades to NULL with `*_available()` gating on the slot |
 
 ## Explicitly not claimed as covered
 
@@ -193,20 +196,15 @@ not export MPI-T at all (MS-MPI). Backend-fill, not hardcoding, sets the
 MPI-T error codes and enumeration constants; a backend that exports no
 MPI-T leaves the slots `NULL` and the suite skips rather than failing.
 
-**OpenMPI `get_info` bridge (known tradeoff).** OpenMPI's tools interface
-predates the MPI-3.0 signatures: `MPI_T_cvar_get_info`/`MPI_T_pvar_get_info`
-take 10/13 arguments, carry extra outputs (`desc`, `bind`, and for pvar
-`readonly`/`continuous`/`atomic`) while omitting the canonical
-`cvar_handle`/`binding`/`var_extra`. UniMPI binds the canonical 9/8-arg slots
-and bridges OpenMPI's native calls, preserving the common outputs (verbosity,
-scope, var_class, datatype, enumtype) but dropping OpenMPI's `desc`/`bind`
-(and pvar's `binding`/`readonly`/`continuous`/`atomic`) because the canonical
-slots have no carrier for them. `cvar_handle` is set to `0`
-(`MPI_T_CVAR_HANDLE_NULL`), matching the standard's "argument unused"
-semantics, so that is not a functional loss. Tools needing the
-description/binding metadata cannot get it on the OpenMPI backend through
-UniMPI. (Verified against OpenMPI 4.x: real prototypes are 10/13-arg, and
-`MPI_T_cvar_get_info` natively returns non-empty `desc`/`bind`/`scope`.)
+**`get_info` signatures are the standard ones, bound directly.** The
+`MPI_T_cvar_get_info`/`MPI_T_pvar_get_info` vtable slots carry the exact
+standard signatures (10-/13-argument, identical across MPI-3.x and MPI-4.x —
+verified: the MPICH 3.3 and 4.2 reference pages and the installed
+MPICH-4.x/OpenMPI-4.x headers all match), so each MPI-T-capable backend binds
+them straight from its own export of `MPI_T_*_get_info` with no bridge. All
+standard outputs are carried through — `desc`/`desc_len`/`bind` (and pvar's
+`readonly`/`continuous`/`atomic`, plus `datatype`); there is no reduced-slot
+loss and no fake handle/`var_extra` outputs.
 
 ### MPI_Status field access
 
